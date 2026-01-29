@@ -1,0 +1,26 @@
+# system
+tags
+
+# temporary
+*~
+*.swp
+*.kate-swp
+
+# python
+*.egg-info
+*.egg
+*.whl
+*.pyc
+dist
+
+# directories
+.DS_Store
+build
+build.sphinx
+__pycache__
+vendor
+
+# generated
+*.png
+*.html
+*.json
