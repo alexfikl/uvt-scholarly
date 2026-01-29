@@ -11,12 +11,7 @@ from uvt_scholarly.logging import make_logger
 log = make_logger(__name__)
 
 
-@enum.unique
-class Score(enum.Enum):
-    JournalImpactFactor = enum.auto()
-    ArticleInfluenceScore = enum.auto()
-    RelativeInfluenceScore = enum.auto()
-    RelativeImpactFactor = enum.auto()
+# {{{ Author
 
 
 @dataclass(frozen=True)
@@ -26,6 +21,19 @@ class Author:
     affiliations: tuple[str, ...]
 
 
+# }}}
+
+# {{{ Journal
+
+
+@enum.unique
+class Score(enum.Enum):
+    JournalImpactFactor = enum.auto()
+    ArticleInfluenceScore = enum.auto()
+    RelativeInfluenceScore = enum.auto()
+    RelativeImpactFactor = enum.auto()
+
+
 @dataclass(frozen=True)
 class Journal:
     name: str
@@ -33,11 +41,54 @@ class Journal:
     quartile: dict[Score, str]
 
 
+# }}}
+
+# {{{ DOI
+
+DOI_RESOLVER = "https://doi.org"
+
+
+def _lowercase_ascii(text: str) -> str:
+    return "".join(chr(ord(c) + 32) if "A" <= c <= "Z" else c for c in text)
+
+
 @dataclass(frozen=True)
 class DOI:
     namespace: str
     registrant: str
     item: str
+
+    def __str__(self) -> str:
+        return f"{self.namespace}.{self.registrant}/{self.item}"
+
+    def display(self) -> str:
+        return f"doi:{self}"
+
+    @property
+    def url(self) -> str:
+        from urllib.parse import quote
+
+        suffix = quote(self.item, safe="")
+        return f"{DOI_RESOLVER}/{self.namespace}.{self.registrant}/{suffix}"
+
+    def __hash__(self) -> int:
+        return hash((self.namespace, self.registrant, _lowercase_ascii(self.item)))
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not type(self):
+            return False
+
+        if self is other:
+            return True
+
+        # NOTE: according to the DOI Handook, Section 3.4.4, two DOIs are considered
+        # equivalent is the codepoints are the same, except ASCII letters, which
+        # are case-insensitive.
+        return (
+            self.namespace == other.namespace
+            and self.registrant == other.registrant
+            and _lowercase_ascii(self.item) == _lowercase_ascii(other.item)
+        )
 
     @staticmethod
     def from_string(doi: str) -> DOI:
@@ -52,10 +103,35 @@ class DOI:
         if not (namespace == "10" and len(registrant) == 4 and registrant.isdigit()):
             raise ValueError(f"DOI prefix must have a form '10.NNNN': {doi!r}")
 
-        return DOI(namespace, registrant, suffix)
+        # NOTE: according to the DOI Handbook, ASCII letters are case-insensitive
+        # in a DOI, so we just lowercase them to begin with.
+        return DOI(namespace, registrant, _lowercase_ascii(suffix))
 
-    def __str__(self) -> str:
-        return f"{self.namespace}.{self.registrant}/{self.item}"
+    @property
+    def is_valid(self) -> bool:
+        if self.namespace != "10":
+            return False
+
+        if len(self.registrant) != 4 or not self.registrant.isdigit():
+            return False
+
+        if not self.item:
+            return False
+
+        for ch in self.item:
+            if ch.isspace():
+                return False
+
+            # also reject ASCII control sequences
+            if ord(ch) < 32 or ord(ch) == 127:
+                return False
+
+        return True
+
+
+# }}}
+
+# {{{ ISSN
 
 
 @dataclass(frozen=True)
@@ -68,14 +144,17 @@ class ISSN:
     @staticmethod
     def from_string(issn: str) -> ISSN:
         if "-" not in issn:
-            raise ValueError(f"ISSN has a form NNNN-NNNC: {issn!r}")
+            raise ValueError(f"ISSN missing dash (expected NNNN-NNNC): {issn!r}")
 
         if len(issn) != 9:
-            raise ValueError(f"ISSN has a form NNNN-NNNC (length 9): {issn!r}")
+            raise ValueError(f"invalid ISSN length (expected NNNN-NNNC): {issn!r}")
+
+        part0, part1 = issn.split("-", maxsplit=1)
+        if len(part0) != 4 or len(part1) != 4:
+            raise ValueError(f"invalid ISSN part size (expected NNNN-NNNC): {issn!r}")
 
         # NOTE: we let the user check if this is a valid ISSN otherwise, since
         # they might want to just construct some for fun and games
-        part0, part1 = issn.split("-")
         return ISSN((part0, part1))
 
     @property
@@ -105,6 +184,11 @@ class ISSN:
         return issn[-1] == expected
 
 
+# }}}
+
+# {{{ Publication
+
+
 @dataclass(frozen=True)
 class Publication:
     authors: tuple[Author, ...]
@@ -120,3 +204,6 @@ class Publication:
     categories: tuple[str, ...]
 
     citations: tuple[Publication, ...]
+
+
+# }}}
