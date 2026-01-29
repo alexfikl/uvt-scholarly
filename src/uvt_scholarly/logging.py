@@ -10,14 +10,14 @@ from rich.logging import RichHandler
 
 
 def quiet() -> None:
-    """Only show errors in all ``wos_uefiscdi`` loggers."""
+    """Only show errors in all ``uvt_scholarly`` loggers."""
 
-    root = logging.getLogger("wos_uefiscdi")
+    root = logging.getLogger("uvt_scholarly")
     root.setLevel(logging.ERROR)
 
 
 def make_logger(module: str, level: int | str | None = None) -> logging.Logger:
-    """Make a logger that is always a child of the root ``wos_uefiscdi`` logger."""
+    """Make a logger that is always a child of the root ``uvt_scholarly`` logger."""
 
     if level is None:
         level = logging.INFO
@@ -30,7 +30,7 @@ def make_logger(module: str, level: int | str | None = None) -> logging.Logger:
     path = pathlib.Path(module)
     if path.exists():
         # NOTE: adding the suffix to ensure that they're all in the same root logger
-        module = f"wos_uefiscdi.{path.stem}"
+        module = f"uvt_scholarly.{path.stem}"
 
     name, *rest = module.split(".", maxsplit=1)
     root = logging.getLogger(name)

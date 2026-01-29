@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: CC0-1.0
 
 version = 1
-SPDX-PackageName = "wos-uefiscdi"
+SPDX-PackageName = "uvt-scholarly"
 SPDX-PackageSupplier = "Alexandru Fikl <alexfikl@gmail.com>"
-SPDX-PackageDownloadLocation = "https://github.com/alexfikl/wos-uefiscdi"
+SPDX-PackageDownloadLocation = "https://github.com/alexfikl/uvt-scholarly"
 
 [[annotations]]
 path = [

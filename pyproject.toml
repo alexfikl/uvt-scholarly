@@ -5,9 +5,9 @@ requires = [
 ]
 
 [project]
-name = "wos-uefiscdi"
+name = "uvt-scholarly"
 version = "2026.1"
-description = "Scripts to help convert WoS data to UEFISCDI formats"
+description = "Convert WoS and Scopus data to UEFISCDI and CNATDCU criteria verification sheets"
 readme = "README.md"
 license = "MIT"
 maintainers = [
@@ -37,8 +37,8 @@ dependencies = [
     "pyperclip>=1.9",
     "rich>=14",
 ]
-urls.Repository = "https://github.com/alexfikl/wos-uefiscdi"
-scripts."wos-uefiscdi" = "wos_uefiscdi.__main__:main"
+urls.Repository = "https://github.com/alexfikl/uvt-scholarly"
+scripts."uvtscholarly" = "uvt_scholarly.__main__:main"
 
 [dependency-groups]
 dev = [ "pyproject-fmt", "uv" ]
@@ -60,7 +60,7 @@ exclude = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "src/wos_uefiscdi",
+    "src/uvt_scholarly",
 ]
 
 [tool.ruff]
@@ -109,7 +109,7 @@ lint.flake8-quotes.docstring-quotes = "double"
 lint.flake8-quotes.inline-quotes = "double"
 lint.flake8-quotes.multiline-quotes = "double"
 lint.isort.known-first-party = [
-    "wos_uefiscdi",
+    "uvt_scholarly",
 ]
 lint.isort.required-imports = [
     "from __future__ import annotations",

@@ -8,7 +8,7 @@ from importlib import metadata
 
 import click
 
-from wos_uefiscdi.logging import make_logger
+from uvt_scholarly.logging import make_logger
 
 log = make_logger(__name__)
 
@@ -21,7 +21,7 @@ log = make_logger(__name__)
     invoke_without_command=False,
 )
 @click.help_option("-h", "--help")
-@click.version_option(metadata.version("wos-uefiscdi"), "-v", "--version")
+@click.version_option(metadata.version("uvt-scholarly"), "-v", "--version")
 @click.option(
     "-q",
     "--quiet",
@@ -42,7 +42,7 @@ def main(
         import logging
 
         # NOTE: set logging level on root logger only since it propagates
-        root = logging.getLogger("wos_uefiscdi")
+        root = logging.getLogger("uvt_scholarly")
         root.setLevel(logging.ERROR)
 
 
