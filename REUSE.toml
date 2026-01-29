@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: CC0-1.0
+
+version = 1
+SPDX-PackageName = "wos-uefiscdi"
+SPDX-PackageSupplier = "Alexandru Fikl <alexfikl@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/alexfikl/wos-uefiscdi"
+
+[[annotations]]
+path = [
+    "justfile",
+    "README.md",
+    "pyproject.toml",
+    "requirements.txt",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Alexandru Fikl <alexfikl@gmail.com>"
+SPDX-License-Identifier = "CC0-1.0"
