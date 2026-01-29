@@ -21,7 +21,10 @@ log = make_logger(__name__)
 class Author:
     first_name: str
     last_name: str
-    affiliations: tuple[str, ...]
+
+    affiliations: tuple[str, ...] = ()
+    researcherid: str | None = None
+    orcid: str | None = None
 
 
 # }}}
@@ -35,6 +38,14 @@ class Score(enum.Enum):
     ArticleInfluenceScore = enum.auto()
     RelativeInfluenceScore = enum.auto()
     RelativeImpactFactor = enum.auto()
+
+
+SCORE_TO_ACRONYM = {
+    Score.JournalImpactFactor: "JIF",
+    Score.ArticleInfluenceScore: "AIS",
+    Score.RelativeInfluenceScore: "RIS",
+    Score.RelativeImpactFactor: "RIF",
+}
 
 
 @dataclass(frozen=True)
@@ -134,6 +145,9 @@ class DOI:
         return True
 
     def resolve(self, client: httpx.Client | None = None) -> bool:
+        if not self.is_valid:
+            return False
+
         try:
             if client:
                 if not client.follow_redirects:
@@ -218,7 +232,7 @@ class Publication:
     journal: Journal
     year: int
     volume: str
-    number: str
+    issue: str
     dtype: str
     doi: DOI
     issn: ISSN
