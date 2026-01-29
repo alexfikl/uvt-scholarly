@@ -103,7 +103,6 @@ lint.ignore = [
     "PLR2004", # magic-value-comparison
     "S101",    # assert
     "S102",    # exec-builtin
-    "UP037",   # quoted-annotation
 ]
 lint.flake8-quotes.docstring-quotes = "double"
 lint.flake8-quotes.inline-quotes = "double"

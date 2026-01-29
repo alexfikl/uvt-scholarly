@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import enum
+from collections.abc import Mapping
 from dataclasses import dataclass
+
+import httpx
 
 from uvt_scholarly.logging import make_logger
 
@@ -37,8 +40,8 @@ class Score(enum.Enum):
 @dataclass(frozen=True)
 class Journal:
     name: str
-    scores: dict[Score, float]
-    quartile: dict[Score, str]
+    scores: Mapping[Score, float]
+    quartile: Mapping[Score, str]
 
 
 # }}}
@@ -126,7 +129,26 @@ class DOI:
             if ord(ch) < 32 or ord(ch) == 127:
                 return False
 
+        # NOTE: this just validates the form of the DOI. To truly know if a DOI
+        # is valid, we have to resolve it through doi.org or something.
         return True
+
+    def resolve(self, client: httpx.Client | None = None) -> bool:
+        try:
+            if client:
+                if not client.follow_redirects:
+                    raise ValueError(
+                        "'resolve' requires a client with follow_redirects=True"
+                    )
+
+                response = client.head(self.url)
+            else:
+                with httpx.Client(follow_redirects=True, timeout=5.0) as c:
+                    response = c.head(self.url)
+
+            return response.status_code == 200
+        except httpx.HTTPError:
+            return False
 
 
 # }}}

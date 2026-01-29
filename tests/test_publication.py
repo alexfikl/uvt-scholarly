@@ -133,4 +133,5 @@ def test_doi() -> None:
     doi = DOI.from_string("10.1000/<>?")
     assert doi.url == "https://doi.org/10.1000/%3C%3E%3F"
 
+
 # }}}
