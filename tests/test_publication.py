@@ -54,7 +54,7 @@ def test_issn() -> None:
         except ValueError:
             is_valid = False
 
-        assert not is_valid
+        assert not is_valid, value
 
     with pytest.raises(ValueError, match="missing dash"):
         ISSN.from_string("123456789")
@@ -135,3 +135,131 @@ def test_doi() -> None:
 
 
 # }}}
+
+
+# {{{ test_researcherid
+
+TEST_RESEARCHERID_VALID = (
+    "A-1234-2008",
+    "B-9876-2012",
+    "Z-0001-2015",
+    "AB-4321-2019",
+    "XY-8080-2020",
+    "IWL-8088-2023",
+    "QRS-1000-2010",
+    "T-5555-2018",
+    "MN-2468-2016",
+    "KLM-9999-2024",
+)
+
+TEST_RESEARCHERID_INVALID = (
+    "A-123-2019",
+    "A-12345-2019",
+    "A-1234-1999",
+    "A1234-2019",
+    "A-1234-19",
+    "A-1234-201X",
+    "12-1234-2019",
+    "A--1234-2019",
+)
+
+
+def test_researcherid() -> None:
+    from uvt_scholarly.publication import ResearcherID
+
+    for value in TEST_RESEARCHERID_VALID:
+        rid = ResearcherID.from_string(value)
+        assert str(rid) == value
+
+    for value in TEST_RESEARCHERID_INVALID:
+        try:
+            doi = ResearcherID.from_string(value)
+            is_valid = doi.is_valid
+        except ValueError:
+            is_valid = False
+
+        assert not is_valid, value
+
+    with pytest.raises(ValueError, match="no dash"):
+        ResearcherID.from_string("A00002009")
+
+    with pytest.raises(ValueError, match="incorrect parts"):
+        ResearcherID.from_string("A-2009")
+
+    with pytest.raises(ValueError, match="incorrect part size"):
+        ResearcherID.from_string("A-203-2009")
+
+
+# }}}
+
+
+# {{{ test_orcid
+
+TEST_ORCID_VALID = (
+    "0000-0002-1825-0097",
+    "0000-0001-5109-3700",
+    "0000-0002-1694-233X",
+    "0000-0003-1419-2405",
+    "0000-0002-9079-593X",
+    "0000-0001-0000-0007",
+    "0000-0001-2345-6789",
+    "0000-0002-0000-0015",
+    "0000-0003-0000-0006",
+    "0000-0001-9999-9991",
+)
+
+TEST_ORCID_INVALID = (
+    # invalid checksums
+    "0000-0002-1825-0098",
+    "0000-0001-5109-3701",
+    "0000-0002-1694-2339",
+    "0000-0003-1419-2400",
+    "0000-0001-0000-0000",
+    "0000-0002-1825-009x",
+    # invalid format
+    "0000-0002-1825-009",
+    "0000-0002-1825-00977",
+    "0000-0002-1825-00A7",
+    "0000000218250097",
+)
+
+
+def test_orcid() -> None:
+    from uvt_scholarly.publication import ORCiD
+
+    for value in TEST_ORCID_VALID:
+        orcid = ORCiD.from_string(value)
+        assert str(orcid) == value
+
+    for value in TEST_ORCID_INVALID:
+        try:
+            orcid = ORCiD.from_string(value)
+            is_valid = orcid.is_valid
+        except ValueError:
+            is_valid = False
+
+        assert not is_valid, value
+
+    with pytest.raises(ValueError, match="no dash"):
+        ORCiD.from_string("0000000100000000")
+
+    with pytest.raises(ValueError, match="incorrect parts"):
+        ORCiD.from_string("0000-0001-0000")
+
+    with pytest.raises(ValueError, match="incorrect part sizes"):
+        ORCiD.from_string("0000-0001-0000-000")
+
+    # check case insensitive
+    orcid = ORCiD.from_string("0000-0002-1694-233x")
+    assert orcid.is_valid
+
+
+# }}}
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        exec(sys.argv[1])
+    else:
+        pytest.main([__file__])

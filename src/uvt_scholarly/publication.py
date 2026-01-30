@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import httpx
 
@@ -13,6 +13,144 @@ from uvt_scholarly.logging import make_logger
 
 log = make_logger(__name__)
 
+
+# {{{ ResearcherID
+
+
+@dataclass(frozen=True)
+class ResearcherID:
+    """A parsed `ResearcherID <https://en.wikipedia.org/wiki/ResearcherID>`__."""
+
+    parts: tuple[str, str, str]
+    """The three parts of the ResearcherID, which generally has the form
+    ``X[XX]-NNNN-NNNN``, which an ASCII letter as the first part and two 4-digit
+    numeric identifiers.
+    """
+
+    def __str__(self) -> str:
+        return "-".join(self.parts)
+
+    @staticmethod
+    def from_string(rid: str) -> ResearcherID:
+        """Convert some text into :class:`ResearcherID` instance."""
+
+        if "-" not in rid:
+            raise ValueError(
+                f"no dash in ResearcherID (format X[XX]-NNNN-NNNN): {rid!r}"
+            )
+
+        parts = [part.strip().upper() for part in rid.upper().split("-")]
+        if len(parts) != 3:
+            raise ValueError(
+                f"incorrect parts in ResearcherID (format X[XX]-NNNN-NNNN): {rid!r}"
+            )
+
+        if not (len(parts[0]) >= 1 and len(parts[1]) == 4 and len(parts[2]) == 4):
+            raise ValueError(
+                f"incorrect part size in ResearcherID (format X[XX]-NNNN-NNNN): {rid!r}"
+            )
+
+        return ResearcherID((parts[0], parts[1], parts[2]))
+
+    @property
+    def year(self) -> int:
+        """The year the ResearcherID was registered. This is only the last 4 digits
+        of the identifier.
+        """
+        return int(self.parts[-1])
+
+    @property
+    def is_valid(self) -> bool:
+        """*True* if the :class:`ResearcherID` is valid.
+
+        Note that there is no standardized format for the ResearcherID, so this
+        validation should be taken with a grain of salt. It mainly checks that
+        values found in the wild are considered valid.
+        """
+
+        if not (
+            len(self.parts[0]) >= 1
+            and len(self.parts[1]) == 4
+            and len(self.parts[2]) == 4
+        ):
+            return False
+
+        if not all("A" <= ch <= "Z" for ch in self.parts[0]):
+            return False
+
+        if not (self.parts[1].isdigit() and self.parts[2].isdigit()):
+            return False
+
+        from datetime import datetime
+
+        # NOTE: the last part of the ResearcherID should represent the year. Given
+        # that it started in 2008, we do not expect to see earlier values there.
+        year = int(self.parts[2])
+        return 2008 <= year < datetime.now().year + 1
+
+
+# }}}
+
+# {{{ ORCiD
+
+
+@dataclass(frozen=True)
+class ORCiD:
+    parts: tuple[str, str, str, str]
+
+    def __str__(self) -> str:
+        return "-".join(self.parts)
+
+    @staticmethod
+    def from_string(orcid: str) -> ORCiD:
+        if "-" not in orcid:
+            raise ValueError(
+                f"no dash in ORCiD (format NNNN-NNNN-NNNN-NNNN): {orcid!r}"
+            )
+
+        parts = [part.strip().upper() for part in orcid.split("-")]
+        if len(parts) != 4:
+            raise ValueError(
+                f"incorrect parts in ORCiD (format NNNN-NNNN-NNNN-NNNN): {orcid!r}"
+            )
+
+        if any(len(part) != 4 for part in parts):
+            raise ValueError(
+                f"incorrect part sizes in ORCiD (format NNNN-NNNN-NNNN-NNNN): {orcid!r}"
+            )
+
+        return ORCiD((parts[0], parts[1], parts[2], parts[3]))
+
+    @property
+    def is_valid(self) -> bool:
+        if any(len(part) != 4 for part in self.parts):
+            return False
+
+        if not (
+            self.parts[0].isdigit()
+            and self.parts[1].isdigit()
+            and self.parts[2].isdigit()
+            and self.parts[3][:-1].isdigit()
+        ):
+            return False
+
+        check = self.parts[3][-1].upper()
+        if not (check.isdigit() or check == "X"):
+            return False
+
+        total = 0
+        digits = "".join(self.parts)
+        for ch in digits[:-1]:
+            total = 2 * (total + int(ch))
+
+        remainder = total % 11
+        result = (12 - remainder) % 11
+        expected = "X" if result == 10 else str(result)
+
+        return check == expected
+
+
+# }}}
 
 # {{{ Author
 
@@ -23,8 +161,8 @@ class Author:
     last_name: str
 
     affiliations: tuple[str, ...] = ()
-    researcherid: str | None = None
-    orcid: str | None = None
+    researcherid: ResearcherID | None = None
+    orcid: ORCiD | None = None
 
 
 # }}}
@@ -51,8 +189,8 @@ SCORE_TO_ACRONYM = {
 @dataclass(frozen=True)
 class Journal:
     name: str
-    scores: Mapping[Score, float]
-    quartile: Mapping[Score, str]
+    scores: Mapping[Score, float] = field(init=False, default_factory=dict)
+    quartile: Mapping[Score, str] = field(init=False, default_factory=dict)
 
 
 # }}}
@@ -222,24 +360,95 @@ class ISSN:
 
 # }}}
 
+
+# {{{ Category
+
+
+@dataclass(frozen=True)
+class Category:
+    name: str
+    field: str | None
+
+    def __str__(self) -> str:
+        return f"{self.name}, {self.field}" if self.field else self.name
+
+
+# }}}
+
+# {{{ Pages
+
+
+@dataclass(frozen=True)
+class Pages:
+    start: str
+    end: str | None
+    count: int | None
+
+    def __str__(self) -> str:
+        return f"{self.start}-{self.end}" if self.end else self.start
+
+
+# }}}
+
 # {{{ Publication
+
+
+@enum.unique
+class DocumentType(enum.Enum):
+    Article = enum.auto()
+    Book = enum.auto()
+    BookChapter = enum.auto()
+    Dataset = enum.auto()
+    Other = enum.auto()
+    ProceedingsPaper = enum.auto()
+    Review = enum.auto()
+    Report = enum.auto()
 
 
 @dataclass(frozen=True)
 class Publication:
     authors: tuple[Author, ...]
+    """A list of authors for the current publication."""
     title: str
+    """The main title of the current publication."""
     journal: Journal
+    """The journal in which it was published."""
     year: int
+    """The year in which it was published."""
     volume: str
+    """The volume in which it was published. This is usually a numerical value,
+    but can also be written as Roman numerals or other identifiers.
+    """
     issue: str
-    dtype: str
+    """The issue in which it was published. This is usually a numerical value,
+    but it can be some other identifier or even something like ``"Summer"`` for
+    various periodicals.
+    """
+    pages: Pages
+    """Page range in the issue."""
     doi: DOI
+    """A Digital Object Identifier (DOI) for the publication."""
+
     issn: ISSN
-    eissn: ISSN
-    categories: tuple[str, ...]
+    """An International Standard Serial Number (ISSN) for the Journal or publishing
+    house that published this publication.
+    """
+    eissn: ISSN | None
+    """An electronic ISSN, if available."""
+
+    dtype: DocumentType
+    """A generic document type for the publication."""
+    categories: tuple[Category, ...]
+    """A list of categories this publication can be classified in. This generally
+    depends heavily on the source of the metadata (e.g. Web of Science categories).
+    """
+    identifier: str
+    """A unique identifier for the publication the the repository from which it
+    was obtained (e.g. a Web of Science Accession Number).
+    """
 
     citations: tuple[Publication, ...]
+    """A list of publications that have cited this publication."""
 
 
 # }}}
