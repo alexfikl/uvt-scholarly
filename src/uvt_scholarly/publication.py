@@ -14,6 +14,10 @@ from uvt_scholarly.logging import make_logger
 
 log = make_logger(__name__)
 
+# NOTE: This stuff will mostly match the Web of Science and Scopus data models,
+# since we are just importing data from there. For now, it pretends it's slightly
+# independent..
+
 
 # {{{ ResearcherID
 
