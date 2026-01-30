@@ -24,7 +24,7 @@ def test_read_from_csv() -> None:
 
     for pub in publications:
         log.info("%s", pub)
-        print(pub)
+        assert not pub.citations
 
 
 # }}}

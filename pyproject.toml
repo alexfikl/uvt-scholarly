@@ -33,6 +33,8 @@ classifiers = [
 dependencies = [
     "click>=8.1",
     "httpx>=0.28",
+    "msoffcrypto-tool>=5",
+    "openpyxl>=3.1",
     "platformdirs",
     "pyperclip>=1.9",
     "rich>=14",
