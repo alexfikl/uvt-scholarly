@@ -6,6 +6,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from functools import cached_property
 
 import httpx
 
@@ -32,7 +33,7 @@ class ResearcherID:
 
     @staticmethod
     def from_string(rid: str) -> ResearcherID:
-        """Convert some text into :class:`ResearcherID` instance."""
+        """Convert some text into a :class:`ResearcherID` instance."""
 
         if "-" not in rid:
             raise ValueError(
@@ -59,7 +60,7 @@ class ResearcherID:
         """
         return int(self.parts[-1])
 
-    @property
+    @cached_property
     def is_valid(self) -> bool:
         """*True* if the :class:`ResearcherID` is valid.
 
@@ -96,13 +97,20 @@ class ResearcherID:
 
 @dataclass(frozen=True)
 class ORCiD:
+    """A parsed `ORCiD <https://en.wikipedia.org/wiki/ORCID>`__."""
+
     parts: tuple[str, str, str, str]
+    """The four parts of the ORCiD, which generally has the form
+    ``NNNN-NNNN-NNNN-NNNN``.
+    """
 
     def __str__(self) -> str:
         return "-".join(self.parts)
 
     @staticmethod
     def from_string(orcid: str) -> ORCiD:
+        """Convert some text into an :class:`ORCiD` instance."""
+
         if "-" not in orcid:
             raise ValueError(
                 f"no dash in ORCiD (format NNNN-NNNN-NNNN-NNNN): {orcid!r}"
@@ -121,8 +129,10 @@ class ORCiD:
 
         return ORCiD((parts[0], parts[1], parts[2], parts[3]))
 
-    @property
+    @cached_property
     def is_valid(self) -> bool:
+        """*True* if the :class:`ORCiD` is valid."""
+
         if any(len(part) != 4 for part in self.parts):
             return False
 
@@ -158,11 +168,22 @@ class ORCiD:
 @dataclass(frozen=True)
 class Author:
     first_name: str
+    """First name of the author. This can contain multiple first names and initials,
+    as necessary.
+    """
     last_name: str
+    """Last name of the author. This can contain additional parts as well, e.g.
+    ``von Neumann``.
+    """
 
     affiliations: tuple[str, ...] = ()
+    """A list of affiliations for the author. This is generally only meant for
+    a particular publication, not a general list over time.
+    """
     researcherid: ResearcherID | None = None
+    """The ResearcherID for the author."""
     orcid: ORCiD | None = None
+    """The ORCiD for the author."""
 
 
 # }}}
@@ -172,6 +193,8 @@ class Author:
 
 @enum.unique
 class Score(enum.Enum):
+    """Supported types of Journal scores."""
+
     JournalImpactFactor = enum.auto()
     ArticleInfluenceScore = enum.auto()
     RelativeInfluenceScore = enum.auto()
@@ -184,13 +207,20 @@ SCORE_TO_ACRONYM = {
     Score.RelativeInfluenceScore: "RIS",
     Score.RelativeImpactFactor: "RIF",
 }
+"""A mapping from journal scores to commonly used acronyms."""
 
 
 @dataclass(frozen=True)
 class Journal:
+    """A basic description of a journal."""
+
     name: str
+    """The name of the journal."""
+
     scores: Mapping[Score, float] = field(init=False, default_factory=dict)
+    """A mapping of known scores for this journal."""
     quartile: Mapping[Score, str] = field(init=False, default_factory=dict)
+    """A mapping of known quartiles for each score, as available."""
 
 
 # }}}
@@ -206,18 +236,29 @@ def _lowercase_ascii(text: str) -> str:
 
 @dataclass(frozen=True)
 class DOI:
+    """A parsed `Digital Object Identifier <https://en.wikipedia.org/wiki/Digital_object_identifier>__`."""
+
     namespace: str
+    """The namespace for the identifier. This is usually ``10`` for scientific
+    publications."""
     registrant: str
+    """The registrant for this identifier. There is no official list of all
+    registrants, but some information can be obtained, e.g., from Crossref by
+    querying ``https://api.crossref.org/prefixes/10.1038``.
+    """
     item: str
+    """The unique identifier for this item."""
 
     def __str__(self) -> str:
         return f"{self.namespace}.{self.registrant}/{self.item}"
 
     def display(self) -> str:
+        """A display string for the DOI (recommended by the DOI Foundation)."""
         return f"doi:{self}"
 
     @property
     def url(self) -> str:
+        """A URL for the DOI using a supported resolver."""
         from urllib.parse import quote
 
         suffix = quote(self.item, safe="")
@@ -244,6 +285,8 @@ class DOI:
 
     @staticmethod
     def from_string(doi: str) -> DOI:
+        """Convert some text into a :class:`DOI` instance."""
+
         if "/" not in doi:
             raise ValueError(f"DOI has a form 'prefix/suffix': {doi!r}")
 
@@ -259,8 +302,16 @@ class DOI:
         # in a DOI, so we just lowercase them to begin with.
         return DOI(namespace, registrant, _lowercase_ascii(suffix))
 
-    @property
+    @cached_property
     def is_valid(self) -> bool:
+        """*True* if the DOI is valid.
+
+        Note that this just checks the general format of the DOI, e.g. size,
+        allowed characters, etc. The only official way to verify if a DOI is valid
+        is to resolve it. This can be done using :meth:`resolve`, which effectively
+        checks if :attr:`url` is redirects successfully.
+        """
+
         if self.namespace != "10":
             return False
 
@@ -283,6 +334,16 @@ class DOI:
         return True
 
     def resolve(self, client: httpx.Client | None = None) -> bool:
+        """
+        :arg client: a client used for the HTTP request. This function automatically
+            creates a client if none is provided. However, if checking many DOIs
+            at once, it is recommended to create a client, so that requests can be
+            handled more efficiently.
+
+        :returns: *True* if the current DOI redirects correctly.
+        """
+        # TODO: we should cache this result and just return it on the next call
+
         if not self.is_valid:
             return False
 
@@ -310,13 +371,18 @@ class DOI:
 
 @dataclass(frozen=True)
 class ISSN:
+    """A parsed `International Standard Serial Number <https://en.wikipedia.org/wiki/ISSN>`__."""
+
     parts: tuple[str, str]
+    """The two parts of the ISSN, which generally has the form ``NNNN-NNNN``."""
 
     def __str__(self) -> str:
         return f"{self.parts[0]}-{self.parts[1]}"
 
     @staticmethod
     def from_string(issn: str) -> ISSN:
+        """Convert some text into an :class:`ISSN` instance."""
+
         if "-" not in issn:
             raise ValueError(f"ISSN missing dash (expected NNNN-NNNC): {issn!r}")
 
@@ -331,8 +397,10 @@ class ISSN:
         # they might want to just construct some for fun and games
         return ISSN((part0, part1))
 
-    @property
+    @cached_property
     def is_valid(self) -> bool:
+        """*True* if the ISSN is valid."""
+
         issn = f"{self.parts[0]}{self.parts[1]}"
         if len(issn) != 8:
             return False
@@ -366,8 +434,12 @@ class ISSN:
 
 @dataclass(frozen=True)
 class Category:
+    """A category for a publication."""
+
     name: str
+    """The main name of the category, e.g. Mathematics."""
     field: str | None
+    """A sub-category or sub-field in the main category."""
 
     def __str__(self) -> str:
         return f"{self.name}, {self.field}" if self.field else self.name
@@ -380,9 +452,17 @@ class Category:
 
 @dataclass(frozen=True)
 class Pages:
+    """Page range for a publication."""
+
     start: str
+    """The starting page identifier. This is generally a numerical value, but
+    more modern online-only journals can use different identifiers."""
     end: str | None
+    """The ending page identifier. This can be missing for some journals."""
     count: int | None
+    """A total page count. If all values are numeric, this should correspond to
+    just ``end - start``.
+    """
 
     def __str__(self) -> str:
         return f"{self.start}-{self.end}" if self.end else self.start
@@ -395,6 +475,8 @@ class Pages:
 
 @enum.unique
 class DocumentType(enum.Enum):
+    """A enumeration of supported document types."""
+
     Article = enum.auto()
     Book = enum.auto()
     BookChapter = enum.auto()
@@ -429,9 +511,9 @@ class Publication:
     doi: DOI
     """A Digital Object Identifier (DOI) for the publication."""
 
-    issn: ISSN
+    issn: ISSN | None
     """An International Standard Serial Number (ISSN) for the Journal or publishing
-    house that published this publication.
+    house that published this publication, if available.
     """
     eissn: ISSN | None
     """An electronic ISSN, if available."""
