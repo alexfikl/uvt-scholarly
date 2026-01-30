@@ -525,10 +525,15 @@ class Publication:
     depends heavily on the source of the metadata (e.g. Web of Science categories).
     """
     identifier: str
-    """A unique identifier for the publication the the repository from which it
+    """A unique identifier for the publication the repository from which it
     was obtained (e.g. a Web of Science Accession Number).
     """
 
+    citation_count: int
+    """A total number of citations for this publication. This value is generally
+    exported from a repository and does not necessarily match :attr:`citations`.
+    When the publication is "finalized", it should match.
+    """
     citations: tuple[Publication, ...]
     """A list of publications that have cited this publication."""
 

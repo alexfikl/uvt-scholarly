@@ -337,6 +337,7 @@ def read_from_csv(
                 issn=ISSN.from_string(issn) if issn else None,
                 eissn=ISSN.from_string(eissn) if eissn else None,
                 categories=parse_wos_categories(row["WC"]),
+                citation_count=int(row["TC"]),
                 citations=(),
                 identifier=row["UT"],
             )
