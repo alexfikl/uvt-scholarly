@@ -203,10 +203,13 @@ def parse_researcher_ids(text: str) -> dict[tuple[str, str], ResearcherID]:
             continue
 
         name, rid = value.split("/")
-        last_name, first_name = name.split(",")
-        key = last_name.strip(), first_name.strip()
+        last_name, first_name = [part.strip() for part in name.split(",")]
 
-        result[key] = ResearcherID.from_string(rid)
+        # NOTE: we use a (last_name, initial) tuple to disambiguate authors here.
+        # There seem to be plenty of typos and mismatches between the AF field
+        # and the RI / OI fields for author names, so it's not clear if we can do
+        # any better without getting false negatives..
+        result[last_name, first_name[0]] = ResearcherID.from_string(rid)
 
     return result
 
@@ -218,10 +221,9 @@ def parse_orcids(text: str) -> dict[tuple[str, str], ORCiD]:
             continue
 
         name, oid = value.split("/")
-        last_name, first_name = name.split(",")
-        key = last_name.strip(), first_name.strip()
+        last_name, first_name = [part.strip() for part in name.split(",")]
 
-        result[key] = ORCiD.from_string(oid)
+        result[last_name, first_name[0]] = ORCiD.from_string(oid)
 
     return result
 
@@ -248,7 +250,7 @@ def parse_wos_authors(
                 first_name=first_name,
                 last_name=last_name,
                 affiliations=(),
-                researcherid=researcherids.get((last_name, first_name)),
+                researcherid=researcherids.get((last_name, first_name[0])),
                 orcid=orcids.get((last_name, first_name)),
             )
         )
@@ -305,26 +307,34 @@ def read_from_csv(
         if missing := CSV_REQUIRED_COLUMNS - columns:
             raise ValueError(f"Web of Science export missing columns: {missing}")
 
+        from titlecase import titlecase
+
         result = []
         for i, row in enumerate(reader):
+            issn = row.get("SN", "").strip()
             eissn = row.get("EI", "").strip()
             dtype = row.get("DT", "").strip()
+
             if dtype not in DOCUMENT_TYPE:
                 log.warning(
                     "Document %d does not have a known document type: '%s'.", i, dtype
                 )
 
             publication = Publication(
-                authors=parse_wos_authors(row["AU"]),
-                title=row["TI"].strip(),
-                journal=Journal(row["SO"].strip()),
+                authors=parse_wos_authors(
+                    row["AU"],
+                    researcherid=row.get("RI"),
+                    orcid=row.get("OI"),
+                ),
+                title=titlecase(row["TI"].strip()),
+                journal=Journal(titlecase(row["SO"].strip())),
                 year=int(row["PY"].strip()),
                 volume=row["VL"].strip(),
                 issue=row["IS"].strip().upper(),
                 pages=parse_pages(row["BP"], row["EP"], row["PG"]),
                 dtype=DOCUMENT_TYPE.get(dtype, DocumentType.Other),
                 doi=DOI.from_string(row["DI"].strip()),
-                issn=ISSN.from_string(row["IS"].strip()),
+                issn=ISSN.from_string(issn) if issn else None,
                 eissn=ISSN.from_string(eissn) if eissn else None,
                 categories=parse_wos_categories(row["WC"]),
                 citations=(),

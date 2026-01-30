@@ -32,11 +32,11 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.1",
-
     "httpx>=0.28",
     "platformdirs",
     "pyperclip>=1.9",
     "rich>=14",
+    "titlecase>=2.4",
 ]
 urls.Repository = "https://github.com/alexfikl/uvt-scholarly"
 scripts."uvtscholarly" = "uvt_scholarly.__main__:main"
@@ -121,4 +121,9 @@ testpaths = "tests"
 [tool.typos.default]
 extend-ignore-re = [
     "(?Rm)^.*#\\s*spell:\\s*disable$",
+]
+
+[tool.typos.files]
+extend-exclude = [
+    "tests/data",
 ]
