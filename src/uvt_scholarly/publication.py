@@ -199,17 +199,17 @@ class Author:
 class Score(enum.Enum):
     """Supported types of Journal scores."""
 
-    JournalImpactFactor = enum.auto()
-    ArticleInfluenceScore = enum.auto()
-    RelativeInfluenceScore = enum.auto()
-    RelativeImpactFactor = enum.auto()
+    AIS = enum.auto()
+    JIF = enum.auto()
+    RIF = enum.auto()
+    RIS = enum.auto()
 
 
-SCORE_TO_ACRONYM = {
-    Score.JournalImpactFactor: "JIF",
-    Score.ArticleInfluenceScore: "AIS",
-    Score.RelativeInfluenceScore: "RIS",
-    Score.RelativeImpactFactor: "RIF",
+SCORE_FULL_NAME = {
+    Score.AIS: "Article Influence Score",
+    Score.JIF: "Journal Impact Factor",
+    Score.RIF: "Relative Impact Factor",
+    Score.RIS: "Relative Influence Score",
 }
 """A mapping from journal scores to commonly used acronyms."""
 
