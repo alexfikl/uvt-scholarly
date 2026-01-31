@@ -30,12 +30,9 @@ EXPECTED_ENTRIES_PER_YEAR = {
 
 @pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_influence_score(year: int) -> None:
-    from uvt_scholarly.uefiscdi import (
-        UEFISCDI_DATABASE_URL,
-        Score,
-        download_file,
-        parse_relative_influence_score,
-    )
+    from uvt_scholarly.publication import Score
+    from uvt_scholarly.uefiscdi import UEFISCDI_DATABASE_URL, download_file
+    from uvt_scholarly.uefiscdi.ris import parse_relative_influence_score
 
     url = UEFISCDI_DATABASE_URL[year][Score.RIS]
     filename = TMPDIR / f"uvt-scholarly-test-ris-{year}.xlsx"
