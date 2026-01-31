@@ -131,35 +131,34 @@ RIS_INCORRECT_ISSN = {
     #
     # 2024
     #
-    # World Journal for Pediatric and Congenital Heart Surgery: eISSN
+    # eISSN: World Journal for Pediatric and Congenital Heart Surgery
     "2150-0136": "2150-136X",
     #
     # 2023
     #
-    # Journal of Intellectual Capital: eISSN
+    # eISSN: Journal of Intellectual Capital
     "758-7468": "1758-7468",
     #
     # 2021
     #
-    # Current Topics in Medicinal Chemistry: eISSN
+    # eISSN: Current Topics in Medicinal Chemistry
     "1873-5294": "1873-4294",
-    # International Journal for Lesson and Learning Studies: eISSN
+    # eISSN: International Journal for Lesson and Learning Studies
     "2016-8261": "2046-8261",
-    # Journal of Wound Care: eISSN
+    # eISSN: Journal of Wound Care
     "2062-2916": "2052-2916",
-    # Proceedings of the Institution of Mechanical Engineers Part B: eISSN
+    # eISSN: Proceedings of the Institution of Mechanical Engineers Part B
     "2041-1975": "2041-2975",
-    # Radical Philosophy: eISSN
+    # eISSN: Radical Philosophy
     "0030-211X": "0300-211X",
-    # Sociology of Race and Ethnicity: eISSN
+    # eISSN: Sociology of Race and Ethnicity
     "2332-6505": "2332-6506",
-    # African Entomology: eISSN
-    # NOTE: this is even wrong on their website..
+    # eISSN: African Entomology (this is even wrong on their website..)
     "2254-8854": "2224-8854",
     #
     # 2020
     #
-    # Invasive Plant Science and Management: ISSN
+    # ISSN: Invasive Plant Science and Management
     "1929-7291": "1939-7291",
 }
 
@@ -252,18 +251,12 @@ class RelativeInfluenceScoreParser:
 
         result = []
         for row in rows:
-            # score = self.parse_row(row)
-
-            try:
-                score = self.parse_row(row)
-            except ValueError:
-                breakpoint()
+            score = self.parse_row(row)
 
             if score is None:
                 break
 
             if not score.is_valid:
-                breakpoint()
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
             result.append(score)
