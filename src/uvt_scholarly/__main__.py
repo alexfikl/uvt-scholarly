@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import pathlib
 from importlib import metadata
 
 import click
@@ -32,10 +31,6 @@ log = make_logger(__name__)
 @click.pass_context
 def main(
     ctx: click.Context,
-    profile: str,
-    key: str,
-    config: pathlib.Path,
-    no_cache: bool,  # noqa: FBT001
     quiet: bool,  # noqa: FBT001
 ) -> None:
     if quiet:
@@ -44,6 +39,19 @@ def main(
         # NOTE: set logging level on root logger only since it propagates
         root = logging.getLogger("uvt_scholarly")
         root.setLevel(logging.ERROR)
+
+
+# }}}
+
+
+# {{{ download
+
+
+@main.command("download")
+@click.help_option("-h", "--help")
+@click.pass_context
+def download(ctx: click.Context) -> None:
+    log.info("Yey!")
 
 
 # }}}
