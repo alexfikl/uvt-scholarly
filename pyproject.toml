@@ -117,9 +117,6 @@ lint.isort.required-imports = [
     "from __future__ import annotations",
 ]
 
-[tool.pytest.ini_options]
-testpaths = "tests"
-
 [tool.typos.default]
 extend-ignore-re = [
     "(?Rm)^.*#\\s*spell:\\s*disable$",
@@ -128,4 +125,15 @@ extend-ignore-re = [
 [tool.typos.files]
 extend-exclude = [
     "tests/data",
+]
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+log_cli = true
+log_cli_level = "INFO"
+addopts = [
+    "-rswx",
+    "--durations=25",
+    "--capture=no",
+    "--verbose",
 ]

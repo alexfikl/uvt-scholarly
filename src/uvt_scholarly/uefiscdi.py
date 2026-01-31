@@ -70,7 +70,10 @@ UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # noqa: S105
 """Default password used in several UEFISCDI documents."""
 
 
-def download_file(url: str, filename: pathlib.Path) -> None:
+def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> None:
+    if not force and filename.exists():
+        return
+
     # TODO: allow passing a httpx.Client
     with open(filename, "wb") as f, httpx.stream("GET", url) as response:
         response.raise_for_status()
@@ -119,6 +122,21 @@ def to_float(value: str, default: float = 0.0) -> float:
     return float(value)
 
 
+EMPTY_ISSN = {"0", "N/A"}
+INCORRECT_ISSN = {
+    # RIS/2023: Journal of Intellectual Capital eISSN
+    "758-7468": "1758-7468"
+}
+
+
+def normalize_issn(issn: str) -> str:
+    issn = issn.strip().upper()
+    if issn in EMPTY_ISSN:
+        return ""
+
+    return INCORRECT_ISSN.get(issn, issn)
+
+
 @dataclass(frozen=True)
 class RelativeInfluenceScore:
     journal: str
@@ -133,13 +151,8 @@ class RelativeInfluenceScore:
         eissn: str = "",
         score: str = "N/A",
     ) -> RelativeInfluenceScore:
-        issn = issn.strip().upper()
-        if issn == "N/A":
-            issn = ""
-
-        eissn = eissn.strip().upper()
-        if eissn == "N/A":
-            eissn = ""
+        issn = normalize_issn(issn)
+        eissn = normalize_issn(eissn)
 
         return RelativeInfluenceScore(
             journal=journal.strip(),
@@ -158,17 +171,18 @@ class RelativeInfluenceScoreParser:
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> RelativeInfluenceScore | None:
+        from openpyxl.cell.read_only import EmptyCell
+
         if len(row) != 4:
             raise ValueError(f"unexpected number of columns: {len(row)} (expected 4)")
+
+        if isinstance(row[-1], EmptyCell):
+            return None
 
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[3].value).strip()
-
-        if not score:
-            # NOTE: better way to figure out that we reached the end?
-            return None
 
         return RelativeInfluenceScore.from_strings(journal, issn, eissn, score)
 
@@ -187,7 +201,11 @@ class RelativeInfluenceScoreParser:
 
         result = []
         for row in rows:
-            score = self.parse_row(row)
+            try:
+                score = self.parse_row(row)
+            except ValueError:
+                breakpoint()
+
             if score is None:
                 break
 
@@ -205,16 +223,18 @@ class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> RelativeInfluenceScore | None:
+        from openpyxl.cell.read_only import EmptyCell
+
         if len(row) != 5:
             raise ValueError(f"unexpected number of columns: {len(row)} (expected 5)")
+
+        if isinstance(row[-1], EmptyCell):
+            return None
 
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[4].value).strip()
-
-        if not score:
-            return None
 
         return RelativeInfluenceScore.from_strings(journal, issn, eissn, score)
 

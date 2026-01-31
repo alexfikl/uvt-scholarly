@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import pathlib
 
 from rich.logging import RichHandler
 
@@ -27,10 +26,9 @@ def make_logger(module: str, level: int | str | None = None) -> logging.Logger:
 
     assert isinstance(level, int)
 
-    path = pathlib.Path(module)
-    if path.exists():
+    if not module.startswith("uvt_scholarly"):
         # NOTE: adding the suffix to ensure that they're all in the same root logger
-        module = f"uvt_scholarly.{path.stem}"
+        module = f"uvt_scholarly.{module}"
 
     name, *rest = module.split(".", maxsplit=1)
     root = logging.getLogger(name)
