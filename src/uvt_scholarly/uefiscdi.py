@@ -22,8 +22,8 @@ log = make_logger(__name__)
 
 # {{{ URLS
 
-# NOTE: This mostly has the last 5 years, since those are required for UEFISCDI
-# competitions.
+# NOTE: This mostly has the last 5 years, since those are required for UEFISCDI,
+# CNATDCU, or university competitions and accreditations.
 UEFISCDI_DATABASE_URL = {
     2025: {
         Score.AIS: "https://uefiscdi.gov.ro/resource-865528-AIS.JCR2024.iunie2025.xlsx",
@@ -122,10 +122,45 @@ def to_float(value: str, default: float = 0.0) -> float:
     return float(value)
 
 
-EMPTY_ISSN = {"0", "N/A"}
-INCORRECT_ISSN = {
-    # RIS/2023: Journal of Intellectual Capital eISSN
-    "758-7468": "1758-7468"
+# NOTE:
+#   - "0" appears in RIS/2023
+#   - "****-****" appears in RIS/2021
+EMPTY_ISSN = {"0", "N/A", "****-****"}
+
+RIS_INCORRECT_ISSN = {
+    #
+    # 2024
+    #
+    # World Journal for Pediatric and Congenital Heart Surgery: eISSN
+    "2150-0136": "2150-136X",
+    #
+    # 2023
+    #
+    # Journal of Intellectual Capital: eISSN
+    "758-7468": "1758-7468",
+    #
+    # 2021
+    #
+    # Current Topics in Medicinal Chemistry: eISSN
+    "1873-5294": "1873-4294",
+    # International Journal for Lesson and Learning Studies: eISSN
+    "2016-8261": "2046-8261",
+    # Journal of Wound Care: eISSN
+    "2062-2916": "2052-2916",
+    # Proceedings of the Institution of Mechanical Engineers Part B: eISSN
+    "2041-1975": "2041-2975",
+    # Radical Philosophy: eISSN
+    "0030-211X": "0300-211X",
+    # Sociology of Race and Ethnicity: eISSN
+    "2332-6505": "2332-6506",
+    # African Entomology: eISSN
+    # NOTE: this is even wrong on their website..
+    "2254-8854": "2224-8854",
+    #
+    # 2020
+    #
+    # Invasive Plant Science and Management: ISSN
+    "1929-7291": "1939-7291",
 }
 
 
@@ -134,7 +169,7 @@ def normalize_issn(issn: str) -> str:
     if issn in EMPTY_ISSN:
         return ""
 
-    return INCORRECT_ISSN.get(issn, issn)
+    return RIS_INCORRECT_ISSN.get(issn, issn)
 
 
 @dataclass(frozen=True)
@@ -160,6 +195,22 @@ class RelativeInfluenceScore:
             eissn=ISSN.from_string(eissn) if eissn else None,
             score=to_float(score.strip()),
         )
+
+    @property
+    def is_valid(self) -> bool:
+        if self.issn and not self.issn.is_valid:
+            return False
+
+        if self.eissn and not self.eissn.is_valid:
+            return False
+
+        if not self.journal:
+            return False
+
+        if self.score and self.score < 0.0:  # noqa: SIM103
+            return False
+
+        return True
 
 
 class RelativeInfluenceScoreParser:
@@ -201,6 +252,8 @@ class RelativeInfluenceScoreParser:
 
         result = []
         for row in rows:
+            # score = self.parse_row(row)
+
             try:
                 score = self.parse_row(row)
             except ValueError:
@@ -209,16 +262,16 @@ class RelativeInfluenceScoreParser:
             if score is None:
                 break
 
+            if not score.is_valid:
+                breakpoint()
+                raise ParsingError(f"score on row {row[0].row} is not valid")
+
             result.append(score)
 
         return tuple(result)
 
 
 class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
-    @property
-    def skip_header(self) -> bool:
-        return True
-
     def parse_row(  # noqa: PLR6301
         self,
         row: tuple[ReadOnlyCell, ...],
@@ -239,14 +292,39 @@ class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
         return RelativeInfluenceScore.from_strings(journal, issn, eissn, score)
 
 
+class RelativeInfluenceScore2020Parser(RelativeInfluenceScoreParser):
+    def parse_row(  # noqa: PLR6301
+        self,
+        row: tuple[ReadOnlyCell, ...],
+    ) -> RelativeInfluenceScore | None:
+        from openpyxl.cell.read_only import EmptyCell
+
+        if len(row) != 3:
+            raise ValueError(f"unexpected number of columns: {len(row)} (expected 3)")
+
+        if isinstance(row[-1], EmptyCell):
+            return None
+
+        journal = str(row[0].value).strip()
+        issn = str(row[1].value).strip()
+        score = str(row[2].value).strip()
+
+        return RelativeInfluenceScore.from_strings(journal, issn, "N/A", score)
+
+
 def parse_relative_influence_score(
     filename: pathlib.Path, version: int
 ) -> tuple[RelativeInfluenceScore, ...]:
     if not filename.exists():
         raise FileNotFoundError(filename)
 
+    if version not in UEFISCDI_DATABASE_URL:
+        raise ValueError(f"unsupported database version: {version}")
+
     if version == 2025:
         parser = RelativeInfluenceScore2025Parser()
+    elif version == 2020:
+        parser = RelativeInfluenceScore2020Parser()
     else:
         parser = RelativeInfluenceScoreParser()
 

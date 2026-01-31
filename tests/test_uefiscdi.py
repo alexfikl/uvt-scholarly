@@ -19,15 +19,16 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 
 # NOTE: extracted from the Excel files by going to the last row
 EXPECTED_ENTRIES_PER_YEAR = {
-    2025: 22249,
-    2024: 21848,
-    2023: 13651,
-    2022: 13658,
+    2020: 11485,
     2021: 12205,
+    2022: 13658,
+    2023: 13651,
+    2024: 21848,
+    2025: 22249,
 }
 
 
-@pytest.mark.parametrize("year", [2021, 2022, 2023, 2024, 2025])
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_influence_score(year: int) -> None:
     from uvt_scholarly.uefiscdi import (
         UEFISCDI_DATABASE_URL,
