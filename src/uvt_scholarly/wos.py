@@ -196,9 +196,9 @@ CSV_REQUIRED_COLUMNS = {
 }
 
 
-def parse_researcher_ids(text: str) -> dict[tuple[str, str], ResearcherID]:
+def parse_rids(text: str, *, sep: str = ";") -> dict[tuple[str, str], ResearcherID]:
     result = {}
-    for value in text.split(";"):
+    for value in text.split(sep):
         if "/" not in value:
             continue
 
@@ -214,9 +214,9 @@ def parse_researcher_ids(text: str) -> dict[tuple[str, str], ResearcherID]:
     return result
 
 
-def parse_orcids(text: str) -> dict[tuple[str, str], ORCiD]:
+def parse_orcids(text: str, *, sep: str = ";") -> dict[tuple[str, str], ORCiD]:
     result = {}
-    for value in text.split(";"):
+    for value in text.split(sep):
         if "/" not in value:
             continue
 
@@ -231,16 +231,18 @@ def parse_orcids(text: str) -> dict[tuple[str, str], ORCiD]:
 def parse_wos_authors(
     text: str,
     *,
+    author_separator: str = ";",
+    id_separator: str = ";",
     researcherid: str | None = None,
     orcid: str | None = None,
 ) -> tuple[Author, ...]:
     from uvt_scholarly.publication import Author
 
-    researcherids = parse_researcher_ids(researcherid) if researcherid else {}
-    orcids = parse_orcids(orcid) if orcid else {}
+    researcherids = parse_rids(researcherid, sep=id_separator) if researcherid else {}
+    orcids = parse_orcids(orcid, sep=id_separator) if orcid else {}
 
     result = []
-    for author in text.split(";"):
+    for author in text.replace("\n", " ").split(author_separator):
         last_name, first_name = author.split(",")
         first_name = first_name.strip()
         last_name = last_name.strip()
@@ -294,6 +296,9 @@ def read_from_csv(
     encoding: str = "utf-8",
     delimiter: str = "\t",
 ) -> tuple[Publication, ...]:
+    if not filename.exists():
+        raise FileNotFoundError(filename)
+
     import csv
 
     from uvt_scholarly.publication import DOI, ISSN, Journal
@@ -320,7 +325,7 @@ def read_from_csv(
                     "Document %d does not have a known document type: '%s'.", i, dtype
                 )
 
-            publication = Publication(
+            pub = Publication(
                 authors=parse_wos_authors(
                     row["AU"],
                     researcherid=row.get("RI"),
@@ -342,7 +347,92 @@ def read_from_csv(
                 identifier=row["UT"],
             )
 
-            result.append(publication)
+            result.append(pub)
+
+    return tuple(result)
+
+
+# }}}
+
+
+# {{{ import BibTeX
+
+
+def parse_bib_pages(pages: str) -> Pages:
+    if "-" not in pages:
+        return Pages(pages.strip().upper(), None, None)
+
+    start, end = [p.strip() for p in pages.split("-") if p]
+    if start.isdigit() and end.isdigit():  # noqa: SIM108
+        count = int(end) - int(start) + 1
+    else:
+        count = None
+
+    return Pages(start, end, count)
+
+
+def read_from_bib(
+    filename: pathlib.Path,
+    *,
+    encoding: str = "utf-8",
+) -> tuple[Publication, ...]:
+    if not filename.exists():
+        raise FileNotFoundError(filename)
+
+    from bibtexparser.bparser import BibTexParser
+
+    parser = BibTexParser(
+        common_strings=True,
+        ignore_nonstandard_types=False,
+        homogenize_fields=False,
+        interpolate_strings=True,
+    )
+
+    with open(filename, encoding=encoding) as fd:
+        entries = parser.parse(fd.read(), partial=True).entries
+
+    from titlecase import titlecase
+
+    from uvt_scholarly.publication import DOI, ISSN, Journal
+
+    def clean(text: str) -> str:
+        return text.replace("\\", "").replace("\n", " ").strip()
+
+    result = []
+    for entry in entries:
+        authors = parse_wos_authors(
+            clean(entry["author"]),
+            researcherid=entry.get("researcherid-numbers", ""),
+            orcid=entry.get("orcid-numbers", ""),
+            author_separator=" and ",
+            id_separator="\n",
+        )
+        issn = entry.get("issn", "").strip()
+        eissn = entry.get("eissn", "").strip()
+        issue = entry.get("number", entry.get("issue", "")).strip()
+        journal = clean(entry.get("journal", entry.get("booktitle", "")))
+
+        pub = Publication(
+            authors=authors,
+            title=titlecase(clean(entry["title"])),
+            journal=Journal(titlecase(clean(journal))),
+            year=int(entry["year"].strip()),
+            volume=entry.get("volume", "").strip(),
+            issue=issue,
+            pages=parse_bib_pages(entry.get("pages", "")),
+            dtype=DOCUMENT_TYPE.get(entry["type"].strip(), DocumentType.Other),
+            doi=DOI.from_string(entry["doi"].strip()),
+            issn=ISSN.from_string(issn) if issn else None,
+            eissn=ISSN.from_string(eissn) if eissn else None,
+            categories=parse_wos_categories(
+                clean(entry.get("web-of-science-categories", ""))
+            ),
+            citation_count=int(entry["times-cited"]),
+            citations=(),
+            identifier=entry["ID"],
+        )
+
+        result.append(pub)
 
     return tuple(result)
 
