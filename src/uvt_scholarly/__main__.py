@@ -7,6 +7,7 @@ import pathlib
 from importlib import metadata
 
 import click
+import httpx
 import platformdirs
 
 from uvt_scholarly.logging import make_logger
@@ -95,7 +96,14 @@ def download(
             url = UEFISCDI_DATABASE_URL[year][Score.RIS]
 
             xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-ris-{year}.xlsx"
-            download_file(url, xlsxfile, force=force)
+            try:
+                download_file(url, xlsxfile, force=force)
+            except httpx.ConnectError:
+                if xlsxfile.exists():
+                    xlsxfile.unlink()
+
+                log.error("Failed to download RIS scores: '%s'.", url)
+                break
 
             log.info("Processing RIS scores for %d: '%s'.", year, xlsxfile)
             try:
@@ -107,6 +115,7 @@ def download(
             log.info("Inserting RIS scores for %d into database.", year)
             db.insert(year, scores)
         else:
+            log.info("Database updated: '%s'.", UEFISCDI_DB_FILE)
             return
 
     # NOTE: we arrive here if some error happened in the database parsing, so
