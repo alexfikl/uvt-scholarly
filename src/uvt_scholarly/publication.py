@@ -527,7 +527,7 @@ class Publication:
     """
     pages: Pages
     """Page range in the issue."""
-    doi: DOI
+    doi: DOI | None
     """A Digital Object Identifier (DOI) for the publication."""
 
     issn: ISSN | None
