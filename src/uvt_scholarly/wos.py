@@ -8,6 +8,8 @@ import pathlib
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
+    DOI,
+    ISSN,
     Author,
     Category,
     DocumentType,
@@ -196,6 +198,30 @@ CSV_REQUIRED_COLUMNS = {
 }
 
 
+def parse_doi(text: str) -> DOI | None:
+    text = text.strip()
+    if not text:
+        return None
+
+    doi = DOI.from_string(text)
+    if not doi.is_valid:
+        raise ValueError(f"DOI is not valid: {doi}")
+
+    return doi
+
+
+def parse_issn(text: str) -> ISSN | None:
+    text = text.strip()
+    if not text:
+        return None
+
+    issn = ISSN.from_string(text)
+    if not issn.is_valid:
+        raise ValueError(f"ISSN is not valid: '{issn}'")
+
+    return issn
+
+
 def parse_rids(text: str, *, sep: str = ";") -> dict[tuple[str, str], ResearcherID]:
     result = {}
     for value in text.split(sep):
@@ -301,7 +327,7 @@ def read_from_csv(
 
     import csv
 
-    from uvt_scholarly.publication import DOI, ISSN, Journal
+    from uvt_scholarly.publication import DOI, Journal
 
     with open(filename, encoding=encoding) as f:
         reader = csv.DictReader(f, delimiter="\t")
@@ -316,36 +342,38 @@ def read_from_csv(
 
         result = []
         for i, row in enumerate(reader):
-            issn = row.get("SN", "").strip()
-            eissn = row.get("EI", "").strip()
-            dtype = row.get("DT", "").strip()
+            dtypes = [dtype.strip() for dtype in row.get("DT", "").split(";")]
 
-            if dtype not in DOCUMENT_TYPE:
+            if any(dtype not in DOCUMENT_TYPE for dtype in dtypes):
                 log.warning(
-                    "Document %d does not have a known document type: '%s'.", i, dtype
+                    "Document %d does not have a known document type: '%s'.", i, dtypes
                 )
 
-            pub = Publication(
-                authors=parse_wos_authors(
-                    row["AU"],
-                    researcherid=row.get("RI"),
-                    orcid=row.get("OI"),
-                ),
-                title=titlecase(row["TI"].strip()),
-                journal=Journal(titlecase(row["SO"].strip())),
-                year=int(row["PY"].strip()),
-                volume=row["VL"].strip(),
-                issue=row["IS"].strip().upper(),
-                pages=parse_pages(row["BP"], row["EP"], row["PG"]),
-                dtype=DOCUMENT_TYPE.get(dtype, DocumentType.Other),
-                doi=DOI.from_string(row["DI"].strip()),
-                issn=ISSN.from_string(issn) if issn else None,
-                eissn=ISSN.from_string(eissn) if eissn else None,
-                categories=parse_wos_categories(row["WC"]),
-                citation_count=int(row["TC"]),
-                citations=(),
-                identifier=row["UT"],
-            )
+            try:
+                pub = Publication(
+                    authors=parse_wos_authors(
+                        row["AU"],
+                        researcherid=row.get("RI"),
+                        orcid=row.get("OI"),
+                    ),
+                    title=titlecase(row["TI"].strip()),
+                    journal=Journal(titlecase(row["SO"].strip())),
+                    year=int(row["PY"].strip()),
+                    volume=row["VL"].strip(),
+                    issue=row["IS"].strip().upper(),
+                    pages=parse_pages(row["BP"], row["EP"], row["PG"]),
+                    dtype=DOCUMENT_TYPE.get(dtypes[0], DocumentType.Other),
+                    doi=parse_doi(row.get("DI", "")),
+                    issn=parse_issn(row.get("SN", "")),
+                    eissn=parse_issn(row.get("EI", "")),
+                    categories=parse_wos_categories(row["WC"]),
+                    citation_count=int(row["TC"]),
+                    citations=(),
+                    identifier=row["UT"],
+                )
+            except Exception as exc:
+                log.error("Failed to parse entry on row %d.", i, exc_info=exc)
+                continue
 
             result.append(pub)
 
@@ -393,7 +421,7 @@ def read_from_bib(
 
     from titlecase import titlecase
 
-    from uvt_scholarly.publication import DOI, ISSN, Journal
+    from uvt_scholarly.publication import Journal
 
     def clean(text: str) -> str:
         return text.replace("\\", "").replace("\n", " ").strip()
@@ -407,30 +435,32 @@ def read_from_bib(
             author_separator=" and ",
             id_separator="\n",
         )
-        issn = entry.get("issn", "").strip()
-        eissn = entry.get("eissn", "").strip()
         issue = entry.get("number", entry.get("issue", "")).strip()
         journal = clean(entry.get("journal", entry.get("booktitle", "")))
 
-        pub = Publication(
-            authors=authors,
-            title=titlecase(clean(entry["title"])),
-            journal=Journal(titlecase(clean(journal))),
-            year=int(entry["year"].strip()),
-            volume=entry.get("volume", "").strip(),
-            issue=issue,
-            pages=parse_bib_pages(entry.get("pages", "")),
-            dtype=DOCUMENT_TYPE.get(entry["type"].strip(), DocumentType.Other),
-            doi=DOI.from_string(entry["doi"].strip()),
-            issn=ISSN.from_string(issn) if issn else None,
-            eissn=ISSN.from_string(eissn) if eissn else None,
-            categories=parse_wos_categories(
-                clean(entry.get("web-of-science-categories", ""))
-            ),
-            citation_count=int(entry["times-cited"]),
-            citations=(),
-            identifier=entry["ID"],
-        )
+        try:
+            pub = Publication(
+                authors=authors,
+                title=titlecase(clean(entry["title"])),
+                journal=Journal(titlecase(clean(journal))),
+                year=int(entry["year"].strip()),
+                volume=entry.get("volume", "").strip(),
+                issue=issue,
+                pages=parse_bib_pages(entry.get("pages", "")),
+                dtype=DOCUMENT_TYPE.get(entry["type"].strip(), DocumentType.Other),
+                doi=parse_doi(entry.get("doi", "")),
+                issn=parse_issn(entry.get("issn", "")),
+                eissn=parse_issn(entry.get("eissn", "")),
+                categories=parse_wos_categories(
+                    clean(entry.get("web-of-science-categories", ""))
+                ),
+                citation_count=int(entry["times-cited"]),
+                citations=(),
+                identifier=entry["ID"],
+            )
+        except Exception as exc:
+            log.error("Failed to parse entry with ID '%s'.", entry["ID"], exc_info=exc)
+            continue
 
         result.append(pub)
 
