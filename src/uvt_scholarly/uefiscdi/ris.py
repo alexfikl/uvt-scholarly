@@ -4,14 +4,22 @@
 from __future__ import annotations
 
 import pathlib
+import sqlite3
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN
-from uvt_scholarly.uefiscdi.common import UEFISCDI_DATABASE_URL, ParsingError
+from uvt_scholarly.uefiscdi.common import (
+    UEFISCDI_DATABASE_URL,
+    UEFISCDI_LATEST_YEAR,
+    ParsingError,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from types import TracebackType
+
     from openpyxl.cell import ReadOnlyCell
 
 
@@ -81,7 +89,7 @@ class RelativeInfluenceScore:
     journal: str
     issn: ISSN | None
     eissn: ISSN | None
-    score: float | None
+    score: float
 
     @staticmethod
     def from_strings(
@@ -101,6 +109,14 @@ class RelativeInfluenceScore:
         )
 
     @property
+    def issns(self) -> str | None:
+        return str(self.issn) if self.issn else None
+
+    @property
+    def eissns(self) -> str | None:
+        return str(self.eissn) if self.eissn else None
+
+    @property
     def is_valid(self) -> bool:
         if self.issn and not self.issn.is_valid:
             return False
@@ -111,7 +127,7 @@ class RelativeInfluenceScore:
         if not self.journal:
             return False
 
-        if self.score and self.score < 0.0:  # noqa: SIM103
+        if self.score < 0.0:  # noqa: SIM103
             return False
 
         return True
@@ -154,7 +170,7 @@ class RelativeInfluenceScoreParser:
         if self.skip_header:
             _ = next(rows)
 
-        result = []
+        result = {}
         for row in rows:
             score = self.parse_row(row)
 
@@ -164,9 +180,29 @@ class RelativeInfluenceScoreParser:
             if not score.is_valid:
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
-            result.append(score)
+            key = (str(score.issn), str(score.eissn))
+            if key in result:
+                issn = score.issn or score.eissn
+                log.warning(
+                    "Journal '%s' (RIS %.3f) with ISSN '%s' already exists: "
+                    "'%s' (RIS %.3f).",
+                    score.journal,
+                    score.score,
+                    issn,
+                    result[key].journal,
+                    result[key].score,
+                )
 
-        return tuple(result)
+                # NOTE: this is probably not a great idea, but we're trying to
+                # be generous and use the bigger score.
+                if result[key].score < score.score:
+                    result[key] = score
+
+                continue
+
+            result[key] = score
+
+        return tuple(result.values())
 
 
 class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
@@ -234,33 +270,130 @@ def parse_relative_influence_score(
 
 # }}}
 
-# {{{ write_relative_influence_score
+# {{{ DB creation
+
+
+def is_valid_issn(text: str | ISSN) -> bool:
+    if isinstance(text, str):
+        try:
+            text = ISSN.from_string(text)
+        except ValueError:
+            return False
+
+    return text.is_valid
 
 
 RIS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS ris_scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     year INTEGER NOT NULL,
-    journal_name TEXT NOT NULL,
+    journal TEXT NOT NULL,
     issn TEXT NULL,
     eissn TEXT NULL,
-    score REAL NULL,
+    score REAL NOT NULL,
     UNIQUE(year, issn, eissn)
 );
 """
 
 RIS_INDEX = """
 CREATE INDEX IF NOT EXISTS ris_scores_index
-    ON ris_scores (issn, eissn, year);
+    ON ris_scores (year, issn, eissn);
 """
 
 
-def write_relative_influence_score(
-    filename: pathlib.Path,
-    ris: tuple[RelativeInfluenceScore, ...],
-    year: int,
-) -> None:
-    pass
+class DB:
+    filename: pathlib.Path
+    conn: sqlite3.Connection | None
+
+    def __init__(self, filename: pathlib.Path) -> None:
+        self.filename = filename
+        self.conn = None
+
+    def __enter__(self) -> DB:
+        self.conn = conn = sqlite3.connect(self.filename)
+
+        # NOTE: this should only be executed on creation, but it's not a problem
+        conn.execute(RIS_SCHEMA)
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        if self.conn:
+            # NOTE: we only create the index on exist so that the database
+            # already contains all the rows. This should be more efficient.
+            self.conn.execute(RIS_INDEX)
+
+            self.conn.commit()
+            self.conn.close()
+
+        self.conn = None
+
+    def insert(self, year: int, ris: Sequence[RelativeInfluenceScore]) -> None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        self.conn.executemany(
+            """
+            INSERT INTO ris_scores (year, journal, issn, eissn, score)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            ((year, r.journal, r.issns, r.eissns, r.score) for r in ris),
+        )
+
+    def find_by_issn(self, text: str | ISSN) -> RelativeInfluenceScore | None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not is_valid_issn(text):
+            raise ValueError(f"not a valid ISSN: '{text}'")
+
+        result = self.conn.execute(
+            """
+            SELECT journal, issn, eissn, score
+            FROM ris_scores
+            WHERE issn = ? OR eissn = ?
+            """,
+            (str(text), str(text)),
+        )
+
+        # NOTE: we make sure the entries are unique by ISSN, so there's no reason
+        # this matches more than one result in the database (right?)
+        for journal, issn, eissn, score in result.fetchall():
+            return RelativeInfluenceScore(
+                journal=journal,
+                issn=ISSN.from_string(issn) if issn else None,
+                eissn=ISSN.from_string(eissn) if eissn else None,
+                score=score,
+            )
+
+        return None
+
+    def max_score_by_issn(self, text: str | ISSN, past: int = 5) -> float | None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not is_valid_issn(text):
+            raise ValueError(f"not a valid ISSN: '{text}'")
+
+        result = self.conn.execute(
+            """
+            SELECT MAX(score)
+            FROM ris_scores
+            WHERE issn = ? OR eissn = ?
+                  AND year >= ?
+            """,
+            (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
+        )
+
+        row = result.fetchone()
+        return row[0]
 
 
 # }}}

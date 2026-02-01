@@ -63,6 +63,9 @@ UEFISCDI_DEFAULT_VERSION = max(UEFISCDI_DATABASE_URL)
 UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # noqa: S105
 """Default password used in several UEFISCDI documents."""
 
+UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
+"""The latest year supported by the library."""
+
 
 def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> None:
     if not force and filename.exists():
