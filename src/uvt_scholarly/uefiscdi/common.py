@@ -16,7 +16,7 @@ log = make_logger(__name__)
 
 # {{{ URLS
 
-# NOTE: This mostly has the last 5 years, since those are required for UEFISCDI,
+# NOTE: This mostly has the last 5-ish years, since those are required for UEFISCDI,
 # CNATDCU, or university competitions and accreditations.
 UEFISCDI_DATABASE_URL = {
     2025: {
@@ -48,11 +48,6 @@ UEFISCDI_DATABASE_URL = {
         Score.AIS: "https://uefiscdi.gov.ro/resource-821312-ais2019-iunie2020-.valori.cuartile.xlsx",
         Score.RIS: "https://uefiscdi.gov.ro/resource-829001-sri.2019.xlsx",
         Score.RIF: "https://uefiscdi.gov.ro/resource-829003-rif.2019.xlsx",
-    },
-    2019: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-828068",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-828022",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-828027",
     },
 }
 """A mapping of database identifiers to URLs containing the databases themselves."""
