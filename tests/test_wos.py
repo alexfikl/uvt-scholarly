@@ -30,6 +30,22 @@ def test_read_from_csv() -> None:
 # }}}
 
 
+# {{{ test_read_from_bib
+
+
+def test_read_from_bib() -> None:
+    from uvt_scholarly.wos import read_from_bib
+
+    publications = read_from_bib(DATADIR / "savedrecs.bib")
+    assert publications
+
+    for pub in publications:
+        log.info("%s", pub)
+        assert not pub.citations
+
+
+# }}}
+
 if __name__ == "__main__":
     import sys
 
