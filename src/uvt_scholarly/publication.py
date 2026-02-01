@@ -35,6 +35,9 @@ class ResearcherID:
     def __str__(self) -> str:
         return "-".join(self.parts)
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
     @staticmethod
     def from_string(rid: str) -> ResearcherID:
         """Convert some text into a :class:`ResearcherID` instance."""
@@ -110,6 +113,9 @@ class ORCiD:
 
     def __str__(self) -> str:
         return "-".join(self.parts)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
 
     @staticmethod
     def from_string(orcid: str) -> ORCiD:
@@ -256,6 +262,9 @@ class DOI:
     def __str__(self) -> str:
         return f"{self.namespace}.{self.registrant}/{self.item}"
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
     def display(self) -> str:
         """A display string for the DOI (recommended by the DOI Foundation)."""
         return f"doi:{self}"
@@ -383,6 +392,9 @@ class ISSN:
     def __str__(self) -> str:
         return f"{self.parts[0]}-{self.parts[1]}"
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
     @staticmethod
     def from_string(issn: str) -> ISSN:
         """Convert some text into an :class:`ISSN` instance."""
@@ -447,6 +459,9 @@ class Category:
 
     def __str__(self) -> str:
         return f"{self.name}, {self.field}" if self.field else self.name
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
 
 
 # }}}
