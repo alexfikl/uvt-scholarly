@@ -327,7 +327,7 @@ def read_from_csv(
 
     import csv
 
-    from uvt_scholarly.publication import DOI, Journal
+    from uvt_scholarly.publication import Journal
 
     with open(filename, encoding=encoding) as f:
         reader = csv.DictReader(f, delimiter="\t")
