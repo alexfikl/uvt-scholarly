@@ -308,7 +308,7 @@ class DOI:
             raise ValueError(f"DOI prefix must have a form '10.NNNN': {doi!r}")
 
         namespace, registrant = prefix.split(".")
-        if not (namespace == "10" and len(registrant) == 4 and registrant.isdigit()):
+        if not (namespace == "10" and len(registrant) >= 4 and registrant.isdigit()):
             raise ValueError(f"DOI prefix must have a form '10.NNNN': {doi!r}")
 
         # NOTE: according to the DOI Handbook, ASCII letters are case-insensitive
@@ -328,7 +328,7 @@ class DOI:
         if self.namespace != "10":
             return False
 
-        if len(self.registrant) != 4 or not self.registrant.isdigit():
+        if len(self.registrant) < 4 or not self.registrant.isdigit():
             return False
 
         if not self.item:
