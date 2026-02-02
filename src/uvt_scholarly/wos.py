@@ -12,6 +12,7 @@ from uvt_scholarly.publication import (
     ISSN,
     Author,
     Category,
+    CitedPublication,
     DocumentType,
     ORCiD,
     Pages,
@@ -316,6 +317,67 @@ def parse_wos_categories(text: str) -> tuple[Category, ...]:
     return tuple(from_string(cat.strip()) for cat in text.split(";"))
 
 
+def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication]:
+    text = text.strip()
+    if not text:
+        return {}
+
+    def clean_doi_text(text: str) -> str:
+        # NOTE: some DOIs seem to have escaped characters (mainly _)
+        text = text.replace("\\", "").replace("DOI", "")
+
+        # NOTE: some entries seem to have multiple DOIs [..., ...], but all examples
+        # found this far just show duplicates, so we choose the last one.
+        if "[" in text:
+            *_, text = text.split(",")
+            text = text.strip(" ]")
+
+        return text.strip()
+
+    result = {}
+    for citation in text.split(sep):
+        parts = [part.strip(" .") for part in citation.split(",")]
+        if len(parts) < 4:
+            log.info("Cannot parse citation (unexpected parts): '%s'.", citation)
+            continue
+
+        author, year, journal = parts[0], parts[1], parts[2]
+        if not year.isdigit():
+            log.info("Cannot parse citation (year is not an int): '%s'.", citation)
+            continue
+
+        if "DOI" not in citation:
+            log.info("Cannot parse citation (DOI not found): '%s'.", citation)
+            continue
+
+        _, doitext = citation.split("DOI", maxsplit=1)
+        if "arXiv" in doitext:
+            log.info("Cannot parse citation (DOI not found): '%s'.", citation)
+            continue
+
+        try:
+            doi = DOI.from_string(clean_doi_text(doitext))
+            is_valid = doi.is_valid
+        except ValueError:
+            is_valid = False
+
+        if not is_valid:
+            log.info("Cannot parse citation (DOI is not valid): '%s'", citation)
+            continue
+
+        first_name, _ = author.split(maxsplit=1)
+        pub = CitedPublication(
+            first_author=first_name,
+            journal=" ".join(f"{part}.".title() for part in journal.split()),
+            year=int(year),
+            doi=doi,
+        )
+
+        result[doi] = pub
+
+    return result
+
+
 def read_from_csv(
     filename: pathlib.Path,
     *,
@@ -367,8 +429,9 @@ def read_from_csv(
                     issn=parse_issn(row.get("SN", "")),
                     eissn=parse_issn(row.get("EI", "")),
                     categories=parse_wos_categories(row["WC"]),
-                    citation_count=int(row["TC"]),
-                    citations=(),
+                    cited_by_count=int(row["TC"]),
+                    cited_by=(),
+                    citations={},
                     identifier=row["UT"],
                 )
             except Exception as exc:
@@ -403,6 +466,7 @@ def read_from_bib(
     filename: pathlib.Path,
     *,
     encoding: str = "utf-8",
+    include_citations: bool = False,
 ) -> tuple[Publication, ...]:
     if not filename.exists():
         raise FileNotFoundError(filename)
@@ -454,9 +518,14 @@ def read_from_bib(
                 categories=parse_wos_categories(
                     clean(entry.get("web-of-science-categories", ""))
                 ),
-                citation_count=int(entry["times-cited"]),
-                citations=(),
                 identifier=entry["ID"],
+                cited_by_count=int(entry["times-cited"]),
+                cited_by=(),
+                citations=(
+                    parse_wos_citations(entry.get("cited-references", ""), sep="\n")
+                    if include_citations
+                    else {}
+                ),
             )
         except Exception as exc:
             log.error("Failed to parse entry with ID '%s'.", entry["ID"], exc_info=exc)

@@ -24,7 +24,7 @@ def test_read_from_csv() -> None:
 
     for pub in publications:
         log.info("%s", pub)
-        assert not pub.citations
+        assert not pub.cited_by
 
 
 # }}}
@@ -36,15 +36,17 @@ def test_read_from_csv() -> None:
 def test_read_from_bib() -> None:
     from uvt_scholarly.wos import read_from_bib
 
-    publications = read_from_bib(DATADIR / "savedrecs.bib")
+    publications = read_from_bib(DATADIR / "savedrecs.bib", include_citations=True)
     assert publications
 
     for pub in publications:
         log.info("%s", pub)
-        assert not pub.citations
+        assert not pub.cited_by
+        assert pub.citations
 
 
 # }}}
+
 
 if __name__ == "__main__":
     import sys
