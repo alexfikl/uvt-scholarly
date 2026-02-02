@@ -506,6 +506,20 @@ class DocumentType(enum.Enum):
     Report = enum.auto()
 
 
+@dataclass
+class CitedPublication:
+    """A short publication metadata for cited references."""
+
+    first_author: str
+    """The last name of the first author."""
+    journal: str
+    """The (usually abbreviated) journal name."""
+    year: int
+    """The year of the publication."""
+    doi: DOI
+    """The Digital Object Identifier (DOI) for this publication."""
+
+
 @dataclass(frozen=True)
 class Publication:
     authors: tuple[Author, ...]
@@ -548,13 +562,16 @@ class Publication:
     was obtained (e.g. a Web of Science Accession Number).
     """
 
-    citation_count: int
+    cited_by_count: int
     """A total number of citations for this publication. This value is generally
     exported from a repository and does not necessarily match :attr:`citations`.
     When the publication is "finalized", it should match.
     """
-    citations: tuple[Publication, ...]
+    cited_by: tuple[Publication, ...]
     """A list of publications that have cited this publication."""
+
+    citations: dict[DOI, CitedPublication]
+    """A list of publications cited by this publication."""
 
 
 # }}}
