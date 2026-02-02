@@ -383,6 +383,7 @@ def read_from_csv(
     *,
     encoding: str = "utf-8",
     delimiter: str = "\t",
+    include_citations: bool = False,
 ) -> tuple[Publication, ...]:
     if not filename.exists():
         raise FileNotFoundError(filename)
@@ -429,10 +430,14 @@ def read_from_csv(
                     issn=parse_issn(row.get("SN", "")),
                     eissn=parse_issn(row.get("EI", "")),
                     categories=parse_wos_categories(row["WC"]),
+                    identifier=row["UT"],
                     cited_by_count=int(row["TC"]),
                     cited_by=(),
-                    citations={},
-                    identifier=row["UT"],
+                    citations=(
+                        parse_wos_citations(row.get("CR", ""))
+                        if include_citations
+                        else {}
+                    ),
                 )
             except Exception as exc:
                 log.error("Failed to parse entry on row %d.", i, exc_info=exc)

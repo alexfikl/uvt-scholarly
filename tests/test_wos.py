@@ -19,12 +19,13 @@ DATADIR = pathlib.Path(__file__).parent / "data"
 def test_read_from_csv() -> None:
     from uvt_scholarly.wos import read_from_csv
 
-    publications = read_from_csv(DATADIR / "savedrecs.txt")
+    publications = read_from_csv(DATADIR / "savedrecs.txt", include_citations=True)
     assert publications
 
     for pub in publications:
         log.info("%s", pub)
         assert not pub.cited_by
+        assert pub.citations
 
 
 # }}}
