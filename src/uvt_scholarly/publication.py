@@ -305,11 +305,11 @@ class DOI:
 
         prefix, suffix = doi.split("/", maxsplit=1)
         if "." not in prefix:
-            raise ValueError(f"DOI prefix must have a form '10.NNNN': {doi!r}")
+            raise ValueError(f"DOI prefix must have a form '10.NNNN[N]': {doi!r}")
 
         namespace, registrant = prefix.split(".")
         if not (namespace == "10" and len(registrant) >= 4 and registrant.isdigit()):
-            raise ValueError(f"DOI prefix must have a form '10.NNNN': {doi!r}")
+            raise ValueError(f"DOI prefix must have a form '10.NNNN[N]': {doi!r}")
 
         # NOTE: according to the DOI Handbook, ASCII letters are case-insensitive
         # in a DOI, so we just lowercase them to begin with.

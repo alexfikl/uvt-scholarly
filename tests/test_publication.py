@@ -73,6 +73,7 @@ def test_issn() -> None:
 
 TEST_DOI_VALID = (
     "10.1000/182",
+    "10.10001/182",
     "10.1000/xyz123",
     "10.1016/j.cell.2019.05.001",
     "10.1038/nphys1170",
@@ -125,10 +126,7 @@ def test_doi() -> None:
         DOI.from_string("11.1000/12345")
 
     with pytest.raises(ValueError, match="prefix must have a form"):
-        DOI.from_string("11.10000/12345")
-
-    with pytest.raises(ValueError, match="prefix must have a form"):
-        DOI.from_string("11.1A000/12345")
+        DOI.from_string("10.1A000/12345")
 
     doi = DOI.from_string("10.1000/<>?")
     assert doi.url == "https://doi.org/10.1000/%3C%3E%3F"
