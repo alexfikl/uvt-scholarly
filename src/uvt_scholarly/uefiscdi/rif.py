@@ -401,4 +401,5 @@ def store_relative_impact_factor(
 
             log.info("")
 
+
 # }}}
