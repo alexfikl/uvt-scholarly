@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import enum
-import pathlib
+from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
@@ -19,6 +19,9 @@ from uvt_scholarly.publication import (
     Publication,
     ResearcherID,
 )
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = make_logger(__name__)
 

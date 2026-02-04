@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import pathlib
 import sqlite3
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -17,6 +16,7 @@ from uvt_scholarly.uefiscdi.common import (
 )
 
 if TYPE_CHECKING:
+    import pathlib
     from collections.abc import Sequence
     from types import TracebackType
 

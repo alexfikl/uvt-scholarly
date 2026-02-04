@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import httpx
 
 from uvt_scholarly.logging import make_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 log = make_logger(__name__)
 

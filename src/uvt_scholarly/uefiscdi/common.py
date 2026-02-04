@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import enum
-import pathlib
+from typing import TYPE_CHECKING
 
 import httpx
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import Score
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = make_logger(__name__)
 

@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from types import TracebackType
+from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import TracebackType
 
 log = make_logger(__name__)
 

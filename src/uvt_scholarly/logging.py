@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import logging
 
-from rich.logging import RichHandler
-
 
 def quiet() -> None:
     """Only show errors in all ``uvt_scholarly`` loggers."""
@@ -34,6 +32,8 @@ def make_logger(module: str, level: int | str | None = None) -> logging.Logger:
     root = logging.getLogger(name)
 
     if not root.hasHandlers():
+        from rich.logging import RichHandler
+
         root.addHandler(RichHandler())
         root.setLevel(level)
 
