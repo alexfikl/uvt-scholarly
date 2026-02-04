@@ -84,7 +84,7 @@ def normalize_issn(issn: str) -> str:
     return RIS_INCORRECT_ISSN.get(issn, issn)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RelativeInfluenceScore:
     journal: str
     issn: ISSN | None

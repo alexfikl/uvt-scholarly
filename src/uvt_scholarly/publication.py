@@ -6,7 +6,6 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from functools import cached_property
 
 import httpx
 
@@ -22,7 +21,7 @@ log = make_logger(__name__)
 # {{{ ResearcherID
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ResearcherID:
     """A parsed `ResearcherID <https://en.wikipedia.org/wiki/ResearcherID>`__."""
 
@@ -67,7 +66,7 @@ class ResearcherID:
         """
         return int(self.parts[-1])
 
-    @cached_property
+    @property
     def is_valid(self) -> bool:
         """*True* if the :class:`ResearcherID` is valid.
 
@@ -102,7 +101,7 @@ class ResearcherID:
 # {{{ ORCiD
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ORCiD:
     """A parsed `ORCiD <https://en.wikipedia.org/wiki/ORCID>`__."""
 
@@ -139,7 +138,7 @@ class ORCiD:
 
         return ORCiD((parts[0], parts[1], parts[2], parts[3]))
 
-    @cached_property
+    @property
     def is_valid(self) -> bool:
         """*True* if the :class:`ORCiD` is valid."""
 
@@ -175,7 +174,7 @@ class ORCiD:
 # {{{ Author
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Author:
     first_name: str
     """First name of the author. This can contain multiple first names and initials,
@@ -220,7 +219,7 @@ SCORE_FULL_NAME = {
 """A mapping from journal scores to commonly used acronyms."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Journal:
     """A basic description of a journal."""
 
@@ -244,7 +243,7 @@ def _lowercase_ascii(text: str) -> str:
     return "".join(chr(ord(c) + 32) if "A" <= c <= "Z" else c for c in text)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DOI:
     """A parsed `Digital Object Identifier <https://en.wikipedia.org/wiki/Digital_object_identifier>__`."""
 
@@ -315,7 +314,7 @@ class DOI:
         # in a DOI, so we just lowercase them to begin with.
         return DOI(namespace, registrant, _lowercase_ascii(suffix))
 
-    @cached_property
+    @property
     def is_valid(self) -> bool:
         """*True* if the DOI is valid.
 
@@ -382,7 +381,7 @@ class DOI:
 # {{{ ISSN
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ISSN:
     """A parsed `International Standard Serial Number <https://en.wikipedia.org/wiki/ISSN>`__."""
 
@@ -413,7 +412,7 @@ class ISSN:
         # they might want to just construct some for fun and games
         return ISSN((part0, part1))
 
-    @cached_property
+    @property
     def is_valid(self) -> bool:
         """*True* if the ISSN is valid."""
 
@@ -448,7 +447,7 @@ class ISSN:
 # {{{ Category
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Category:
     """A category for a publication."""
 
@@ -469,7 +468,7 @@ class Category:
 # {{{ Pages
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pages:
     """Page range for a publication."""
 
@@ -506,7 +505,7 @@ class DocumentType(enum.Enum):
     Report = enum.auto()
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CitedPublication:
     """A short publication metadata for cited references."""
 
@@ -520,7 +519,7 @@ class CitedPublication:
     """The Digital Object Identifier (DOI) for this publication."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Publication:
     authors: tuple[Author, ...]
     """A list of authors for the current publication."""
