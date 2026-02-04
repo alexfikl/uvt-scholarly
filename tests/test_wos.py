@@ -16,10 +16,11 @@ DATADIR = pathlib.Path(__file__).parent / "data"
 # {{{ test_read_from_csv
 
 
-def test_read_from_csv() -> None:
+@pytest.mark.parametrize("filename", ["savedrecs.txt", "savedrecs_cited_by.txt"])
+def test_read_from_csv(filename: str) -> None:
     from uvt_scholarly.wos import read_from_csv
 
-    publications = read_from_csv(DATADIR / "savedrecs.txt", include_citations=True)
+    publications = read_from_csv(DATADIR / filename, include_citations=True)
     assert publications
 
     for pub in publications:
@@ -34,10 +35,11 @@ def test_read_from_csv() -> None:
 # {{{ test_read_from_bib
 
 
-def test_read_from_bib() -> None:
+@pytest.mark.parametrize("filename", ["savedrecs.bib", "savedrecs_cited_by.bib"])
+def test_read_from_bib(filename: str) -> None:
     from uvt_scholarly.wos import read_from_bib
 
-    publications = read_from_bib(DATADIR / "savedrecs.bib", include_citations=True)
+    publications = read_from_bib(DATADIR / filename, include_citations=True)
     assert publications
 
     for pub in publications:
