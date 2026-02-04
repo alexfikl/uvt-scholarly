@@ -545,3 +545,28 @@ def read_from_bib(
 
 
 # }}}
+
+# {{{ read_pubs
+
+
+def read_pubs(
+    filename: pathlib.Path,
+    *,
+    encoding: str = "utf-8",
+    include_citations: bool = False,
+) -> tuple[Publication, ...]:
+    if filename.suffix.lower() in {".txt", ".csv", ".tsv"}:
+        return read_from_csv(
+            filename, encoding=encoding, include_citations=include_citations
+        )
+    elif filename.suffix.lower() in {".bib"}:
+        return read_from_bib(
+            filename, encoding=encoding, include_citations=include_citations
+        )
+    else:
+        raise ValueError(
+            f"unknown file format: '{filename}' (expected .csv, .tsv, .bib)"
+        )
+
+
+# }}}
