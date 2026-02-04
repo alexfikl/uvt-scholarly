@@ -20,7 +20,7 @@ UVT_SCHOLARLY_CACHE_DIR = pathlib.Path(platformdirs.user_cache_dir(PROJECT_NAME)
 
 UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi"
 
-UEFISCDI_DB_FILE = UEFISCDI_CACHE_DIR / "uvt-scholarly.sqlite"
+UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
 
 # {{{ main
 
