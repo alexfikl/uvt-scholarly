@@ -391,5 +391,6 @@ def store_relative_influence_score(
             log.info("Inserting RIS scores for %d into database.", year)
             db.insert(year, scores)
 
+            log.info("")
 
 # }}}

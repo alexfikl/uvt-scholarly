@@ -83,7 +83,9 @@ def download(
 
     try:
         store_relative_influence_score(UEFISCDI_DB_FILE, force=force)
-    except UEFISCDIError:
+    except UEFISCDIError as exc:
+        log.error("Failed to download RIS scores.", exc_info=exc)
+
         UEFISCDI_DB_FILE.unlink()
         ctx.exit(1)
 
@@ -91,7 +93,9 @@ def download(
 
     try:
         store_relative_impact_factor(UEFISCDI_DB_FILE, force=force)
-    except UEFISCDIError:
+    except UEFISCDIError as exc:
+        log.error("Failed to download RIF scores.", exc_info=exc)
+
         UEFISCDI_DB_FILE.unlink()
         ctx.exit(1)
 

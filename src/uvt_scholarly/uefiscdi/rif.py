@@ -390,7 +390,7 @@ def store_relative_impact_factor(
         for year in years:
             url = UEFISCDI_DATABASE_URL[year][Score.RIF]
 
-            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-RIF-{year}.xlsx"
+            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-rif-{year}.xlsx"
             download_file(url, xlsxfile, force=force)
 
             log.info("Processing RIF scores for %d: '%s'.", year, xlsxfile)
@@ -399,5 +399,6 @@ def store_relative_impact_factor(
             log.info("Inserting RIF scores for %d into database.", year)
             db.insert(year, scores)
 
+            log.info("")
 
 # }}}
