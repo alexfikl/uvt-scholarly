@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN
 from uvt_scholarly.uefiscdi.common import (
+    UEFISCDI_CACHE_DIR,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
     ParsingError,
+    download_file,
     is_valid_issn,
     normalize_issn,
     to_float,
@@ -30,6 +32,7 @@ log = make_logger(__name__)
 
 # {{{ parse_relative_impact_factor
 
+# NOTE: these seem to be the same as the RIS values
 RIF_INCORRECT_ISSN = {
     # eISSN: African Entomology (this is even wrong on their website..)
     "2254-8854": "2224-8854",
@@ -243,9 +246,10 @@ def parse_relative_impact_factor(
 
 # {{{ DB creation
 
+RIF_DB_NAME = "relative_impact_factors"
 
-RIF_SCHEMA = """
-CREATE TABLE IF NOT EXISTS relative_impact_factor (
+RIF_SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS {RIF_DB_NAME} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     year INTEGER NOT NULL,
     journal TEXT NOT NULL,
@@ -256,18 +260,25 @@ CREATE TABLE IF NOT EXISTS relative_impact_factor (
 );
 """
 
-RIF_INDEX = """
-CREATE INDEX IF NOT EXISTS relative_impact_factor_index
-    ON relative_impact_factor (year, issn, eissn);
+RIF_INDEX = f"""
+CREATE INDEX IF NOT EXISTS {RIF_DB_NAME}_index
+    ON {RIF_DB_NAME} (year, issn, eissn);
 """
 
 
 class DB:
     filename: pathlib.Path
+    name: str
     conn: sqlite3.Connection | None
 
-    def __init__(self, filename: pathlib.Path) -> None:
+    def __init__(self, filename: pathlib.Path, name: str) -> None:
+        # TODO: this should be nicely generalized for all the scores. We don't
+        # really need more copies of this class...
+        if name != RIF_DB_NAME:
+            raise ValueError(f"unsupported database name: {name!r}")
+
         self.filename = filename
+        self.name = name
         self.conn = None
 
     def __enter__(self) -> DB:
@@ -301,10 +312,10 @@ class DB:
             raise ValueError(f"not connected to database '{self.filename}'")
 
         self.conn.executemany(
-            """
-            INSERT INTO relative_impact_factor (year, journal, issn, eissn, score)
+            f"""
+            INSERT INTO {self.name} (year, journal, issn, eissn, score)
             VALUES (?, ?, ?, ?, ?)
-            """,
+            """,  # noqa: S608
             ((year, r.journal, r.issns, r.eissns, r.score) for r in rif),
         )
 
@@ -316,11 +327,11 @@ class DB:
             raise ValueError(f"not a valid ISSN: '{text}'")
 
         result = self.conn.execute(
-            """
+            f"""
             SELECT journal, issn, eissn, score
-            FROM relative_impact_factor
+            FROM {self.name}
             WHERE issn = ? OR eissn = ?
-            """,
+            """,  # noqa: S608
             (str(text), str(text)),
         )
 
@@ -344,16 +355,49 @@ class DB:
             raise ValueError(f"not a valid ISSN: '{text}'")
 
         result = self.conn.execute(
-            """
+            f"""
             SELECT MAX(score)
-            FROM relative_impact_factor
-            WHERE issn = ? OR eissn = ? AND year >= ?
-            """,
+            FROM {self.name}
+            WHERE (issn = ? OR eissn = ?) AND year >= ?
+            """,  # noqa: S608
             (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
         )
 
         row = result.fetchone()
         return row[0]
+
+
+# }}}
+
+# {{{ store_relative_impact_factor
+
+
+def store_relative_impact_factor(
+    filename: pathlib.Path,
+    *,
+    years: set[int] | None = None,
+    force: bool = False,
+) -> None:
+    if years is None:
+        years = set(UEFISCDI_DATABASE_URL)
+
+    if unknown := years - set(UEFISCDI_DATABASE_URL):
+        raise ValueError(f"unsupported years: {unknown}")
+
+    from uvt_scholarly.publication import Score
+
+    with DB(filename, RIF_DB_NAME) as db:
+        for year in years:
+            url = UEFISCDI_DATABASE_URL[year][Score.RIF]
+
+            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-RIF-{year}.xlsx"
+            download_file(url, xlsxfile, force=force)
+
+            log.info("Processing RIF scores for %d: '%s'.", year, xlsxfile)
+            scores = parse_relative_impact_factor(xlsxfile, year)
+
+            log.info("Inserting RIF scores for %d into database.", year)
+            db.insert(year, scores)
 
 
 # }}}

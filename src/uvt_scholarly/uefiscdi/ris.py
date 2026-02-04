@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN
 from uvt_scholarly.uefiscdi.common import (
+    UEFISCDI_CACHE_DIR,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
     ParsingError,
+    download_file,
     is_valid_issn,
     normalize_issn,
     to_float,
@@ -354,6 +356,40 @@ class DB:
 
         row = result.fetchone()
         return row[0]
+
+
+# }}}
+
+
+# {{{ store_relative_influence_score
+
+
+def store_relative_influence_score(
+    filename: pathlib.Path,
+    *,
+    years: set[int] | None = None,
+    force: bool = False,
+) -> None:
+    if years is None:
+        years = set(UEFISCDI_DATABASE_URL)
+
+    if unknown := years - set(UEFISCDI_DATABASE_URL):
+        raise ValueError(f"unsupported years: {unknown}")
+
+    from uvt_scholarly.publication import Score
+
+    with DB(filename) as db:
+        for year in years:
+            url = UEFISCDI_DATABASE_URL[year][Score.RIS]
+
+            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-ris-{year}.xlsx"
+            download_file(url, xlsxfile, force=force)
+
+            log.info("Processing RIS scores for %d: '%s'.", year, xlsxfile)
+            scores = parse_relative_influence_score(xlsxfile, year)
+
+            log.info("Inserting RIS scores for %d into database.", year)
+            db.insert(year, scores)
 
 
 # }}}

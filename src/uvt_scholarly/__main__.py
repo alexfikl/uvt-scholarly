@@ -3,24 +3,14 @@
 
 from __future__ import annotations
 
-import pathlib
 from importlib import metadata
 
 import click
-import httpx
-import platformdirs
 
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.utils import PROJECT_NAME
 
 log = make_logger(__name__)
-
-PROJECT_NAME = "uvt-scholarly"
-
-UVT_SCHOLARLY_CACHE_DIR = pathlib.Path(platformdirs.user_cache_dir(PROJECT_NAME))
-
-UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi"
-
-UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
 
 # {{{ main
 
@@ -71,6 +61,12 @@ def download(
     ctx: click.Context,
     force: bool,  # noqa: FBT001
 ) -> None:
+    from uvt_scholarly.uefiscdi import (
+        UEFISCDI_CACHE_DIR,
+        UEFISCDI_DB_FILE,
+        UEFISCDIError,
+    )
+
     if not UEFISCDI_CACHE_DIR.exists():
         log.info("Creating UEFISCDI cache directory: '%s'.", UEFISCDI_CACHE_DIR)
         UEFISCDI_CACHE_DIR.mkdir(parents=True)
@@ -83,45 +79,21 @@ def download(
             log.warning("RIS database already exists: '%s'", UEFISCDI_DB_FILE)
             ctx.exit(1)
 
-    from uvt_scholarly.publication import Score
-    from uvt_scholarly.uefiscdi import UEFISCDI_DATABASE_URL, download_file
-    from uvt_scholarly.uefiscdi.ris import (
-        DB,
-        ParsingError,
-        parse_relative_influence_score,
-    )
+    from uvt_scholarly.uefiscdi.ris import store_relative_influence_score
 
-    with DB(UEFISCDI_DB_FILE) as db:
-        for year in UEFISCDI_DATABASE_URL:
-            url = UEFISCDI_DATABASE_URL[year][Score.RIS]
+    try:
+        store_relative_influence_score(UEFISCDI_DB_FILE, force=force)
+    except UEFISCDIError:
+        UEFISCDI_DB_FILE.unlink()
+        ctx.exit(1)
 
-            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-ris-{year}.xlsx"
-            try:
-                download_file(url, xlsxfile, force=force)
-            except httpx.ConnectError:
-                if xlsxfile.exists():
-                    xlsxfile.unlink()
+    from uvt_scholarly.uefiscdi.rif import store_relative_impact_factor
 
-                log.error("Failed to download RIS scores: '%s'.", url)
-                break
-
-            log.info("Processing RIS scores for %d: '%s'.", year, xlsxfile)
-            try:
-                scores = parse_relative_influence_score(xlsxfile, year)
-            except ParsingError:
-                log.error("Failed to parse RIS scores: '%s'.", xlsxfile)
-                break
-
-            log.info("Inserting RIS scores for %d into database.", year)
-            db.insert(year, scores)
-        else:
-            log.info("Database updated: '%s'.", UEFISCDI_DB_FILE)
-            return
-
-    # NOTE: we arrive here if some error happened in the database parsing, so
-    # we make sure to clean up a bit. The rest of the data is temporary anyway..
-    UEFISCDI_DB_FILE.unlink()
-    ctx.exit(1)
+    try:
+        store_relative_impact_factor(UEFISCDI_DB_FILE, force=force)
+    except UEFISCDIError:
+        UEFISCDI_DB_FILE.unlink()
+        ctx.exit(1)
 
 
 # }}}

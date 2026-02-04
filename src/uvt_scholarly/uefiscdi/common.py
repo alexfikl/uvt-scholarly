@@ -10,18 +10,31 @@ import httpx
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN, Score
+from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:
     import pathlib
 
 log = make_logger(__name__)
 
+UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi"
+
+UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
+
 
 # {{{ misc
 
 
-class ParsingError(Exception):
+class UEFISCDIError(Exception):
+    """Generic exception raised by the UEFISCDI score handling."""
+
+
+class ParsingError(UEFISCDIError):
     """Exception raised while parsing a score file."""
+
+
+class DownloadError(UEFISCDIError):
+    """Exception raised when failing a download."""
 
 
 EMPTY_SCORE = {"", "N/A"}
@@ -115,11 +128,17 @@ def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> N
         return
 
     # TODO: allow passing a httpx.Client
-    with open(filename, "wb") as f, httpx.stream("GET", url) as response:
-        response.raise_for_status()
+    try:
+        with open(filename, "wb") as f, httpx.stream("GET", url) as response:
+            response.raise_for_status()
 
-        for chunk in response.iter_bytes():
-            f.write(chunk)
+            for chunk in response.iter_bytes():
+                f.write(chunk)
+    except httpx.ConnectError:
+        if filename.exists():
+            filename.unlink()
+
+        raise DownloadError(f"failed to download '{url}'") from None
 
 
 # }}}

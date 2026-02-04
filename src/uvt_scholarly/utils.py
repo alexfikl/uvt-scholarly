@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import pathlib
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+import platformdirs
 
 from uvt_scholarly.logging import make_logger
 
@@ -16,6 +19,15 @@ if TYPE_CHECKING:
 
 log = make_logger(__name__)
 
+
+# {{{ config
+
+PROJECT_NAME = "uvt-scholarly"
+
+UVT_SCHOLARLY_CACHE_DIR = pathlib.Path(platformdirs.user_cache_dir(PROJECT_NAME))
+
+
+# }}}
 
 # {{{ BlockTimer
 
