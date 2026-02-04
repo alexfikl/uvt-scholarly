@@ -20,7 +20,7 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 
 # NOTE: extracted from the Excel files by going to the last row.
 # NOTE: some duplicates were removed as well, so it's not exactly the same.
-EXPECTED_ENTRIES_PER_YEAR = {
+EXPECTED_RIS_ENTRIES_PER_YEAR = {
     2020: 11484,
     2021: 12203,
     2022: 13656,
@@ -45,7 +45,7 @@ def test_parse_relative_influence_score(year: int) -> None:
         scores = parse_relative_influence_score(filename, year)
 
     nscores = len(scores)
-    assert nscores == EXPECTED_ENTRIES_PER_YEAR[year]
+    assert nscores == EXPECTED_RIS_ENTRIES_PER_YEAR[year]
 
 
 def test_ris_database() -> None:
@@ -106,6 +106,38 @@ def test_ris_database() -> None:
 
 # }}}
 
+
+# {{{ test_parse_relative_impact_factor
+
+EXPECTED_RIF_ENTRIES_PER_YEAR = {
+    2020: 12144,
+    2021: 12276,
+    2022: 12464,
+    2023: 13651,
+    2024: 21846,
+    2025: 22247,
+}
+
+
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
+def test_parse_relative_impact_factor(year: int) -> None:
+    from uvt_scholarly.publication import Score
+    from uvt_scholarly.uefiscdi.rif import parse_relative_impact_factor
+
+    url = UEFISCDI_DATABASE_URL[year][Score.RIF]
+    filename = TMPDIR / f"uvt-scholarly-test-rif-{year}.xlsx"
+
+    with block_timer(f"download-rif-{year}"):
+        download_file(url, filename)
+
+    with block_timer(f"parse-rif-{year}"):
+        scores = parse_relative_impact_factor(filename, year)
+
+    nscores = len(scores)
+    assert nscores == EXPECTED_RIF_ENTRIES_PER_YEAR[year]
+
+
+# }}}
 
 if __name__ == "__main__":
     import sys

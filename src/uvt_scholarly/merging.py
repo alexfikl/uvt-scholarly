@@ -15,5 +15,16 @@ if TYPE_CHECKING:
 log = make_logger(__name__)
 
 
-def add_cited_by(pubs: Sequence[Publication], citations: Sequence[Publication]):
-    pass
+def add_cited_by(
+    pubs: Sequence[Publication],
+    citations: Sequence[Publication],
+) -> tuple[Publication, ...]:
+    return tuple(pubs)
+
+
+def add_scores(
+    pubs: Sequence[Publication],
+    *,
+    scores: set[str] | None = None,
+) -> tuple[Publication, ...]:
+    return tuple(pubs)
