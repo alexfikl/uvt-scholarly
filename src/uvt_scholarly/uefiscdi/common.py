@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import httpx
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Score
+from uvt_scholarly.publication import ISSN, Score
 
 if TYPE_CHECKING:
     import pathlib
@@ -17,7 +17,52 @@ if TYPE_CHECKING:
 log = make_logger(__name__)
 
 
-# {{{ URLS
+# {{{ misc
+
+
+class ParsingError(Exception):
+    """Exception raised while parsing a score file."""
+
+
+EMPTY_SCORE = {"", "N/A"}
+
+
+def to_float(value: str, default: float = 0.0) -> float:
+    value = value.strip().upper()
+    if value in EMPTY_SCORE:
+        return default
+
+    return float(value)
+
+
+# NOTE:
+#   - "0" appears in RIS/2023
+#   - "****-****" appears in RIS/2021
+EMPTY_ISSN = {"0", "N/A", "****-****"}
+
+
+def normalize_issn(issn: str) -> ISSN | None:
+    issn = issn.strip().upper()
+    if issn in EMPTY_ISSN:
+        return None
+
+    return ISSN.from_string(issn)
+
+
+def is_valid_issn(text: str | ISSN) -> bool:
+    if isinstance(text, str):
+        try:
+            text = ISSN.from_string(text)
+        except ValueError:
+            return False
+
+    return text.is_valid
+
+
+# }}}
+
+
+# {{{ URLs
 
 # NOTE: This mostly has the last 5-ish years, since those are required for UEFISCDI,
 # CNATDCU, or university competitions and accreditations.
@@ -80,8 +125,7 @@ def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> N
 # }}}
 
 
-class ParsingError(Exception):
-    """Exception raised while parsing a score file."""
+# {{{ Index
 
 
 @enum.unique
@@ -101,3 +145,5 @@ INDEX_DISPLAY_NAME = {
 """A mapping of citation indexes (as they appear in the UEFISCDI databases) to their
 full names.
 """
+
+# }}}

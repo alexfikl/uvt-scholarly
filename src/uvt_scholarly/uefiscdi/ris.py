@@ -13,6 +13,9 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
     ParsingError,
+    is_valid_issn,
+    normalize_issn,
+    to_float,
 )
 
 if TYPE_CHECKING:
@@ -27,33 +30,12 @@ log = make_logger(__name__)
 
 # {{{ parse_relative_influence_score
 
-
-def to_float(value: str, default: float = 0.0) -> float:
-    if value.strip().upper() in {"", "N/A"}:
-        return default
-
-    return float(value)
-
-
-# NOTE:
-#   - "0" appears in RIS/2023
-#   - "****-****" appears in RIS/2021
-EMPTY_ISSN = {"0", "N/A", "****-****"}
-
+# NOTE: some of these are incorrect in multiple years
 RIS_INCORRECT_ISSN = {
-    #
-    # 2024
-    #
     # eISSN: World Journal for Pediatric and Congenital Heart Surgery
     "2150-0136": "2150-136X",
-    #
-    # 2023
-    #
     # eISSN: Journal of Intellectual Capital
     "758-7468": "1758-7468",
-    #
-    # 2021
-    #
     # eISSN: Current Topics in Medicinal Chemistry
     "1873-5294": "1873-4294",
     # eISSN: International Journal for Lesson and Learning Studies
@@ -68,20 +50,9 @@ RIS_INCORRECT_ISSN = {
     "2332-6505": "2332-6506",
     # eISSN: African Entomology (this is even wrong on their website..)
     "2254-8854": "2224-8854",
-    #
-    # 2020
-    #
     # ISSN: Invasive Plant Science and Management
     "1929-7291": "1939-7291",
 }
-
-
-def normalize_issn(issn: str) -> str:
-    issn = issn.strip().upper()
-    if issn in EMPTY_ISSN:
-        return ""
-
-    return RIS_INCORRECT_ISSN.get(issn, issn)
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,18 +65,18 @@ class RelativeInfluenceScore:
     @staticmethod
     def from_strings(
         journal: str,
-        issn: str = "",
-        eissn: str = "",
-        score: str = "N/A",
+        issn: str,
+        eissn: str,
+        score: str,
     ) -> RelativeInfluenceScore:
-        issn = normalize_issn(issn)
-        eissn = normalize_issn(eissn)
+        issn = issn.strip().upper()
+        eissn = eissn.strip().upper()
 
         return RelativeInfluenceScore(
             journal=journal.strip(),
-            issn=ISSN.from_string(issn) if issn else None,
-            eissn=ISSN.from_string(eissn) if eissn else None,
-            score=to_float(score.strip()),
+            issn=normalize_issn(RIS_INCORRECT_ISSN.get(issn, issn)),
+            eissn=normalize_issn(RIS_INCORRECT_ISSN.get(eissn, eissn)),
+            score=to_float(score),
         )
 
     @property
@@ -273,18 +244,8 @@ def parse_relative_influence_score(
 # {{{ DB creation
 
 
-def is_valid_issn(text: str | ISSN) -> bool:
-    if isinstance(text, str):
-        try:
-            text = ISSN.from_string(text)
-        except ValueError:
-            return False
-
-    return text.is_valid
-
-
 RIS_SCHEMA = """
-CREATE TABLE IF NOT EXISTS ris_scores (
+CREATE TABLE IF NOT EXISTS relative_influence_scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     year INTEGER NOT NULL,
     journal TEXT NOT NULL,
@@ -296,8 +257,8 @@ CREATE TABLE IF NOT EXISTS ris_scores (
 """
 
 RIS_INDEX = """
-CREATE INDEX IF NOT EXISTS ris_scores_index
-    ON ris_scores (year, issn, eissn);
+CREATE INDEX IF NOT EXISTS relative_influence_score_index
+    ON relative_influence_scores (year, issn, eissn);
 """
 
 
@@ -341,7 +302,7 @@ class DB:
 
         self.conn.executemany(
             """
-            INSERT INTO ris_scores (year, journal, issn, eissn, score)
+            INSERT INTO relative_influence_scores (year, journal, issn, eissn, score)
             VALUES (?, ?, ?, ?, ?)
             """,
             ((year, r.journal, r.issns, r.eissns, r.score) for r in ris),
@@ -357,7 +318,7 @@ class DB:
         result = self.conn.execute(
             """
             SELECT journal, issn, eissn, score
-            FROM ris_scores
+            FROM relative_influence_scores
             WHERE issn = ? OR eissn = ?
             """,
             (str(text), str(text)),
@@ -385,9 +346,8 @@ class DB:
         result = self.conn.execute(
             """
             SELECT MAX(score)
-            FROM ris_scores
-            WHERE issn = ? OR eissn = ?
-                  AND year >= ?
+            FROM relative_influence_scores
+            WHERE issn = ? OR eissn = ? AND year >= ?
             """,
             (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
         )
