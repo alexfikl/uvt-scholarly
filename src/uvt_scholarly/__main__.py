@@ -64,11 +64,8 @@ def download(
     ctx: click.Context,
     force: bool,  # noqa: FBT001
 ) -> None:
-    from uvt_scholarly.uefiscdi import (
-        UEFISCDI_CACHE_DIR,
-        UEFISCDI_DB_FILE,
-        UEFISCDIError,
-    )
+    from uvt_scholarly.uefiscdi import UEFISCDI_CACHE_DIR, UEFISCDI_DB_FILE
+    from uvt_scholarly.utils import ScholarlyError
 
     if not UEFISCDI_CACHE_DIR.exists():
         log.info("Creating UEFISCDI cache directory: '%s'.", UEFISCDI_CACHE_DIR)
@@ -86,7 +83,7 @@ def download(
 
     try:
         store_relative_influence_score(UEFISCDI_DB_FILE, force=force)
-    except UEFISCDIError as exc:
+    except ScholarlyError as exc:
         log.error("Failed to download RIS scores.", exc_info=exc)
 
         UEFISCDI_DB_FILE.unlink()
@@ -96,7 +93,7 @@ def download(
 
     try:
         store_relative_impact_factor(UEFISCDI_DB_FILE, force=force)
-    except UEFISCDIError as exc:
+    except ScholarlyError as exc:
         log.error("Failed to download RIF scores.", exc_info=exc)
 
         UEFISCDI_DB_FILE.unlink()

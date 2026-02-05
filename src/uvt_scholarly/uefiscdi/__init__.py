@@ -9,11 +9,7 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_DB_FILE,
     UEFISCDI_DEFAULT_PASSWORD,
     UEFISCDI_DEFAULT_VERSION,
-    DownloadError,
     Index,
-    ParsingError,
-    UEFISCDIError,
-    download_file,
 )
 
 __all__ = (
@@ -23,9 +19,5 @@ __all__ = (
     "UEFISCDI_DB_FILE",
     "UEFISCDI_DEFAULT_PASSWORD",
     "UEFISCDI_DEFAULT_VERSION",
-    "DownloadError",
     "Index",
-    "ParsingError",
-    "UEFISCDIError",
-    "download_file",
 )

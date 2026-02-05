@@ -13,8 +13,6 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIR,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
-    ParsingError,
-    download_file,
     is_valid_issn,
     normalize_issn,
     to_float,
@@ -143,6 +141,8 @@ class RelativeInfluenceScoreParser:
         if self.skip_header:
             _ = next(rows)
 
+        from uvt_scholarly.utils import ParsingError
+
         result = {}
         for row in rows:
             score = self.parse_row(row)
@@ -234,6 +234,8 @@ def parse_relative_influence_score(
         parser = RelativeInfluenceScore2020Parser()
     else:
         parser = RelativeInfluenceScoreParser()
+
+    from uvt_scholarly.utils import ParsingError
 
     try:
         return parser.parse(filename)
@@ -377,6 +379,7 @@ def store_relative_influence_score(
         raise ValueError(f"unsupported years: {unknown}")
 
     from uvt_scholarly.publication import Score
+    from uvt_scholarly.utils import download_file
 
     with DB(filename) as db:
         for year in years:

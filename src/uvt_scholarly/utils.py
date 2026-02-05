@@ -29,6 +29,48 @@ UVT_SCHOLARLY_CACHE_DIR = pathlib.Path(platformdirs.user_cache_dir(PROJECT_NAME)
 
 # }}}
 
+# {{{ exceptions
+
+
+class ScholarlyError(Exception):
+    """A generic exception raised by this library."""
+
+
+class ParsingError(ScholarlyError):
+    """Exception raised while parsing a score file."""
+
+
+class DownloadError(ScholarlyError):
+    """Exception raised when failing a download."""
+
+
+# }}}
+
+# {{{ download_file
+
+
+def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> None:
+    if not force and filename.exists():
+        return
+
+    import httpx
+
+    # TODO: allow passing a httpx.Client
+    try:
+        with open(filename, "wb") as f, httpx.stream("GET", url) as response:
+            response.raise_for_status()
+
+            for chunk in response.iter_bytes():
+                f.write(chunk)
+    except httpx.ConnectError:
+        if filename.exists():
+            filename.unlink()
+
+        raise DownloadError(f"failed to download '{url}'") from None
+
+
+# }}}
+
 # {{{ BlockTimer
 
 

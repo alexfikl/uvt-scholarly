@@ -9,8 +9,8 @@ import tempfile
 import pytest
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.uefiscdi import UEFISCDI_DATABASE_URL, download_file
-from uvt_scholarly.utils import block_timer
+from uvt_scholarly.uefiscdi import UEFISCDI_DATABASE_URL
+from uvt_scholarly.utils import block_timer, download_file
 
 log = make_logger(__name__)
 DATADIR = pathlib.Path(__file__).parent / "data"
