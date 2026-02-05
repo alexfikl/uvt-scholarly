@@ -396,7 +396,7 @@ def read_from_csv(
     from uvt_scholarly.publication import Journal
 
     with open(filename, encoding=encoding) as f:
-        reader = csv.DictReader(f, delimiter="\t")
+        reader = csv.DictReader(f, delimiter=delimiter)
         if reader.fieldnames is None:
             raise ValueError("csv files does not have column names")
 
