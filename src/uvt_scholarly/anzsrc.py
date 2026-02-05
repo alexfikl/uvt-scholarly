@@ -255,6 +255,14 @@ ANZSRC_CLASSIFICATIONS = {
     5299: "Other psychology",
 }
 
+
+def get_name_from_code(code: str) -> str:
+    if code.isdigit():
+        return ANZSRC_CLASSIFICATIONS[int(code)]
+
+    raise ValueError(f"code is not a known classification: '{code}'")
+
+
 # {{{ parse research classification
 
 
