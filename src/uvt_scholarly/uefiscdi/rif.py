@@ -151,7 +151,6 @@ class RelativeImpactFactorPraser:
                 break
 
             if not score.is_valid:
-                breakpoint()
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
             key = (str(score.issn), str(score.eissn))
