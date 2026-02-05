@@ -349,7 +349,7 @@ class DB:
             """
             SELECT MAX(score)
             FROM relative_influence_scores
-            WHERE issn = ? OR eissn = ? AND year >= ?
+            WHERE (issn = ? OR eissn = ?) AND year >= ?
             """,
             (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
         )
