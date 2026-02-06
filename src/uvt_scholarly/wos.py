@@ -341,21 +341,21 @@ def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication
     for citation in text.split(sep):
         parts = [part.strip(" .") for part in citation.split(",")]
         if len(parts) < 4:
-            log.info("Cannot parse citation (unexpected parts): '%s'.", citation)
+            log.debug("Cannot parse citation (unexpected parts): '%s'.", citation)
             continue
 
         author, year, journal = parts[0], parts[1], parts[2]
         if not year.isdigit():
-            log.info("Cannot parse citation (year is not an int): '%s'.", citation)
+            log.debug("Cannot parse citation (year is not an int): '%s'.", citation)
             continue
 
         if "DOI" not in citation:
-            log.info("Cannot parse citation (DOI not found): '%s'.", citation)
+            log.debug("Cannot parse citation (DOI not found): '%s'.", citation)
             continue
 
         _, doitext = citation.split("DOI", maxsplit=1)
         if "arXiv" in doitext:
-            log.info("Cannot parse citation (DOI not found): '%s'.", citation)
+            log.debug("Cannot parse citation (DOI not found): '%s'.", citation)
             continue
 
         try:
@@ -365,12 +365,19 @@ def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication
             is_valid = False
 
         if not is_valid:
-            log.info("Cannot parse citation (DOI is not valid): '%s'", citation)
+            log.debug("Cannot parse citation (DOI is not valid): '%s'", citation)
             continue
 
-        first_name, _ = author.split(maxsplit=1)
+        author = author.strip()
+        if " " in author:
+            last_name, _ = author.split(" ", maxsplit=1)
+        elif "." in author:
+            last_name, _ = author.split(".", maxsplit=1)
+        else:
+            last_name = author.strip()
+
         pub = CitedPublication(
-            first_author=first_name,
+            first_author=last_name,
             journal=" ".join(f"{part}.".title() for part in journal.split()),
             year=int(year),
             doi=doi,
