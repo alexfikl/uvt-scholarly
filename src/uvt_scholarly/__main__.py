@@ -114,6 +114,11 @@ def download(
     help="The source format of the publications and citations",
 )
 @click.option(
+    "--researcher",
+    required=True,
+    help="Full name of the researcher for which to generate the list",
+)
+@click.option(
     "--pub-file",
     type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
     default=None,

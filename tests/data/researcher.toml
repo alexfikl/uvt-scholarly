@@ -1,0 +1,9 @@
+[author]
+FirstName = "Alexandru"
+LastName = "Fikl"
+ResearcherID = "TODO"
+ORCiD = "TODO"
+
+[math.files.wos]
+Publications = "savedrecs.txt"
+Citations = "savedrecs_cited_by.txt"
