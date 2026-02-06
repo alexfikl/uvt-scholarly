@@ -229,9 +229,9 @@ class Journal:
     name: str
     """The name of the journal."""
 
-    scores: Mapping[Score, float] = field(init=False, default_factory=dict)
+    scores: Mapping[Score, float] = field(default_factory=dict)
     """A mapping of known scores for this journal."""
-    quartile: Mapping[Score, str] = field(init=False, default_factory=dict)
+    quartile: Mapping[Score, str] = field(default_factory=dict)
     """A mapping of known quartiles for each score, as available."""
 
 

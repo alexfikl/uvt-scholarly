@@ -98,6 +98,9 @@ class RelativeInfluenceScore:
         if not self.journal:
             return False
 
+        if self.issn is None and self.eissn is None:
+            return False
+
         if self.score < 0.0:  # noqa: SIM103
             return False
 
@@ -369,11 +372,14 @@ class DB:
 def store_relative_influence_score(
     filename: pathlib.Path,
     *,
-    years: set[int] | None = None,
+    years: int | set[int] | None = None,
     force: bool = False,
 ) -> None:
     if years is None:
         years = set(UEFISCDI_DATABASE_URL)
+
+    if isinstance(years, int):
+        years = {years}
 
     if unknown := years - set(UEFISCDI_DATABASE_URL):
         raise ValueError(f"unsupported years: {unknown}")
@@ -382,7 +388,7 @@ def store_relative_influence_score(
     from uvt_scholarly.utils import download_file
 
     with DB(filename) as db:
-        for year in years:
+        for i, year in enumerate(years):
             url = UEFISCDI_DATABASE_URL[year][Score.RIS]
 
             xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-ris-{year}.xlsx"
@@ -394,7 +400,8 @@ def store_relative_influence_score(
             log.info("Inserting RIS scores for %d into database.", year)
             db.insert(year, scores)
 
-            log.info("")
+            if i != len(years) - 1:
+                log.info("")
 
 
 # }}}

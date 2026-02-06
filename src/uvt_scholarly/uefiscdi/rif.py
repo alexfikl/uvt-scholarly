@@ -272,14 +272,11 @@ class DB:
     name: str
     conn: sqlite3.Connection | None
 
-    def __init__(self, filename: pathlib.Path, name: str) -> None:
+    def __init__(self, filename: pathlib.Path) -> None:
         # TODO: this should be nicely generalized for all the scores. We don't
         # really need more copies of this class...
-        if name != RIF_DB_NAME:
-            raise ValueError(f"unsupported database name: {name!r}")
-
         self.filename = filename
-        self.name = name
+        self.name = RIF_DB_NAME
         self.conn = None
 
     def __enter__(self) -> DB:
@@ -388,8 +385,8 @@ def store_relative_impact_factor(
     from uvt_scholarly.publication import Score
     from uvt_scholarly.utils import download_file
 
-    with DB(filename, RIF_DB_NAME) as db:
-        for year in years:
+    with DB(filename) as db:
+        for i, year in enumerate(years):
             url = UEFISCDI_DATABASE_URL[year][Score.RIF]
 
             xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-rif-{year}.xlsx"
@@ -401,7 +398,8 @@ def store_relative_impact_factor(
             log.info("Inserting RIF scores for %d into database.", year)
             db.insert(year, scores)
 
-            log.info("")
+            if i != len(years) - 1:
+                log.info("")
 
 
 # }}}
