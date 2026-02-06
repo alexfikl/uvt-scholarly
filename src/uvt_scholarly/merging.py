@@ -103,6 +103,7 @@ def add_scores(
     pubs: tuple[Publication, ...],
     dbfile: pathlib.Path,
     *,
+    past: int = 5,
     scores: set[Score] | None = None,
 ) -> tuple[Publication, ...]:
     if not dbfile.exists():
@@ -112,10 +113,10 @@ def add_scores(
         return pubs
 
     if Score.RIS in scores:
-        pubs = _add_ris_scores(pubs, dbfile)
+        pubs = _add_ris_scores(pubs, dbfile, past=past)
 
     if Score.RIF in scores:
-        pubs = _add_rif_scores(pubs, dbfile)
+        pubs = _add_rif_scores(pubs, dbfile, past=past)
 
     return pubs
 
