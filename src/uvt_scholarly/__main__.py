@@ -105,8 +105,14 @@ def download(
 # {{{ generate
 
 
-@main.command("generate")
+@main.group("generate")
 @click.help_option("-h", "--help")
+def generate() -> None:
+    """Generate documents based on citation data."""
+    pass
+
+
+@generate.command("math")
 @click.option(
     "--source",
     type=click.Choice(sorted(SUPPORTED_SOURCES)),
@@ -134,9 +140,13 @@ def download(
 def generate(
     ctx: click.Context,
     source: str,
+    researcher: str,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
 ) -> None:
+    """Generate citation data for the Mathematics Department."""
+
+    from uvt_scholarly.publication import Score
     from uvt_scholarly.uefiscdi import UEFISCDI_DB_FILE
 
     if not UEFISCDI_DB_FILE.exists():
@@ -153,12 +163,14 @@ def generate(
         cites = read_pubs(cite_file, include_citations=True)
 
         pubs = add_cited_by(pubs, cites)
-        pubs = add_scores(pubs, UEFISCDI_DB_FILE)
+        pubs = add_scores(pubs, UEFISCDI_DB_FILE, scores={Score.RIS})
     else:
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
 
-    # TODO: write out a template
+    from uvt_scholarly.export.math import export_publications_csv
+
+    export_publications_csv(pathlib.Path("publications.csv"), pubs)
 
 
 # }}}

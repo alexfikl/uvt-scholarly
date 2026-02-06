@@ -18,12 +18,13 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 # {{{ test_add_cited_by
 
 
-def test_add_cited_by() -> None:
+@pytest.mark.parametrize("ext", ["txt", "bib"])
+def test_add_cited_by(ext: str) -> None:
     from uvt_scholarly.wos import read_from_csv
 
-    publications = read_from_csv(DATADIR / "savedrecs.txt")
+    publications = read_from_csv(DATADIR / f"savedrecs.{ext}")
     citations = read_from_csv(
-        DATADIR / "savedrecs_cited_by.txt", include_citations=True
+        DATADIR / f"savedrecs_cited_by.{ext}", include_citations=True
     )
 
     from uvt_scholarly.enrich import add_cited_by

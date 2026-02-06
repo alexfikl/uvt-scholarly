@@ -234,6 +234,9 @@ class Journal:
     quartile: Mapping[Score, str] = field(default_factory=dict)
     """A mapping of known quartiles for each score, as available."""
 
+    def __str__(self) -> str:
+        return self.name
+
 
 # }}}
 
