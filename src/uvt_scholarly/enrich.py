@@ -24,7 +24,14 @@ def add_cited_by(
     pubs: Sequence[Publication],
     citations: Sequence[Publication],
 ) -> tuple[Publication, ...]:
-    raise NotImplementedError
+    doi_to_pub = {pub.doi: pub for pub in pubs if pub.doi is not None}
+
+    for cite in citations:
+        for doi in cite.citations:
+            if (pub := doi_to_pub.get(doi)) is not None:
+                doi_to_pub[doi] = replace(pub, cited_by=(*pub.cited_by, cite))
+
+    return tuple(pub for pub in doi_to_pub.values())
 
 
 # }}}

@@ -144,7 +144,7 @@ def generate(
         log.info("Run 'uvtscholarly download' to generate the database.")
         ctx.exit(1)
 
-    from uvt_scholarly.merging import add_cited_by, add_scores
+    from uvt_scholarly.enrich import add_cited_by, add_scores
 
     if source == "wos":
         from uvt_scholarly.wos import read_pubs

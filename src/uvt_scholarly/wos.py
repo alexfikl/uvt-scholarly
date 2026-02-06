@@ -372,9 +372,12 @@ def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication
         if " " in author:
             last_name, _ = author.split(" ", maxsplit=1)
         elif "." in author:
+            # NOTE: found an author like "Chandra.S", which seems to have been
+            # shortened from "Subrahmanyan Chandrasekhar, F. R. S.". Not sure
+            # what that's about, but we just split a bit of it..
             last_name, _ = author.split(".", maxsplit=1)
         else:
-            last_name = author.strip()
+            last_name = author
 
         pub = CitedPublication(
             first_author=last_name,

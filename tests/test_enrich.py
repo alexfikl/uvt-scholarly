@@ -15,6 +15,29 @@ DATADIR = pathlib.Path(__file__).parent / "data"
 TMPDIR = pathlib.Path(tempfile.gettempdir())
 
 
+# {{{ test_add_cited_by
+
+
+def test_add_cited_by() -> None:
+    from uvt_scholarly.wos import read_from_csv
+
+    publications = read_from_csv(DATADIR / "savedrecs.txt")
+    citations = read_from_csv(
+        DATADIR / "savedrecs_cited_by.txt", include_citations=True
+    )
+
+    from uvt_scholarly.enrich import add_cited_by
+
+    pubs = add_cited_by(publications, citations)
+    assert len(pubs) == len(publications)
+
+    for pub in pubs:
+        assert pub.cited_by_count == len(pub.cited_by)
+
+
+# }}}
+
+
 # {{{ test_add_scores
 
 
@@ -32,7 +55,7 @@ def test_add_scores() -> None:
 
     publications = read_from_csv(DATADIR / "savedrecs.txt")
 
-    from uvt_scholarly.merging import add_scores
+    from uvt_scholarly.enrich import add_scores
     from uvt_scholarly.publication import DocumentType, Score
 
     publications = add_scores(publications, filename, scores={Score.RIS})
