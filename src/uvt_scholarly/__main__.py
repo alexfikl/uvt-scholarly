@@ -161,6 +161,7 @@ def generate(
 
         pubs = read_pubs(pub_file)
         cites = read_pubs(cite_file, include_citations=True)
+        cites = add_scores(cites, UEFISCDI_DB_FILE, scores={Score.RIS})
 
         pubs = add_cited_by(pubs, cites)
         pubs = add_scores(pubs, UEFISCDI_DB_FILE, scores={Score.RIS})
@@ -168,9 +169,10 @@ def generate(
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
 
-    from uvt_scholarly.export.math import export_publications_csv
+    from uvt_scholarly.export.math import export_citations_csv, export_publications_csv
 
     export_publications_csv(pathlib.Path("publications.csv"), pubs)
+    export_citations_csv(pathlib.Path("citations.csv"), pubs)
 
 
 # }}}
