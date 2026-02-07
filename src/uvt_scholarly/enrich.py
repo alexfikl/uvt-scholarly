@@ -26,6 +26,7 @@ def add_cited_by(
 ) -> tuple[Publication, ...]:
     doi_to_pub = {pub.doi: pub for pub in pubs if pub.doi is not None}
 
+    # FIXME: the citations are no longer needed after this. remove them?
     for cite in citations:
         for doi in cite.citations:
             if (pub := doi_to_pub.get(doi)) is not None:

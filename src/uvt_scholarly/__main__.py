@@ -125,6 +125,12 @@ def generate() -> None:
     help="Full name of the researcher for which to generate the list",
 )
 @click.option(
+    "--outfile",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    required=True,
+    help="The file name for the generated documents",
+)
+@click.option(
     "--pub-file",
     type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
     default=None,
@@ -136,13 +142,22 @@ def generate() -> None:
     default=None,
     help="A list of citations for the given publications",
 )
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite generated file if it exists",
+)
 @click.pass_context
 def generate(
     ctx: click.Context,
     source: str,
     researcher: str,
+    outfile: pathlib.Path,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
+    force: bool,  # noqa: FBT001
 ) -> None:
     """Generate citation data for the Mathematics Department."""
 
@@ -152,6 +167,10 @@ def generate(
     if not UEFISCDI_DB_FILE.exists():
         log.error("UEFISCDI database file does not exist: '%s'.", UEFISCDI_DB_FILE)
         log.info("Run 'uvtscholarly download' to generate the database.")
+        ctx.exit(1)
+
+    if not force and outfile.exists():
+        log.error("File already exists (use --force to overwrite): '%s'.", outfile)
         ctx.exit(1)
 
     from uvt_scholarly.enrich import add_cited_by, add_scores
@@ -169,10 +188,26 @@ def generate(
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
 
-    from uvt_scholarly.export.math import export_citations_csv, export_publications_csv
+    if outfile.suffix == ".tex":
+        from uvt_scholarly.export.math import export_publications_latex
 
-    export_publications_csv(pathlib.Path("publications.csv"), pubs)
-    export_citations_csv(pathlib.Path("citations.csv"), pubs)
+        export_publications_latex(outfile, researcher, pubs)
+    elif outfile.suffix == ".csv":
+        from uvt_scholarly.export.math import (
+            export_citations_csv,
+            export_publications_csv,
+        )
+
+        export_publications_csv(outfile, pubs)
+        export_citations_csv(outfile.with_stem(f"{outfile.stem}.cites"), pubs)
+    else:
+        raise ValueError(f"unrecognized file type: {outfile.suffix}")
 
 
 # }}}
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

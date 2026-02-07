@@ -36,6 +36,7 @@ dependencies = [
     "msoffcrypto-tool>=5",
     "openpyxl>=3.1",
     "platformdirs",
+    "pylatexenc>=2.10",
     "pyperclip>=1.9",
     "rich>=14",
     "titlecase>=2.4",
@@ -126,6 +127,7 @@ extend-ignore-re = [
 [tool.typos.files]
 extend-exclude = [
     "tests/data",
+    "src/uvt_scholarly/resources",
 ]
 
 [tool.pytest.ini_options]
