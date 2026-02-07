@@ -1,0 +1,207 @@
+% SPDX-FileCopyrightText: 2026 Alexandru Fikl <alexfikl@gmail.com>
+% SPDX-License-Identifier: CC-BY-SA-4.0
+
+\documentclass[11pt, a4paper]{article}
+
+% NOTE: toggle the following lines to switch to Romanian
+\usepackage[romanian]{babel}
+\selectlanguage{romanian}
+
+\usepackage{geometry}
+\geometry{top=2cm, left=1cm, right=1cm, bottom=2cm, showframe}
+
+\usepackage[table]{xcolor}
+\usepackage[shortlabels]{enumitem}
+\usepackage{array}
+\usepackage{tabularray}
+\usepackage{tabularx}
+\usepackage{multirow}
+
+\definecolor{TableGray}{RGB}{242, 242, 242}
+\definecolor{TableYellow}{RGB}{255, 255, 153}
+
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+
+% set font
+\ifpdftex
+    \usepackage[sc]{mathpazo}
+\else
+    % NOTE: use a more old timey Times New Roman lookalike
+    \usepackage{unicode-math}
+    \setmainfont{TeX Gyre Termes}[FakeBold=1]
+    \setmathfont{Stix Two Math}[FakeBold=1]
+    \setmonofont{Inconsolata}[Scale=MatchLowercase]
+\fi
+
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+{\Huge \textbf{Fișă de verificare: ((* researcher.qualname *))}}
+\bigskip
+
+{\Large Standarde minimale pentru conferirea titlului de ((* summary.positionname *))}
+\bigskip
+
+{\Large
+Domeniul: Matematică
+}
+\end{center}
+
+\vspace{2cm}
+
+\noindent \textbf{Indicatori precizați în Anexa 1 din ORDINUL nr. 6560 din 20 decembrie
+2012, publicat în Monitorul Oficial Partea I, nr. 890bis/27.12.2012.}
+
+\bigskip
+
+{
+\renewcommand{\arraystretch}{1.5}
+
+\begin{tblr}{width=\textwidth, colspec={|l|X|X|}, hlines, vlines}
+\textbf{Indicator}
+& \textbf{Standard pentru ((* summary.positionname *))}
+& \textbf{Valoarea realizată a indicatorului} \\
+I &
+$\ge ((* summary.minindicator[0] *))$ &
+((* '{:.3f}'.format(researcher.ris) *)) \\
+I\textsubscript{recent} &
+$\ge ((* summary.minindicator[1] *))$ &
+((* '{:.3f}'.format(researcher.recentris) *)) \\
+C &
+$\ge ((* summary.minindicator[2] *))$ &
+((* researcher.totalcitations *)) \\
+\end{tblr}
+}
+\vfill
+
+{\large
+\noindent \textbf{Timișoara, \today \hfill ((* researcher.qualname *))}
+}
+
+\vspace{1.5cm}
+
+\clearpage
+
+{
+\textbf{Universitatea de Vest din Timișoara}
+
+\textbf{Facultatea de Matematică}
+
+\textbf{((* researcher.qualname *))}
+}
+
+\begin{center}
+{\Large \textbf{Fișă de verificare a îndeplinirii standardelor minimale}}
+\end{center}
+\bigskip
+
+\textbf{Indicatori precizați în Anexa 1  la OM  nr. 6129 din 20.12.2016, publicată în
+Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
+\medskip
+
+{
+\renewcommand{\arraystretch}{1.5}
+
+\begin{tblr}{width=\textwidth, colspec={|l|X[c]|}, hlines, vlines}
+\textbf{Indicator} & \textbf{Punctaj total} \\
+S & ((* researcher.ris *)) \\
+S\textsubscript{recent} & ((* researcher.recentris *)) \\
+Citări & ((* researcher.totalcitations *))
+\end{tblr}
+}
+
+\bigskip
+\begin{center}
+{\Large \textbf{Calculul coeficienților S și S\textsubscript{recent}}}
+\end{center}
+\bigskip
+
+{\footnotesize
+
+\begin{tblr}{
+    colspec={|Q[wd=1.5em,c]
+             |Q[wd=0.125\textwidth]
+             |Q[wd=0.125\textwidth]
+             |Q[wd=0.125\textwidth]
+             |Q[wd=0.1\textwidth]
+             |Q[wd=3.2em,c]
+             |Q[wd=4em,c]
+             |Q[wd=2.9em,c]
+             |Q[wd=2.7em,c]
+             |Q[wd=1.8em,c]|},
+    hlines,
+    vlines,
+    long}
+\SetRow{valign=m}
+\textbf{Nr. crt.} &
+\textbf{Autori} &
+\textbf{Titlu} &
+\textbf{Revista} &
+\textbf{Detalii} &
+\textbf{ISSN Revistă} &
+\textbf{Publicat în ultimii 7 ani} &
+\textbf{Scor revistă} &
+\textbf{Nr. autori} &
+\textbf{Scor} \\
+((( for pub in researcher.publications )))
+((* loop.index *)) &
+((* pub.authors | formatauthors | latexescape *)) &
+((* pub.title | latexescape *)) &
+((* pub.journal | latexescape *)) &
+((* pub | formatdetails | latexescape *)) &
+((* pub.issn *)) &
+((* pub | isrecent *)) &
+((* '{:.3f}'.format(pub | getscore('RIS')) *)) &
+((* pub.authors | length *)) &
+((* '{:.3f}'.format(pub | getscore('ARIS')) *)) \\
+((( endfor )))
+\end{tblr}
+}
+
+\clearpage
+
+\begin{center}
+{\Large \textbf{Citări (în reviste S\textsubscript{i} $\ge$ 0.5)}}
+\end{center}
+\bigskip
+
+{\footnotesize
+
+\begin{tblr}{
+    width=\textwidth,
+    colspec={|Q[wd=1.5em,c]
+             |X
+             |X
+             |Q[wd=3.3em,c]
+             |Q[wd=3em,c]|},
+    hlines,
+    vlines,
+    long}
+\SetRow{valign=m}
+\textbf{Nr. crt.} &
+\textbf{Articol citat} &
+\textbf{Articol} &
+\textbf{ISSN} &
+\textbf{Scor} \\
+((( set n = researcher.publications | length )))
+((( for pub in researcher.publications )))
+    ((( set j = loop.index0 )))
+    ((( for cite in pub.cited_by )))
+        ((* 1 + loop.index0 + j * n *)) &
+        ((( if j == 0 )))
+            ((* pub | formatpub | latexescape *))
+        ((( endif ))) &
+        ((* cite | formatpub | latexescape *)) &
+        ((* cite.issn *)) &
+        ((* '{:.3f}'.format(cite | getscore('RIS')) *)) \\
+    ((( endfor )))
+((( endfor )))
+\end{tblr}
+}
+\end{document}
+
+% vim:foldmarker=<<<,>>>:foldmethod=marker:spell spelllang=ro
+% kate: default-dictionary ro_RO;
