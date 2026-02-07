@@ -8,6 +8,7 @@ from importlib import metadata
 
 import click
 
+from uvt_scholarly.export.math import ID_TO_POSITION
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.utils import PROJECT_NAME
 
@@ -120,9 +121,15 @@ def generate() -> None:
     help="The source format of the publications and citations",
 )
 @click.option(
-    "--researcher",
+    "--candidate",
     required=True,
-    help="Full name of the researcher for which to generate the list",
+    help="Full name of the candidate for which to generate the list",
+)
+@click.option(
+    "--position",
+    type=click.Choice(list(ID_TO_POSITION)),
+    required=True,
+    help="The position for which the candidate is applying",
 )
 @click.option(
     "--outfile",
@@ -153,7 +160,8 @@ def generate() -> None:
 def generate(
     ctx: click.Context,
     source: str,
-    researcher: str,
+    candidate: str,
+    position: str,
     outfile: pathlib.Path,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
@@ -174,24 +182,35 @@ def generate(
         ctx.exit(1)
 
     from uvt_scholarly.enrich import add_cited_by, add_scores
+    from uvt_scholarly.export.math import PAST_YEAR_CUTOFF
 
     if source == "wos":
         from uvt_scholarly.wos import read_pubs
 
         pubs = read_pubs(pub_file)
         cites = read_pubs(cite_file, include_citations=True)
-        cites = add_scores(cites, UEFISCDI_DB_FILE, scores={Score.RIS})
+        cites = add_scores(
+            cites, UEFISCDI_DB_FILE, scores={Score.RIS}, past=PAST_YEAR_CUTOFF
+        )
 
         pubs = add_cited_by(pubs, cites)
-        pubs = add_scores(pubs, UEFISCDI_DB_FILE, scores={Score.RIS})
+        pubs = add_scores(
+            pubs, UEFISCDI_DB_FILE, scores={Score.RIS}, past=PAST_YEAR_CUTOFF
+        )
     else:
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
 
     if outfile.suffix == ".tex":
-        from uvt_scholarly.export.math import export_publications_latex
+        from uvt_scholarly.export.math import ID_TO_POSITION, export_publications_latex
 
-        export_publications_latex(outfile, researcher, pubs)
+        export_publications_latex(
+            outfile,
+            candidate,
+            pubs,
+            position=ID_TO_POSITION[position],
+            overwrite=force,
+        )
     elif outfile.suffix == ".csv":
         from uvt_scholarly.export.math import (
             export_citations_csv,

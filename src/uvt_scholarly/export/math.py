@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Author, Publication, Score
+from uvt_scholarly.publication import Publication, Score
 
 if TYPE_CHECKING:
     import pathlib
@@ -17,6 +17,155 @@ if TYPE_CHECKING:
 
 log = make_logger(__name__)
 
+
+# {{{ utils
+
+MIN_RIS_SCORE = 0.5
+"""The minimum score allowed for publications by the Mathematics Department."""
+
+PAST_YEAR_CUTOFF = 5
+"""The span over which the RIS should be considered. The presented score is
+a maximum over this period.
+"""
+
+RECENT_YEAR_CUTOFF = 7
+"""The span over which the publication is considered as *RECENT*."""
+
+
+def filter_latex_format_pub(pub: Publication) -> str:
+    from pylatexenc.latexencode import unicode_to_latex
+
+    parts: list[str] = []
+
+    # authors
+    authors = ", ".join(f"{au.first_name[0]}. {au.last_name}" for au in pub.authors)
+    parts.append(unicode_to_latex(authors))
+
+    # title
+    parts.append(unicode_to_latex(pub.title))
+
+    # journal
+    parts.append(rf"\textit{{{unicode_to_latex(pub.journal)}}}")
+
+    # volume + year
+    parts.append(f"vol. {pub.volume} ({pub.year})")
+    if pages := str(pub.pages):
+        parts.append(f"{pages}")
+
+    # issn
+    # issn = pub.issn or pub.eissn
+    # parts.append(f"ISSN: {issn}")
+
+    if pub.doi:
+        parts.append(
+            rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {pub.doi}}}"
+        )
+
+    return ", ".join(parts)
+
+
+def filter_latex_is_recent(pub: Publication) -> str:
+    from datetime import datetime
+
+    seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
+    return r"\textbf{X}" if pub.year >= seven_years_ago else ""
+
+
+def filter_get_score(pub: Publication, name: str) -> float:
+    try:
+        score = Score[name]
+    except KeyError:
+        return -1.0
+
+    return pub.journal.scores[score]
+
+
+def filter_get_average_score(pub: Publication, name: str) -> float:
+    return filter_get_score(pub, name) / len(pub.authors)
+
+
+# }}}
+
+# {{{ position
+
+
+@enum.unique
+class Position(enum.Enum):
+    Professor = enum.auto()
+    AssociateProfessor = enum.auto()
+    AssistantProfessor = enum.auto()
+    Assistant = enum.auto()
+
+    SeniorResearcher = enum.auto()
+    Researcher = enum.auto()
+    JuniorResearcher = enum.auto()
+
+
+POSITION_NAME = {
+    # academic
+    Position.Professor: "Profesor Universitar",  # spell: disable
+    Position.AssociateProfessor: "Conferențiar",
+    Position.AssistantProfessor: "Lector",
+    Position.Assistant: "Asistent Universitar",
+    # research
+    Position.SeniorResearcher: "Cercetător Științific I",
+    Position.Researcher: "Cercetător Științific II",
+    Position.JuniorResearcher: "Cercetător Științific III",
+}
+
+POSITION_SHORT_NAME = {
+    Position.Professor: "Prof. Dr.",
+    Position.AssociateProfessor: "Conf. Dr.",
+    Position.AssistantProfessor: "Lect. Dr.",
+    Position.Assistant: "Ass.",
+    # research
+    Position.SeniorResearcher: "C.S. I",
+    Position.Researcher: "C.S. II",
+    Position.JuniorResearcher: "C.S. III",
+}
+
+ID_TO_POSITION = {
+    "prof": Position.Professor,
+    "conf": Position.AssociateProfessor,
+    "lect": Position.AssistantProfessor,
+    "assi": Position.Assistant,
+    "cs1": Position.SeniorResearcher,
+    "cs2": Position.Researcher,
+    "cs3": Position.JuniorResearcher,
+}
+
+# }}}
+
+
+# {{{
+
+
+@dataclass(frozen=True)
+class Criteria:
+    position: Position
+    min_ris: float
+    min_recent_ris: float
+    min_citations: int
+
+    @property
+    def position_name(self) -> str:
+        return POSITION_NAME[self.position]
+
+
+MIN_INDICATOR_FOR_POSITION = {
+    # academic
+    Position.Professor: (5.0, 2.5, 12),
+    Position.AssociateProfessor: (2.5, 1.5, 6),
+    Position.AssistantProfessor: (1.0, 0.0, 0),
+    Position.Assistant: (0.0, 0.0, 0),
+    # research
+    Position.SeniorResearcher: (5.0, 2.5, 12),
+    Position.Researcher: (2.5, 1.5, 6),
+    Position.JuniorResearcher: (1.0, 0.0, 0),
+}
+
+
+# }}}
 
 # {{{ export_publications_csv
 
@@ -169,148 +318,21 @@ def export_citations_csv(
 
 # }}}
 
-
-# {{{ Position
-
-
-@enum.unique
-class Position(enum.Enum):
-    Professor = enum.auto()
-    AssociateProfessor = enum.auto()
-    AssistantProfessor = enum.auto()
-    Assistant = enum.auto()
-
-    SeniorResearcher = enum.auto()
-    Researcher = enum.auto()
-    JuniorResearcher = enum.auto()
-
-
-POSITION_NAME = {
-    # academic
-    Position.Professor: "Profesor Universitar",  # spell: disable
-    Position.AssociateProfessor: "Conferențiar",
-    Position.AssistantProfessor: "Lector",
-    Position.Assistant: "Asistent Universitar",
-    # research
-    Position.SeniorResearcher: "Cercetător Științific I",
-    Position.Researcher: "Cercetător Științific II",
-    Position.JuniorResearcher: "Cercetător Științific III",
-}
-
-POSITION_SHORT_NAME = {
-    Position.Professor: "Prof. Dr.",
-    Position.AssociateProfessor: "Conf. Dr.",
-    Position.AssistantProfessor: "Lect. Dr.",
-    Position.Assistant: "Ass.",
-    # research
-    Position.SeniorResearcher: "C. S. I",
-    Position.Researcher: "C. S. II",
-    Position.JuniorResearcher: "C. S. III",
-}
-
-# }}}
-
-
-# {{{ Summary
-
-
-@dataclass(frozen=True)
-class Summary:
-    position: Position
-    minindicator: tuple[float, float, int]
-
-    @property
-    def positionname(self) -> str:
-        return POSITION_NAME[self.position]
-
-
-MIN_INDICATOR_FOR_POSITION = {
-    # academic
-    Position.Professor: (5.0, 2.5, 12),
-    Position.AssociateProfessor: (2.5, 1.5, 6),
-    Position.AssistantProfessor: (1.0, 0.0, 0),
-    Position.Assistant: (0.0, 0.0, 0),
-    # research
-    Position.SeniorResearcher: (5.0, 2.5, 12),
-    Position.Researcher: (2.5, 1.5, 6),
-    Position.JuniorResearcher: (1.0, 0.0, 0),
-}
-
-# }}}
-
-
 # {{{ export_publications_latex
 
 
 @dataclass(frozen=True)
-class Researcher:
-    name: str
-    position: Position | None
+class Candidate:
+    qualname: str
     publications: Sequence[Publication]
-    indicator: tuple[float, float, int]
     ris: float
-    recentris: float
-    totalcitations: int
-
-    @property
-    def qualname(self) -> str:
-        if self.position is None:
-            return self.name
-
-        return f"{POSITION_SHORT_NAME[self.position]} {self.name}"
-
-
-def filter_yes_or_no(value: bool) -> str:  # noqa: FBT001
-    return r"\textbf{DA}" if value else r"\textit{NU}"
-
-
-def filter_format_pub(pub: Publication) -> str:
-    return _display_publication_short(pub)
-
-
-def filter_format_authors(value: tuple[Author, ...]) -> str:
-    return "; ".join(f"{au.last_name} {au.first_name[0]}." for au in value)
-
-
-def filter_format_details(pub: Publication) -> str:
-    return f"{pub.volume}({pub.issue}) ({pub.year})"
-
-
-def filter_is_recent(pub: Publication) -> str:
-    from datetime import datetime
-
-    seven_years_ago = datetime.now().year - 7
-
-    return filter_yes_or_no(pub.year >= seven_years_ago)
-
-
-def filter_get_score(pub: Publication, name: str) -> float:
-    try:
-        score = Score[name]
-        is_average = False
-    except KeyError:
-        try:
-            score = Score[name[1:]]
-            is_average = True
-        except KeyError:
-            return -1.0
-
-    value = pub.journal.scores[score]
-    if is_average:
-        value /= len(pub.authors)
-
-    return value
-
-
-def filter_latex_escape(value: str) -> str:
-    from pylatexenc.latexencode import unicode_to_latex
-
-    return unicode_to_latex(value)
+    recent_ris: float
+    total_citations: int
 
 
 def export_publications_latex(
     outfile: pathlib.Path,
-    researcher_name: str,
+    candidate_name: str,
     pubs: Sequence[Publication],
     *,
     position: Position = Position.Professor,
@@ -320,7 +342,7 @@ def export_publications_latex(
 
     from datetime import datetime
 
-    seven_years_ago = datetime.now().year - 7
+    seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
 
     total_ris = 0.0
     recent_total_ris = 0.0
@@ -333,23 +355,25 @@ def export_publications_latex(
             log.warning("Journal does not have a RIS score: '%s'.", pub.journal)
             continue
 
-        if ris < 0.5:
+        if ris < MIN_RIS_SCORE:
             log.warning("Journal RIS '%.3f' < 0.5: '%s'.", ris, pub.journal)
             continue
 
         cited_by = []
         for cite in pub.cited_by:
             ris = cite.journal.scores.get(Score.RIS)
-            if ris is None or ris < 0.5:
+            if ris is None or ris < MIN_RIS_SCORE:
+                continue
+
+            if any(au.last_name in candidate_name for au in cite.authors):
                 continue
 
             total_citations += 1
-            cited_by.append(replace(cite, issn=cite.issn or cite.eissn))
+            cited_by.append(cite)
 
         publications.append(
             replace(
                 pub,
-                issn=pub.issn or pub.eissn,
                 cited_by=tuple(cited_by),
                 cited_by_count=len(cited_by),
             )
@@ -359,14 +383,12 @@ def export_publications_latex(
         if pub.year >= seven_years_ago:
             recent_total_ris += ris
 
-    researcher = Researcher(
-        name=researcher_name,
-        position=position,
+    candidate = Candidate(
+        qualname=candidate_name,
         publications=publications,
-        indicator=(total_ris, recent_total_ris, total_citations),
         ris=total_ris,
-        recentris=recent_total_ris,
-        totalcitations=total_citations,
+        recent_ris=recent_total_ris,
+        total_citations=total_citations,
     )
 
     # }}}
@@ -376,20 +398,22 @@ def export_publications_latex(
     import jinja2
 
     env = jinja2.Environment(  # noqa: S701
-        block_start_string="(((",
-        block_end_string=")))",
-        variable_start_string="((*",
-        variable_end_string="*))",
+        block_start_string=r"\JinjaBlock{",
+        block_end_string="}",
+        variable_start_string=r"\JinjaVar{",
+        variable_end_string="}",
         comment_start_string="((=",
         comment_end_string="=))",
     )
-    env.filters["yesorno"] = filter_yes_or_no
-    env.filters["formatpub"] = filter_format_pub
-    env.filters["formatauthors"] = filter_format_authors
-    env.filters["formatdetails"] = filter_format_details
-    env.filters["isrecent"] = filter_is_recent
-    env.filters["getscore"] = filter_get_score
-    env.filters["latexescape"] = filter_latex_escape
+
+    env.filters["format_pub"] = filter_latex_format_pub
+    env.filters["is_recent"] = filter_latex_is_recent
+    env.filters["get_score"] = filter_get_score
+
+    if position in {Position.AssistantProfessor, Position.JuniorResearcher}:
+        env.filters["get_average_score"] = filter_get_average_score
+    else:
+        env.filters["get_average_score"] = filter_get_score
 
     # }}}
 
@@ -397,9 +421,12 @@ def export_publications_latex(
 
     from importlib.resources import files
 
-    summary = Summary(
+    min_ris, min_recent_ris, min_citations = MIN_INDICATOR_FOR_POSITION[position]
+    criteria = Criteria(
         position=position,
-        minindicator=MIN_INDICATOR_FOR_POSITION[position],
+        min_ris=min_ris,
+        min_recent_ris=min_recent_ris,
+        min_citations=min_citations,
     )
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
@@ -407,7 +434,7 @@ def export_publications_latex(
         tex = (
             env
             .from_string(f.read())
-            .render(researcher=researcher, summary=summary)
+            .render(candidate=candidate, criteria=criteria)
             .strip()
         )
 

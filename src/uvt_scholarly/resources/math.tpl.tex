@@ -3,6 +3,8 @@
 
 \documentclass[11pt, a4paper]{article}
 
+% {{{ BEGIN packages
+
 % NOTE: toggle the following lines to switch to Romanian
 \usepackage[romanian]{babel}
 \selectlanguage{romanian}
@@ -11,16 +13,31 @@
 \geometry{top=2cm, left=1cm, right=1cm, bottom=2cm, showframe}
 
 \usepackage[table]{xcolor}
+
+\definecolor{UrlColor}{HTML}{0072BD}
+\usepackage[hypertexnames=false,breaklinks=true]{hyperref}
+\hypersetup{%
+    colorlinks=true,
+    urlcolor=UrlColor,
+    citecolor=UrlColor,
+    linkcolor=UrlColor
+}
+\renewcommand{\UrlFont}{\bfseries\ttfamily}
+
 \usepackage[shortlabels]{enumitem}
-\usepackage{array}
+
 \usepackage{tabularray}
-\usepackage{tabularx}
-\usepackage{multirow}
+\UseTblrLibrary{longtblr}
+\SetTblrTemplate{caption}{empty}
+\SetTblrTemplate{capcont}{empty}
 
-\definecolor{TableGray}{RGB}{242, 242, 242}
-\definecolor{TableYellow}{RGB}{255, 255, 153}
+\DeclareTblrTemplate{contfoot-text}{normal}{Continuat pe pagina următoare}
+\SetTblrTemplate{contfoot-text}{normal}
 
-\newcolumntype{C}{>{\centering\arraybackslash}X}
+% }}} END
+
+% {{{ BEGIN formatting
+
 
 % set font
 \ifpdftex
@@ -33,27 +50,40 @@
     \setmonofont{Inconsolata}[Scale=MatchLowercase]
 \fi
 
+% remove paragraph indentation
 \setlength{\parindent}{0pt}
+
+% remove page numbers
 \pagestyle{empty}
+
+% define some standard colors used in the official templates
+\definecolor{TableGray}{RGB}{242, 242, 242}
+\definecolor{TableYellow}{RGB}{255, 255, 153}
+
+% }}} END
+
+% {{{ BEGIN commands
+
+\NewDocumentCommand \JinjaBlock {+m} {}
+\NewDocumentCommand \JinjaVar {+m} {}
+
+% }}}
 
 \begin{document}
 
 \begin{center}
-{\Huge \textbf{Fișă de verificare: ((* researcher.qualname *))}}
+{\Huge \textbf{Fișă de verificare: \JinjaVar{candidate.qualname}}}
 \bigskip
 
-{\Large Standarde minimale pentru conferirea titlului de ((* summary.positionname *))}
-\bigskip
+{\Large Standarde minimale pentru conferirea titlului de \JinjaVar{criteria.position_name}}
 
-{\Large
-Domeniul: Matematică
-}
+{\Large Departament: Matematică}
 \end{center}
 
 \vspace{2cm}
 
-\noindent \textbf{Indicatori precizați în Anexa 1 din ORDINUL nr. 6560 din 20 decembrie
-2012, publicat în Monitorul Oficial Partea I, nr. 890bis/27.12.2012.}
+\textbf{Indicatori precizați în Anexa 1 la ORDINUL nr. 6129 din 20.12.2016, publicată în
+Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 
 \bigskip
 
@@ -61,24 +91,36 @@ Domeniul: Matematică
 \renewcommand{\arraystretch}{1.5}
 
 \begin{tblr}{width=\textwidth, colspec={|l|X|X|}, hlines, vlines}
+\SetRow{bg=TableYellow}
 \textbf{Indicator}
-& \textbf{Standard pentru ((* summary.positionname *))}
+& \textbf{Standard pentru \JinjaVar{criteria.position_name}}
 & \textbf{Valoarea realizată a indicatorului} \\
-I &
-$\ge ((* summary.minindicator[0] *))$ &
-((* '{:.3f}'.format(researcher.ris) *)) \\
-I\textsubscript{recent} &
-$\ge ((* summary.minindicator[1] *))$ &
-((* '{:.3f}'.format(researcher.recentris) *)) \\
+S &
+$\ge \JinjaVar{criteria.min_ris}$ &
+\JinjaVar{'{:.3f}'.format(candidate.ris)} \\
+S\textsubscript{recent} &
+$\ge \JinjaVar{criteria.min_recent_ris}$ &
+\JinjaVar{'{:.3f}'.format(candidate.recent_ris)} \\
 C &
-$\ge ((* summary.minindicator[2] *))$ &
-((* researcher.totalcitations *)) \\
+$\ge \JinjaVar{criteria.min_citations}$ &
+\JinjaVar{candidate.total_citations} \\
 \end{tblr}
+}
+
+{\footnotesize
+\begin{itemize}[leftmargin=*]
+    \item S: suma scorurilor relative de influență (maximul peste ultimii 5 ani) a
+    tuturor articolelor publicate (cu un scor de peste 0.5).
+    \item S: suma scorurilor relative de influență (maximul peste ultimii 5 ani) a
+    tuturor articolelor publicate \textbf{în ultimii 7 ani} (cu un scor de peste 0.5).
+    \item C: numărul de citări ale articolelor luate în considerare pentru indicatorul S.
+    Nu se iau în considerare articole care au ca autor candidatul.
+\end{itemize}
 }
 \vfill
 
 {\large
-\noindent \textbf{Timișoara, \today \hfill ((* researcher.qualname *))}
+\noindent \textbf{Timișoara, \today \hfill \JinjaVar{candidate.qualname}}
 }
 
 \vspace{1.5cm}
@@ -90,27 +132,7 @@ $\ge ((* summary.minindicator[2] *))$ &
 
 \textbf{Facultatea de Matematică}
 
-\textbf{((* researcher.qualname *))}
-}
-
-\begin{center}
-{\Large \textbf{Fișă de verificare a îndeplinirii standardelor minimale}}
-\end{center}
-\bigskip
-
-\textbf{Indicatori precizați în Anexa 1  la OM  nr. 6129 din 20.12.2016, publicată în
-Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
-\medskip
-
-{
-\renewcommand{\arraystretch}{1.5}
-
-\begin{tblr}{width=\textwidth, colspec={|l|X[c]|}, hlines, vlines}
-\textbf{Indicator} & \textbf{Punctaj total} \\
-S & ((* researcher.ris *)) \\
-S\textsubscript{recent} & ((* researcher.recentris *)) \\
-Citări & ((* researcher.totalcitations *))
-\end{tblr}
+\textbf{\JinjaVar{candidate.qualname}}
 }
 
 \bigskip
@@ -121,13 +143,9 @@ Citări & ((* researcher.totalcitations *))
 
 {\footnotesize
 
-\begin{tblr}{
+\begin{longtblr}{
     colspec={|Q[wd=1.5em,c]
-             |Q[wd=0.125\textwidth]
-             |Q[wd=0.125\textwidth]
-             |Q[wd=0.125\textwidth]
-             |Q[wd=0.1\textwidth]
-             |Q[wd=3.2em,c]
+             |X
              |Q[wd=4em,c]
              |Q[wd=2.9em,c]
              |Q[wd=2.7em,c]
@@ -135,30 +153,26 @@ Citări & ((* researcher.totalcitations *))
     hlines,
     vlines,
     long}
-\SetRow{valign=m}
+\SetRow{valign=m, bg=TableYellow}
 \textbf{Nr. crt.} &
-\textbf{Autori} &
-\textbf{Titlu} &
-\textbf{Revista} &
-\textbf{Detalii} &
-\textbf{ISSN Revistă} &
+\textbf{Articol -- referință bibliografică} &
 \textbf{Publicat în ultimii 7 ani} &
-\textbf{Scor revistă} &
+\textbf{SRI revistă} &
 \textbf{Nr. autori} &
 \textbf{Scor} \\
-((( for pub in researcher.publications )))
-((* loop.index *)) &
-((* pub.authors | formatauthors | latexescape *)) &
-((* pub.title | latexescape *)) &
-((* pub.journal | latexescape *)) &
-((* pub | formatdetails | latexescape *)) &
-((* pub.issn *)) &
-((* pub | isrecent *)) &
-((* '{:.3f}'.format(pub | getscore('RIS')) *)) &
-((* pub.authors | length *)) &
-((* '{:.3f}'.format(pub | getscore('ARIS')) *)) \\
-((( endfor )))
-\end{tblr}
+\JinjaBlock{for pub in candidate.publications}
+\JinjaVar{loop.index} &
+\JinjaVar{pub | format_pub} &
+\JinjaVar{pub | is_recent} &
+\JinjaVar{'{:.3f}'.format(pub | get_score('RIS'))} &
+\JinjaVar{pub.authors | length} &
+\JinjaVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\
+\JinjaBlock{endfor}
+&
+\textbf{Total} &
+\SetCell[c=2]{l} \textbf{S} = \JinjaVar{candidate.ris} & &
+\SetCell[c=2]{l} \textbf{S\textsubscript{recent}} = \JinjaVar{candidate.recent_ris} \\
+\end{longtblr}
 }
 
 \clearpage
@@ -170,36 +184,33 @@ Citări & ((* researcher.totalcitations *))
 
 {\footnotesize
 
-\begin{tblr}{
+\begin{longtblr}{
     width=\textwidth,
     colspec={|Q[wd=1.5em,c]
              |X
              |X
-             |Q[wd=3.3em,c]
-             |Q[wd=3em,c]|},
+             |Q[wd=3.3em,c]|},
     hlines,
-    vlines,
-    long}
-\SetRow{valign=m}
+    vlines}
+\SetRow{valign=m, bg=TableYellow}
 \textbf{Nr. crt.} &
-\textbf{Articol citat} &
-\textbf{Articol} &
-\textbf{ISSN} &
-\textbf{Scor} \\
-((( set n = researcher.publications | length )))
-((( for pub in researcher.publications )))
-    ((( set j = loop.index0 )))
-    ((( for cite in pub.cited_by )))
-        ((* 1 + loop.index0 + j * n *)) &
-        ((( if j == 0 )))
-            ((* pub | formatpub | latexescape *))
-        ((( endif ))) &
-        ((* cite | formatpub | latexescape *)) &
-        ((* cite.issn *)) &
-        ((* '{:.3f}'.format(cite | getscore('RIS')) *)) \\
-    ((( endfor )))
-((( endfor )))
-\end{tblr}
+\textbf{Articolul citat} &
+\textbf{Revista și articolul în care a fost citat} &
+\textbf{SRI Revistă} \\
+\JinjaBlock{set counter = namespace(value=0)}
+\JinjaBlock{for pub in candidate.publications}
+    \JinjaBlock{-for cite in pub.cited_by}
+        \JinjaBlock{set counter.value = counter.value + 1}
+\JinjaVar{counter.value} &
+\JinjaBlock{-if loop.index == 1} \JinjaVar{pub | format_pub} \JinjaBlock{endif-} &
+\JinjaVar{cite | format_pub} &
+\JinjaVar{'{:.3f}'.format(cite | get_score('RIS'))} \\
+    \JinjaBlock{-endfor}
+\JinjaBlock{-endfor}
+&
+\textbf{Total} &
+\SetCell[c=2]{r} C = \JinjaVar{candidate.total_citations}
+\end{longtblr}
 }
 \end{document}
 
