@@ -618,6 +618,9 @@ def merge_csv_files(
     fieldnames = None
 
     for filename in filenames:
+        if not filename.exists():
+            raise FileNotFoundError(filename)
+
         with open(filename, encoding="utf-8") as f:
             reader = csv.DictReader(f, delimiter="\t")
 
@@ -644,6 +647,107 @@ def merge_csv_files(
     assert fieldnames is not None
 
     # }}}
+
+    with open(outfile, "w", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames, delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+# }}}
+
+
+# {{{ merge_bib_files
+
+# }}}
+
+
+# {{{ filter_csv_publications
+
+
+def filter_csv_publications(
+    filename: pathlib.Path,
+    outfile: pathlib.Path,
+    *,
+    dbfile: pathlib.Path | None = None,
+    overwrite: bool = False,
+) -> None:
+    if not filename.exists():
+        raise FileNotFoundError(filename)
+
+    if not overwrite and outfile.exists():
+        raise FileExistsError(outfile)
+
+    db = None
+    if dbfile is not None and dbfile.exists():
+        from uvt_scholarly.uefiscdi.ris import DB
+
+        db = DB(dbfile)
+        db.init()
+
+    import csv
+
+    with open(filename, encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        if reader.fieldnames is None:
+            raise ValueError("csv files does not have column names")
+
+        rows = []
+        fieldnames = reader.fieldnames
+
+        for row in reader:
+            title = row["TI"].strip()
+            journal = row["SO"].strip()
+
+            issn = parse_issn(row.get("SN", ""))
+            eissn = parse_issn(row.get("EI", ""))
+            if issn is None and eissn is None:
+                log.warning("Entry has no ISSN:\n\t'%s'\n\t%s.", title, journal)
+                continue
+
+            if issn is not None and not issn.is_valid:
+                log.warning(
+                    "Entry has an invalid ISSN '%s':\n\t'%s'\n\t%s.",
+                    issn,
+                    title,
+                    journal,
+                )
+                continue
+
+            if eissn is not None and not eissn.is_valid:
+                log.warning(
+                    "Entry has an invalid eISSN '%s':\n\t'%s'\n\t%s.",
+                    eissn,
+                    title,
+                    journal,
+                )
+                continue
+
+            doi = parse_doi(row.get("DI", ""))
+            if doi is None:
+                log.warning("Entry has no DOI:\n\t'%s'\n\t%s.", title, journal)
+                continue
+
+            if not doi.is_valid:
+                log.warning(
+                    "Entry has an invalid DOI '%s':\n\t'%s'\n\t%s.", doi, title, journal
+                )
+                continue
+
+            if db is not None:
+                issn = issn or eissn
+                assert issn is not None
+
+                ris = db.max_score_by_issn(issn)
+                if ris is None:
+                    log.warning(
+                        "Entry does not appear in the RIS database:\n\t'%s'\n\t%s",
+                        title,
+                        journal,
+                    )
+                    continue
+
+            rows.append(row)
 
     with open(outfile, "w", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames, delimiter="\t")

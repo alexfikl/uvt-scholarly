@@ -300,7 +300,7 @@ class DB:
         self.filename = filename
         self.conn = None
 
-    def __enter__(self) -> DB:
+    def init(self) -> None:
         self.conn = conn = sqlite3.connect(self.filename)
 
         # NOTE: this should only be executed on creation, but it's not a problem
@@ -308,6 +308,8 @@ class DB:
         conn.execute("PRAGMA journal_mode = WAL;")
         conn.execute("PRAGMA synchronous = NORMAL;")
 
+    def __enter__(self) -> DB:
+        self.init()
         return self
 
     def __exit__(

@@ -317,6 +317,57 @@ def wos_merge(
     log.info("Merged file into '%s'.", outfile)
 
 
+@wos.command("filter")
+@click.help_option("-h", "--help")
+@click.argument(
+    "filename",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+)
+@click.option(
+    "--outfile",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="The file name for the generated documents",
+)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite generated file if it exists",
+)
+@click.pass_context
+def wos_filter(
+    ctx: click.Context,
+    filename: pathlib.Path,
+    outfile: pathlib.Path | None,
+    force: bool,  # noqa: FBT001
+) -> None:
+    """Remove publications that have invalid metadata."""
+
+    if outfile is None:
+        outfile = filename
+
+    if not force and outfile.exists():
+        log.error("File already exists (use --force to overwrite): '%s'.", outfile)
+        ctx.exit(1)
+
+    from uvt_scholarly.uefiscdi import UEFISCDI_DB_FILE
+
+    if filename.suffix in {".txt", ".csv"}:
+        from uvt_scholarly.wos import filter_csv_publications
+
+        filter_csv_publications(
+            filename,
+            outfile,
+            dbfile=UEFISCDI_DB_FILE,
+            overwrite=force,
+        )
+    else:
+        log.error("Unsupported file format: '%s'.", filename)
+        ctx.exit(1)
+
+
 # }}}
 
 
