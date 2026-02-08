@@ -32,8 +32,12 @@ idna==3.11
     #   httpx
 iniconfig==2.3.0
     # via pytest
+jinja2==3.1.6
+    # via uvt-scholarly (pyproject.toml)
 markdown-it-py==4.0.0
     # via rich
+markupsafe==3.0.3
+    # via jinja2
 mdurl==0.1.2
     # via markdown-it-py
 msoffcrypto-tool==6.0.0
