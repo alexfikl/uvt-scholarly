@@ -54,6 +54,19 @@ RIS_INCORRECT_ISSN = {
     "1929-7291": "1939-7291",
 }
 
+# NOTE: the names should match (case senstitive) the UEFISCDI documents
+# NOTE: only add cases which lack both ISSN and eISSN. It seems like most of the
+# other missing ISSNs are just because ISSN == eISSN or there is only one anyway
+RIS_MISSING_ISSN = {
+    # https://journals.sagepub.com/home/IYA
+    "Infancia y Aprendizaje": "0210-3702",
+}
+
+RIS_MISSING_EISSN = {
+    # https://journals.sagepub.com/home/IYA
+    "Infancia y Aprendizaje": "1578-4126",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class RelativeInfluenceScore:
@@ -69,11 +82,20 @@ class RelativeInfluenceScore:
         eissn: str,
         score: str,
     ) -> RelativeInfluenceScore:
+        from uvt_scholarly.uefiscdi.common import EMPTY_ISSN
+
+        journal = journal.strip()
         issn = issn.strip().upper()
         eissn = eissn.strip().upper()
 
+        if issn in EMPTY_ISSN:
+            issn = RIS_MISSING_ISSN.get(journal, issn)
+
+        if eissn in EMPTY_ISSN:
+            eissn = RIS_MISSING_EISSN.get(journal, eissn)
+
         return RelativeInfluenceScore(
-            journal=journal.strip(),
+            journal=journal,
             issn=normalize_issn(RIS_INCORRECT_ISSN.get(issn, issn)),
             eissn=normalize_issn(RIS_INCORRECT_ISSN.get(eissn, eissn)),
             score=to_float(score),
@@ -154,9 +176,10 @@ class RelativeInfluenceScoreParser:
                 break
 
             if not score.is_valid:
+                breakpoint()
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
-            key = (str(score.issn), str(score.eissn))
+            key = (score.issns, score.eissns)
             if key in result:
                 issn = score.issn or score.eissn
                 log.warning(
