@@ -212,13 +212,15 @@ def generate(
             overwrite=force,
         )
     elif outfile.suffix == ".csv":
-        from uvt_scholarly.export.math import (
-            export_citations_csv,
-            export_publications_csv,
-        )
+        from uvt_scholarly.export.math import ID_TO_POSITION, export_publications_csv
 
-        export_publications_csv(outfile, pubs)
-        export_citations_csv(outfile.with_stem(f"{outfile.stem}.cites"), pubs)
+        export_publications_csv(
+            outfile,
+            candidate,
+            pubs,
+            position=ID_TO_POSITION[position],
+            overwrite=force,
+        )
     else:
         raise ValueError(f"unrecognized file type: {outfile.suffix}")
 

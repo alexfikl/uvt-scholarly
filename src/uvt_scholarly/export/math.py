@@ -52,14 +52,36 @@ def filter_latex_format_pub(pub: Publication) -> str:
     if pages := str(pub.pages):
         parts.append(f"{pages}")
 
-    # issn
-    # issn = pub.issn or pub.eissn
-    # parts.append(f"ISSN: {issn}")
-
+    # doi
     if pub.doi:
         parts.append(
             rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {pub.doi}}}"
         )
+
+    return ", ".join(parts)
+
+
+def filter_csv_format_pub(pub: Publication) -> str:
+    parts: list[str] = []
+
+    # authors
+    authors = ", ".join(f"{au.first_name[0]}. {au.last_name}" for au in pub.authors)
+    parts.append(authors)
+
+    # title
+    parts.append(pub.title)
+
+    # journal
+    parts.append(f"{pub.journal}")
+
+    # volume + year
+    parts.append(f"vol. {pub.volume} ({pub.year})")
+    if pages := str(pub.pages):
+        parts.append(f"{pages}".replace("--", "-"))
+
+    # doi
+    if pub.doi:
+        parts.append(f"DOI: {pub.doi}")
 
     return ", ".join(parts)
 
@@ -137,7 +159,7 @@ ID_TO_POSITION = {
 # }}}
 
 
-# {{{
+# {{{ criteria
 
 
 @dataclass(frozen=True)
@@ -167,158 +189,8 @@ MIN_INDICATOR_FOR_POSITION = {
 
 # }}}
 
-# {{{ export_publications_csv
 
-PUBLICATION_FIELD_NAMES = (
-    "Nr. Crt.",
-    "Autori",
-    "Titlu",
-    "Revista",
-    "Detalii",
-    "ISSN",
-    "Publicat în ultimii 7 ani",
-    "Scor revistă (S_i)",
-    "Nr. autori (N_i)",
-    "S_i / N_i",
-)
-
-
-def export_publications_csv(
-    filename: pathlib.Path,
-    pubs: Sequence[Publication],
-    *,
-    encoding: str = "utf-8",
-    dialect: str = "excel",
-    overwrite: bool = False,
-) -> None:
-    if not overwrite and filename.exists():
-        raise FileExistsError(filename)
-
-    import csv
-    from datetime import datetime
-
-    seven_years_ago = datetime.now().year - 7
-
-    with open(filename, "w", encoding=encoding) as f:
-        writer = csv.DictWriter(
-            f,
-            PUBLICATION_FIELD_NAMES,
-            dialect=dialect,
-            quoting=csv.QUOTE_ALL,
-        )
-        writer.writeheader()
-
-        s_score = 0.0
-        s_recent_score = 0.0
-
-        for i, pub in enumerate(pubs):
-            if Score.RIS not in pub.journal.scores:
-                log.warning("Journal does not have a RIS score: '%s'.", pub.journal)
-                continue
-
-            author = "; ".join(
-                f"{au.last_name} {au.first_name[0]}." for au in pub.authors
-            )
-            ris = pub.journal.scores[Score.RIS]
-            ris_per_author = ris / len(pub.authors)
-
-            s_score += ris_per_author
-            if pub.year >= seven_years_ago:
-                s_recent_score += ris_per_author
-
-            writer.writerow(
-                dict(
-                    zip(
-                        PUBLICATION_FIELD_NAMES,
-                        [
-                            str(i),
-                            author,
-                            pub.title,
-                            pub.journal.name,
-                            f"{pub.volume}({pub.issue}) ({pub.year})",
-                            str(pub.issn or pub.eissn),
-                            "Da" if pub.year >= seven_years_ago else "Nu",
-                            f"{ris:.3f}",
-                            str(len(pub.authors)),
-                            f"{ris_per_author:.3f}",
-                        ],
-                        strict=True,
-                    )
-                )
-            )
-
-        writer.writerow({"Autori": "Total S_i", "S_i / N_i": f"{s_score:.3f}"})
-        writer.writerow({
-            "Autori": "Total S_recent",
-            "S_i / N_i": f"{s_recent_score:.3f}",
-        })
-
-
-# }}}
-
-
-# {{{ export_citations_csv
-
-CITATION_FIELD_NAMES = ("Nr. Crt.", "Articol citat", "Articol", "ISSN", "S_i")
-
-
-def _display_publication_short(pub: Publication) -> str:
-    author = "; ".join(f"{au.last_name} {au.first_name[0]}." for au in pub.authors)
-    issn = pub.issn or pub.eissn
-
-    return (
-        f'{author}, "{pub.title}", {pub.journal.name}, {pub.volume}({pub.year}), '
-        f"ISSN: {issn}, DOI: {pub.doi}"
-    )
-
-
-def export_citations_csv(
-    filename: pathlib.Path,
-    pubs: Sequence[Publication],
-    *,
-    encoding: str = "utf-8",
-    dialect: str = "excel",
-    overwrite: bool = False,
-) -> None:
-    if not overwrite and filename.exists():
-        raise FileExistsError(filename)
-
-    import csv
-
-    with open(filename, "w", encoding=encoding) as f:
-        writer = csv.DictWriter(
-            f,
-            CITATION_FIELD_NAMES,
-            dialect=dialect,
-            quoting=csv.QUOTE_ALL,
-        )
-        writer.writeheader()
-
-        i = 0
-        for pub in pubs:
-            for j, cited_by in enumerate(pub.cited_by):
-                if Score.RIS not in cited_by.journal.scores:
-                    log.warning("Journal does not have a RIS score: '%s'.", pub.journal)
-                    continue
-
-                row = {
-                    "Nr. Crt.": str(i),
-                    "Articol citat": "",
-                    "Articol": _display_publication_short(cited_by),
-                    "ISSN": str(cited_by.issn or cited_by.eissn),
-                    "S_i": f"{cited_by.journal.scores[Score.RIS]:.3f}",
-                }
-
-                if j == 0:
-                    row["Articol citat"] = _display_publication_short(pub)
-
-                writer.writerow(row)
-                i += 1
-
-
-# }}}
-
-# {{{ export_publications_latex
+# {{{ candidate
 
 
 @dataclass(frozen=True)
@@ -330,16 +202,7 @@ class Candidate:
     total_citations: int
 
 
-def export_publications_latex(
-    outfile: pathlib.Path,
-    candidate_name: str,
-    pubs: Sequence[Publication],
-    *,
-    position: Position = Position.Professor,
-    overwrite: bool = False,
-) -> None:
-    # {{{ preprocess publications
-
+def make_candidate(name: str, pubs: Sequence[Publication]) -> Candidate:
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
@@ -365,7 +228,7 @@ def export_publications_latex(
             if ris is None or ris < MIN_RIS_SCORE:
                 continue
 
-            if any(au.last_name in candidate_name for au in cite.authors):
+            if any(au.last_name in name for au in cite.authors):
                 continue
 
             total_citations += 1
@@ -383,15 +246,148 @@ def export_publications_latex(
         if pub.year >= seven_years_ago:
             recent_total_ris += ris
 
-    candidate = Candidate(
-        qualname=candidate_name,
+    return Candidate(
+        qualname=name,
         publications=publications,
         ris=total_ris,
         recent_ris=recent_total_ris,
         total_citations=total_citations,
     )
 
-    # }}}
+
+# }}}
+
+
+# {{{ export_publications_csv
+
+PUBLICATION_FIELD_NAMES = (
+    "Nr. Crt.",
+    "Articol - referință bibliografică",
+    "Publicat în ultimii 7 ani",
+    "SRI revistă",
+    "Nr. autori",
+    "Scor",
+)
+
+CITATION_FIELD_NAMES = (
+    "Nr. Crt.",
+    "Articol citat",
+    "Revista și articolul în care a fost citat",
+    "SRI revistă",
+)
+
+
+def export_publications_csv(
+    filename: pathlib.Path,
+    candidate_name: str,
+    pubs: Sequence[Publication],
+    *,
+    position: Position = Position.Professor,
+    encoding: str = "utf-8",
+    dialect: str = "excel",
+    overwrite: bool = False,
+) -> None:
+    if not overwrite and filename.exists():
+        raise FileExistsError(filename)
+
+    import csv
+    from datetime import datetime
+
+    seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
+    candidate = make_candidate(candidate_name, pubs)
+
+    with open(filename, "w", encoding=encoding) as f:
+        writer = csv.DictWriter(
+            f,
+            PUBLICATION_FIELD_NAMES,
+            dialect=dialect,
+            quoting=csv.QUOTE_ALL,
+        )
+        writer.writeheader()
+
+        for i, pub in enumerate(candidate.publications):
+            ris = pub.journal.scores[Score.RIS]
+            if position in {Position.AssistantProfessor, Position.JuniorResearcher}:
+                ris_per_author = ris
+            else:
+                ris_per_author = ris / len(pub.authors)
+
+            writer.writerow(
+                dict(
+                    zip(
+                        PUBLICATION_FIELD_NAMES,
+                        [
+                            str(i + 1),
+                            filter_csv_format_pub(pub),
+                            "X" if pub.year >= seven_years_ago else "",
+                            f"{ris:.3f}",
+                            str(len(pub.authors)),
+                            f"{ris_per_author:.3f}",
+                        ],
+                        strict=True,
+                    )
+                )
+            )
+
+        writer.writerow({
+            PUBLICATION_FIELD_NAMES[1]: "Total",
+            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ris}",
+            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ris}",
+        })
+
+    filename = filename.with_stem(f"{filename.stem}.cites")
+    with open(filename, "w", encoding=encoding) as f:
+        writer = csv.DictWriter(
+            f,
+            CITATION_FIELD_NAMES,
+            dialect=dialect,
+            quoting=csv.QUOTE_ALL,
+        )
+        writer.writeheader()
+
+        i = 0
+        for pub in candidate.publications:
+            for cited_by in pub.cited_by:
+                ris = pub.journal.scores[Score.RIS]
+
+                i += 1
+                writer.writerow(
+                    dict(
+                        zip(
+                            CITATION_FIELD_NAMES,
+                            [
+                                str(i),
+                                filter_csv_format_pub(pub),
+                                filter_csv_format_pub(cited_by),
+                                f"{ris:.3f}",
+                            ],
+                            strict=True,
+                        )
+                    )
+                )
+
+        writer.writerow({
+            CITATION_FIELD_NAMES[1]: "Total",
+            CITATION_FIELD_NAMES[3]: f"C = {candidate.total_citations}",
+        })
+
+
+# }}}
+
+
+# {{{ export_publications_latex
+
+
+def export_publications_latex(
+    outfile: pathlib.Path,
+    candidate_name: str,
+    pubs: Sequence[Publication],
+    *,
+    position: Position = Position.Professor,
+    overwrite: bool = False,
+) -> None:
+    if not overwrite and outfile.exists():
+        raise FileExistsError(outfile)
 
     # {{{ set up jinja environment
 
@@ -411,9 +407,9 @@ def export_publications_latex(
     env.filters["get_score"] = filter_get_score
 
     if position in {Position.AssistantProfessor, Position.JuniorResearcher}:
-        env.filters["get_average_score"] = filter_get_average_score
-    else:
         env.filters["get_average_score"] = filter_get_score
+    else:
+        env.filters["get_average_score"] = filter_get_average_score
 
     # }}}
 
@@ -428,6 +424,8 @@ def export_publications_latex(
         min_recent_ris=min_recent_ris,
         min_citations=min_citations,
     )
+
+    candidate = make_candidate(candidate_name, pubs)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
     with template_file.open(encoding="utf-8") as f:
