@@ -398,9 +398,9 @@ def export_publications_latex(
     import jinja2
 
     env = jinja2.Environment(  # noqa: S701
-        block_start_string=r"\JinjaBlock{",
+        block_start_string=r"\TplBlock{",
         block_end_string="}",
-        variable_start_string=r"\JinjaVar{",
+        variable_start_string=r"\TplVar{",
         variable_end_string="}",
         comment_start_string="((=",
         comment_end_string="=))",

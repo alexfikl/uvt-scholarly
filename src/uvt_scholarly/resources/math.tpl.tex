@@ -64,18 +64,18 @@
 
 % {{{ BEGIN commands
 
-\NewDocumentCommand \JinjaBlock {+m} {}
-\NewDocumentCommand \JinjaVar {+m} {}
+\NewDocumentCommand \TplBlock {+m} {}
+\NewDocumentCommand \TplVar {+m} {}
 
 % }}}
 
 \begin{document}
 
 \begin{center}
-{\Huge \textbf{Fișă de verificare: \JinjaVar{candidate.qualname}}}
+{\Huge \textbf{Fișă de verificare: \TplVar{candidate.qualname}}}
 \bigskip
 
-{\Large Standarde minimale pentru conferirea titlului de \JinjaVar{criteria.position_name}}
+{\Large Standarde minimale pentru conferirea titlului de \TplVar{criteria.position_name}}
 
 {\Large Departament: Matematică}
 \end{center}
@@ -93,17 +93,17 @@ Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 \begin{tblr}{width=\textwidth, colspec={|l|X|X|}, hlines, vlines}
 \SetRow{bg=TableYellow}
 \textbf{Indicator}
-& \textbf{Standard pentru \JinjaVar{criteria.position_name}}
+& \textbf{Standard pentru \TplVar{criteria.position_name}}
 & \textbf{Valoarea realizată a indicatorului} \\
 S &
-$\ge \JinjaVar{criteria.min_ris}$ &
-\JinjaVar{'{:.3f}'.format(candidate.ris)} \\
+$\ge \TplVar{criteria.min_ris}$ &
+\TplVar{'{:.3f}'.format(candidate.ris)} \\
 S\textsubscript{recent} &
-$\ge \JinjaVar{criteria.min_recent_ris}$ &
-\JinjaVar{'{:.3f}'.format(candidate.recent_ris)} \\
+$\ge \TplVar{criteria.min_recent_ris}$ &
+\TplVar{'{:.3f}'.format(candidate.recent_ris)} \\
 C &
-$\ge \JinjaVar{criteria.min_citations}$ &
-\JinjaVar{candidate.total_citations} \\
+$\ge \TplVar{criteria.min_citations}$ &
+\TplVar{candidate.total_citations} \\
 \end{tblr}
 }
 
@@ -121,7 +121,7 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 \vfill
 
 {\large
-\noindent \textbf{Timișoara, \today \hfill \JinjaVar{candidate.qualname}}
+\noindent \textbf{Timișoara, \today \hfill \TplVar{candidate.qualname}}
 }
 
 \vspace{1.5cm}
@@ -133,7 +133,7 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 
 \textbf{Facultatea de Matematică}
 
-\textbf{\JinjaVar{candidate.qualname}}
+\textbf{\TplVar{candidate.qualname}}
 }
 
 \bigskip
@@ -161,18 +161,18 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 \textbf{SRI revistă} &
 \textbf{Nr. autori} &
 \textbf{Scor} \\
-\JinjaBlock{for pub in candidate.publications}
-\JinjaVar{loop.index} &
-\JinjaVar{pub | format_pub} &
-\JinjaVar{pub | is_recent} &
-\JinjaVar{'{:.3f}'.format(pub | get_score('RIS'))} &
-\JinjaVar{pub.authors | length} &
-\JinjaVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\
-\JinjaBlock{endfor}
+\TplBlock{for pub in candidate.publications}
+\TplVar{loop.index} &
+\TplVar{pub | format_pub} &
+\TplVar{pub | is_recent} &
+\TplVar{'{:.3f}'.format(pub | get_score('RIS'))} &
+\TplVar{pub.authors | length} &
+\TplVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\
+\TplBlock{endfor}
 \SetRow{bg=TableGray} &
 \textbf{Total} &
-\SetCell[c=2]{l} \textbf{S = \JinjaVar{candidate.ris}} & &
-\SetCell[c=2]{l} \textbf{S\textsubscript{recent} = \JinjaVar{candidate.recent_ris}} \\
+\SetCell[c=2]{l} \textbf{S = \TplVar{candidate.ris}} & &
+\SetCell[c=2]{l} \textbf{S\textsubscript{recent} = \TplVar{candidate.recent_ris}} \\
 \end{longtblr}
 }
 
@@ -203,19 +203,19 @@ Scor: SRI revistă / Nr. Autori. Pentru poziția de Lector (sau Cercetător
 \textbf{Articolul citat} &
 \textbf{Revista și articolul în care a fost citat} &
 \textbf{SRI Revistă} \\
-\JinjaBlock{set counter = namespace(value=0)}
-\JinjaBlock{for pub in candidate.publications}
-    \JinjaBlock{-for cite in pub.cited_by}
-        \JinjaBlock{set counter.value = counter.value + 1}
-\JinjaVar{counter.value} &
-\JinjaBlock{-if loop.index == 1} \JinjaVar{pub | format_pub} \JinjaBlock{endif-} &
-\JinjaVar{cite | format_pub} &
-\JinjaVar{'{:.3f}'.format(cite | get_score('RIS'))} \\
-    \JinjaBlock{-endfor}
-\JinjaBlock{-endfor}
+\TplBlock{set counter = namespace(value=0)}
+\TplBlock{for pub in candidate.publications}
+    \TplBlock{-for cite in pub.cited_by}
+        \TplBlock{set counter.value = counter.value + 1}
+\TplVar{counter.value} &
+\TplBlock{-if loop.index == 1} \TplVar{pub | format_pub} \TplBlock{endif-} &
+\TplVar{cite | format_pub} &
+\TplVar{'{:.3f}'.format(cite | get_score('RIS'))} \\
+    \TplBlock{-endfor}
+\TplBlock{-endfor}
 \SetRow{bg=TableGray} &
 \textbf{Total} &
-\SetCell[c=2]{r} \textbf{C = \JinjaVar{candidate.total_citations}}
+\SetCell[c=2]{r} \textbf{C = \TplVar{candidate.total_citations}}
 \end{longtblr}
 }
 \end{document}
