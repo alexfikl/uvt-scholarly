@@ -45,13 +45,11 @@ urls.Repository = "https://github.com/alexfikl/uvt-scholarly"
 scripts."uvtscholarly" = "uvt_scholarly.__main__:main"
 
 [dependency-groups]
-dev = [ "pyproject-fmt", "uv" ]
+dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
 test = [
     "pytest",
-    "reuse",
     "ruff",
     "ty",
-    "typos",
 ]
 docs = [ "sphinx>=6", "sphinx-book-theme" ]
 
