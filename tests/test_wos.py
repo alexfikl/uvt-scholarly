@@ -37,6 +37,8 @@ def test_read_from_csv(filename: str) -> None:
 
 @pytest.mark.parametrize("filename", ["savedrecs.bib", "savedrecs_cited_by.bib"])
 def test_read_from_bib(filename: str) -> None:
+    pytest.importorskip("bibtexparser")
+
     from uvt_scholarly.wos import read_from_bib
 
     publications = read_from_bib(DATADIR / filename, include_citations=True)

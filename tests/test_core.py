@@ -32,7 +32,7 @@ def test_parse_core_csv(collection: str) -> None:
     from uvt_scholarly.utils import download_file
 
     year = int(collection[-4:])
-    filename = TMPDIR / f"uvt-scholarly-test-core-{year}.xlsx"
+    filename = TMPDIR / f"uvt-scholarly-test-core-{year}.csv"
     download_file(get_url_for_collection(collection), filename)
 
     conferences = parse_core_csv(filename)

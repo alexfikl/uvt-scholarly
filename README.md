@@ -42,7 +42,7 @@ To generate a file with your information, you can follow these steps.
 
 1. Go to Web of Science and sign in with your institutional login.
 
-2. Go to **Advance Search**, select **Author**, and enter your name.
+2. Go to **Advanced Search**, select **Author**, and enter your name.
 
 3. On top of the search results, there should be an *Export* button. Click it
    and select *BibTeX* (or *Tab delimited file*).

@@ -43,6 +43,8 @@ def test_add_cited_by(ext: str) -> None:
 
 
 def test_add_scores() -> None:
+    pytest.importorskip("openpyxl")
+
     from uvt_scholarly.uefiscdi.ris import store_relative_influence_score
 
     year = 2025

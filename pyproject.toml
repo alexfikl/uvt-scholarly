@@ -52,6 +52,7 @@ test = [
     "ty",
 ]
 docs = [ "sphinx>=6", "sphinx-book-theme" ]
+bibtex = [ "bibtexparser" ]
 
 [tool.hatch]
 build.targets.sdist.exclude = [

@@ -18,6 +18,8 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 
 
 def test_parse_research_classification() -> None:
+    pytest.importorskip("openpyxl")
+
     from uvt_scholarly.anzsrc import ANZSRC_FOR_URL, parse_research_classification
     from uvt_scholarly.utils import download_file
 

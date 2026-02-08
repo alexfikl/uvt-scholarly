@@ -32,6 +32,8 @@ EXPECTED_RIS_ENTRIES_PER_YEAR = {
 
 @pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_influence_score(year: int) -> None:
+    pytest.importorskip("openpyxl")
+
     from uvt_scholarly.publication import Score
     from uvt_scholarly.uefiscdi.ris import parse_relative_influence_score
 
@@ -49,6 +51,8 @@ def test_parse_relative_influence_score(year: int) -> None:
 
 
 def test_ris_database() -> None:
+    pytest.importorskip("openpyxl")
+
     from uvt_scholarly.publication import Score
 
     year = 2025
@@ -121,6 +125,8 @@ EXPECTED_RIF_ENTRIES_PER_YEAR = {
 
 @pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_impact_factor(year: int) -> None:
+    pytest.importorskip("openpyxl")
+
     from uvt_scholarly.publication import Score
     from uvt_scholarly.uefiscdi.rif import parse_relative_impact_factor
 
