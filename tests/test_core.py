@@ -6,6 +6,7 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
+import httpx
 import pytest
 
 from uvt_scholarly.logging import make_logger
@@ -24,6 +25,7 @@ EXPECTED_CORE_CONFERENCES_PER_COLLECTION = {
 }
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 @pytest.mark.parametrize(
     "collection", ["ICORE2026", "CORE2023", "CORE2021", "CORE2020"]
 )

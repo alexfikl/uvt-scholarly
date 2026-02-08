@@ -6,6 +6,7 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
+import httpx
 import pytest
 
 from uvt_scholarly.logging import make_logger
@@ -17,6 +18,7 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 # {{{ test_parse_research_classification
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 def test_parse_research_classification() -> None:
     pytest.importorskip("openpyxl")
 

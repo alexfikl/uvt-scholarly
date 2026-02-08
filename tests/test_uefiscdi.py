@@ -6,6 +6,7 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
+import httpx
 import pytest
 
 from uvt_scholarly.logging import make_logger
@@ -30,6 +31,7 @@ EXPECTED_RIS_ENTRIES_PER_YEAR = {
 }
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 @pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
@@ -50,6 +52,7 @@ def test_parse_relative_influence_score(year: int) -> None:
     assert nscores == EXPECTED_RIS_ENTRIES_PER_YEAR[year]
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 def test_ris_database() -> None:
     pytest.importorskip("openpyxl")
 
@@ -124,6 +127,7 @@ EXPECTED_RIF_ENTRIES_PER_YEAR = {
 }
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 @pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
 def test_parse_relative_impact_factor(year: int) -> None:
     pytest.importorskip("openpyxl")

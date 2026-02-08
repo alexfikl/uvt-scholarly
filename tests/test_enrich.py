@@ -6,6 +6,7 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
+import httpx
 import pytest
 
 from uvt_scholarly.logging import make_logger
@@ -48,6 +49,7 @@ def test_add_cited_by(ext: str) -> None:
 # {{{ test_add_scores
 
 
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
 def test_add_scores() -> None:
     pytest.importorskip("openpyxl")
 
