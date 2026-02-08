@@ -106,14 +106,14 @@ def download(
 # {{{ generate
 
 
-@main.group("generate")
+@main.group("math")
 @click.help_option("-h", "--help")
-def generate() -> None:
-    """Generate documents based on citation data."""
+def math() -> None:
+    """Generate documents based on citation data for the Mathematics Department."""
     pass
 
 
-@generate.command("math")
+@math.command("generate")
 @click.option(
     "--source",
     type=click.Choice(sorted(SUPPORTED_SOURCES)),

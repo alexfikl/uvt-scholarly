@@ -62,7 +62,7 @@ You should now have two files with all your publications and all the citing
 articles. We can take over from there! To generate the verification sheet for the
 Mathematics department, just run
 ```bash
-uvtscholarly generate math \
+uvtscholarly math generate \
     --candidate "prof. dr. John Smith" \
     --position cs1 \
     --source wos \
