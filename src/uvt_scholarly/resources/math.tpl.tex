@@ -10,7 +10,7 @@
 \selectlanguage{romanian}
 
 \usepackage{geometry}
-\geometry{top=2cm, left=1cm, right=1cm, bottom=2cm, showframe}
+\geometry{top=2cm, left=1cm, right=1cm, bottom=2cm}
 
 \usepackage[table]{xcolor}
 
@@ -111,8 +111,9 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 \begin{itemize}[leftmargin=*]
     \item S: suma scorurilor relative de influență (maximul peste ultimii 5 ani) a
     tuturor articolelor publicate (cu un scor de peste 0.5).
-    \item S: suma scorurilor relative de influență (maximul peste ultimii 5 ani) a
-    tuturor articolelor publicate \textbf{în ultimii 7 ani} (cu un scor de peste 0.5).
+    \item S\textsubscript{recent}: suma scorurilor relative de influență (maximul
+    peste ultimii 5 ani) a tuturor articolelor publicate \textbf{în ultimii 7 ani}
+    (cu un scor de peste 0.5).
     \item C: numărul de citări ale articolelor luate în considerare pentru indicatorul S.
     Nu se iau în considerare articole care au ca autor candidatul.
 \end{itemize}
@@ -168,11 +169,16 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 \JinjaVar{pub.authors | length} &
 \JinjaVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\
 \JinjaBlock{endfor}
-&
+\SetRow{bg=TableGray} &
 \textbf{Total} &
-\SetCell[c=2]{l} \textbf{S} = \JinjaVar{candidate.ris} & &
-\SetCell[c=2]{l} \textbf{S\textsubscript{recent}} = \JinjaVar{candidate.recent_ris} \\
+\SetCell[c=2]{l} \textbf{S = \JinjaVar{candidate.ris}} & &
+\SetCell[c=2]{l} \textbf{S\textsubscript{recent} = \JinjaVar{candidate.recent_ris}} \\
 \end{longtblr}
+}
+
+{\footnotesize
+Scor: SRI revistă / Nr. Autori. Pentru poziția de Lector (sau Cercetător
+Științific III) nu se împarte la numărul de autori.
 }
 
 \clearpage
@@ -207,9 +213,9 @@ $\ge \JinjaVar{criteria.min_citations}$ &
 \JinjaVar{'{:.3f}'.format(cite | get_score('RIS'))} \\
     \JinjaBlock{-endfor}
 \JinjaBlock{-endfor}
-&
+\SetRow{bg=TableGray} &
 \textbf{Total} &
-\SetCell[c=2]{r} C = \JinjaVar{candidate.total_citations}
+\SetCell[c=2]{r} \textbf{C = \JinjaVar{candidate.total_citations}}
 \end{longtblr}
 }
 \end{document}
