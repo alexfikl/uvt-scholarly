@@ -65,6 +65,7 @@ def download(
     ctx: click.Context,
     force: bool,  # noqa: FBT001
 ) -> None:
+    """Download required scores and rankings to generate documents."""
     from uvt_scholarly.uefiscdi import UEFISCDI_CACHE_DIR, UEFISCDI_DB_FILE
     from uvt_scholarly.utils import ScholarlyError
 
@@ -103,17 +104,18 @@ def download(
 
 # }}}
 
-# {{{ generate
+# {{{ math
 
 
 @main.group("math")
 @click.help_option("-h", "--help")
-def math() -> None:
+@click.pass_context
+def math(ctx: click.Context) -> None:
     """Generate documents based on citation data for the Mathematics Department."""
-    pass
 
 
 @math.command("generate")
+@click.help_option("-h", "--help")
 @click.option(
     "--source",
     type=click.Choice(sorted(SUPPORTED_SOURCES)),
@@ -134,7 +136,7 @@ def math() -> None:
 @click.option(
     "--outfile",
     type=click.Path(dir_okay=False, path_type=pathlib.Path),
-    required=True,
+    default=None,
     help="The file name for the generated documents",
 )
 @click.option(
@@ -157,12 +159,12 @@ def math() -> None:
     help="Overwrite generated file if it exists",
 )
 @click.pass_context
-def generate(
+def math_generate(
     ctx: click.Context,
     source: str,
     candidate: str,
     position: str,
-    outfile: pathlib.Path,
+    outfile: pathlib.Path | None,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
     force: bool,  # noqa: FBT001
@@ -176,6 +178,10 @@ def generate(
         log.error("UEFISCDI database file does not exist: '%s'.", UEFISCDI_DB_FILE)
         log.info("Run 'uvtscholarly download' to generate the database.")
         ctx.exit(1)
+
+    if outfile is None:
+        basename = candidate.lower().replace(" ", "-").replace(".", "")
+        outfile = pathlib.Path(f"math-{basename}.tex")
 
     if not force and outfile.exists():
         log.error("File already exists (use --force to overwrite): '%s'.", outfile)
