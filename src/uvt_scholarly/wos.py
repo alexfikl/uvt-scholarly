@@ -335,7 +335,7 @@ def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication
             *_, text = text.split(",")
             text = text.strip(" ]")
 
-        return text.strip()
+        return text.strip(".").strip()
 
     result = {}
     for citation in text.split(sep):

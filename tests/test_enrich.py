@@ -18,7 +18,7 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 # {{{ test_add_cited_by
 
 
-@pytest.mark.parametrize("ext", ["txt"])
+@pytest.mark.parametrize("ext", ["txt", "bib"])
 def test_add_cited_by(ext: str) -> None:
     from uvt_scholarly.wos import read_from_bib, read_from_csv
 
