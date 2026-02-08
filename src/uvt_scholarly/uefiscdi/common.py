@@ -11,7 +11,9 @@ from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 log = make_logger(__name__)
 
-UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi"
+UEFISCDI_CACHE_DIRNAME = "uefiscdi-cache"
+
+UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / UEFISCDI_CACHE_DIRNAME
 
 UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
 

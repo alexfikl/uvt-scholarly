@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN
 from uvt_scholarly.uefiscdi.common import (
-    UEFISCDI_CACHE_DIR,
+    UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
     is_valid_issn,
@@ -407,6 +407,10 @@ def store_relative_influence_score(
     if unknown := years - set(UEFISCDI_DATABASE_URL):
         raise ValueError(f"unsupported years: {unknown}")
 
+    dirname = filename.parent / UEFISCDI_CACHE_DIRNAME
+    if not dirname.exists():
+        dirname.mkdir(parents=True)
+
     from uvt_scholarly.publication import Score
     from uvt_scholarly.utils import download_file
 
@@ -414,7 +418,7 @@ def store_relative_influence_score(
         for i, year in enumerate(years):
             url = UEFISCDI_DATABASE_URL[year][Score.RIS]
 
-            xlsxfile = UEFISCDI_CACHE_DIR / f"uvt-scholarly-ris-{year}.xlsx"
+            xlsxfile = dirname / f"uvt-scholarly-ris-{year}.xlsx"
             download_file(url, xlsxfile, force=force)
 
             log.info("Processing RIS scores for %d: '%s'.", year, xlsxfile)
