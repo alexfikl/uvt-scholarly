@@ -57,7 +57,11 @@ def _add_ris_scores(
                 continue
 
             issn = pub.issn or pub.eissn
-            assert issn is not None
+            if not issn:
+                log.error(
+                    "Publication has no ISSN: '%s'.", pub.doi if pub.doi else pub.title
+                )
+                continue
 
             score = db.max_score_by_issn(issn, past=past)
             if score is not None:

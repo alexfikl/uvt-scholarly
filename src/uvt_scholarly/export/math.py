@@ -54,8 +54,9 @@ def filter_latex_format_pub(pub: Publication) -> str:
 
     # doi
     if pub.doi:
+        doi = unicode_to_latex(str(pub.doi))
         parts.append(
-            rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {pub.doi}}}"
+            rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {doi}}}"
         )
 
     return ", ".join(parts)
@@ -222,6 +223,10 @@ def make_candidate(name: str, pubs: Sequence[Publication]) -> Candidate:
             log.warning("Journal RIS '%.3f' < 0.5: '%s'.", ris, pub.journal)
             continue
 
+        total_ris += ris
+        if pub.year >= seven_years_ago:
+            recent_total_ris += ris
+
         cited_by = []
         for cite in pub.cited_by:
             ris = cite.journal.scores.get(Score.RIS)
@@ -241,10 +246,6 @@ def make_candidate(name: str, pubs: Sequence[Publication]) -> Candidate:
                 cited_by_count=len(cited_by),
             )
         )
-
-        total_ris += ris
-        if pub.year >= seven_years_ago:
-            recent_total_ris += ris
 
     return Candidate(
         qualname=name,
