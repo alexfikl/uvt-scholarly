@@ -228,7 +228,93 @@ def math_generate(
             overwrite=force,
         )
     else:
-        raise ValueError(f"unrecognized file type: {outfile.suffix}")
+        log.error("Unsupported file format '%s'.", outfile)
+        ctx.exit(1)
+
+    log.info("Generated file: '%s'.", outfile)
+
+
+# }}}
+
+
+# {{{ wos
+
+
+@main.group("wos")
+@click.help_option("-h", "--help")
+@click.pass_context
+def wos(ctx: click.Context) -> None:
+    """Utilities for pre-processing Web of Science data."""
+
+
+@wos.command("merge")
+@click.help_option("-h", "--help")
+@click.argument(
+    "paths",
+    nargs=-1,
+    type=click.Path(exists=True, path_type=pathlib.Path),
+)
+@click.option(
+    "--outfile",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="The file name for the generated documents",
+)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite generated file if it exists",
+)
+@click.pass_context
+def wos_merge(
+    ctx: click.Context,
+    paths: tuple[pathlib.Path, ...],
+    outfile: pathlib.Path | None,
+    force: bool,  # noqa: FBT001
+) -> None:
+    """Merge multiple Web of Science exports."""
+
+    if not paths:
+        log.error("Must give files or directories containing files to merge.")
+        ctx.exit(1)
+
+    filenames = []
+    for path in paths:
+        if path.is_dir():
+            filenames.extend(f for f in path.iterdir() if f.is_file())
+        else:
+            filenames.append(path)
+
+    if not filenames:
+        log.error("No files found in given paths: %s", paths)
+        ctx.exit(1)
+
+    ext = filenames[0].suffix
+    if any(f.suffix != ext for f in filenames):
+        log.error("Expected all files to have the same extension '%s'.", ext)
+        for i, f in enumerate(filenames):
+            log.info("    %d. %s", i, f)
+
+        ctx.exit(1)
+
+    if outfile is None:
+        outfile = pathlib.Path(f"{filenames[0].stem}.merge{ext}")
+
+    if not force and outfile.exists():
+        log.error("File already exists (use --force to overwrite): '%s'.", outfile)
+        ctx.exit(1)
+
+    from uvt_scholarly.wos import merge_csv_files
+
+    if ext in {".txt", ".csv"}:
+        merge_csv_files(filenames, outfile, overwrite=force)
+    else:
+        log.error("Unsupported extension '%s'.", ext)
+        ctx.exit(1)
+
+    log.info("Merged file into '%s'.", outfile)
 
 
 # }}}

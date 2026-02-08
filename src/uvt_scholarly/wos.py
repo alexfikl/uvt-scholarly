@@ -22,6 +22,7 @@ from uvt_scholarly.publication import (
 
 if TYPE_CHECKING:
     import pathlib
+    from collections.abc import Sequence
 
 log = make_logger(__name__)
 
@@ -277,6 +278,11 @@ def parse_wos_authors(
         first_name = first_name.strip()
         last_name = last_name.strip()
 
+        # NOTE: small formatting improvement: if all the letters in the first
+        # name are uppercase, we assume it's just a bunch of initials
+        if first_name.upper() == first_name:
+            first_name = " ".join(f"{ch}." for ch in first_name)
+
         result.append(
             Author(
                 first_name=first_name,
@@ -433,7 +439,7 @@ def read_from_csv(
                         orcid=row.get("OI"),
                     ),
                     title=titlecase(row["TI"].strip()),
-                    journal=Journal(titlecase(row["SO"].strip())),
+                    journal=Journal(row["SO"].strip()),
                     year=int(row["PY"].strip()),
                     volume=row["VL"].strip(),
                     issue=row["IS"].strip().upper(),
@@ -524,7 +530,7 @@ def read_from_bib(
             pub = Publication(
                 authors=authors,
                 title=titlecase(clean(entry["title"])),
-                journal=Journal(titlecase(clean(journal))),
+                journal=Journal(clean(journal)),
                 year=int(entry["year"].strip()),
                 volume=entry.get("volume", "").strip(),
                 issue=issue,
@@ -577,6 +583,72 @@ def read_pubs(
         raise ValueError(
             f"unknown file format: '{filename}' (expected .csv, .tsv, .bib)"
         )
+
+
+# }}}
+
+
+# {{{ merge_csv_files
+
+
+def merge_csv_files(
+    filenames: Sequence[pathlib.Path],
+    outfile: pathlib.Path,
+    *,
+    overwrite: bool = False,
+) -> None:
+    if not filenames:
+        return
+
+    if len(filenames) == 1:
+        import shutil
+
+        shutil.copy2(outfile, filenames[0])
+        return
+
+    if not overwrite and outfile.exists():
+        raise FileExistsError(outfile)
+
+    import csv
+
+    # {{{ gather
+
+    rows = []
+    seen = set()
+    fieldnames = None
+
+    for filename in filenames:
+        with open(filename, encoding="utf-8") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+
+            if reader.fieldnames is None:
+                raise ValueError("csv files does not have column names")
+
+            if fieldnames is None:
+                fieldnames = tuple(reader.fieldnames)
+
+            if "UT" not in fieldnames:
+                raise ValueError("merging requires the WoS identifier (UT column)")
+
+            if set(fieldnames) - set(reader.fieldnames):
+                raise ValueError(f"mismatch in column names in file '{filename}'")
+
+            for row in reader:
+                wos = row["UT"]
+                if wos in seen:
+                    continue
+
+                seen.add(wos)
+                rows.append({key: row[key] for key in fieldnames})
+
+    assert fieldnames is not None
+
+    # }}}
+
+    with open(outfile, "w", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames, delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 # }}}
