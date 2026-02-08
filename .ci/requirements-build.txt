@@ -12,5 +12,7 @@ pip==26.0.1
     # via -r .ci/requirements-build.in
 pluggy==1.6.0
     # via hatchling
+setuptools==81.0.0
+    # via -r .ci/requirements-build.in
 trove-classifiers==2026.1.14.14
     # via hatchling
