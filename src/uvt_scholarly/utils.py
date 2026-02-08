@@ -49,7 +49,14 @@ class DownloadError(ScholarlyError):
 # {{{ download_file
 
 
-def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> None:
+def download_file(
+    url: str,
+    filename: pathlib.Path,
+    *,
+    # NOTE: the default timeout in httpx is 5s. We set it higher just in case..
+    timeout: float = 15.0,
+    force: bool = False,
+) -> None:
     if not force and filename.exists():
         return
 
@@ -57,7 +64,10 @@ def download_file(url: str, filename: pathlib.Path, *, force: bool = False) -> N
 
     # TODO: allow passing a httpx.Client
     try:
-        with open(filename, "wb") as f, httpx.stream("GET", url) as response:
+        with (
+            open(filename, "wb") as f,
+            httpx.stream("GET", url, timeout=timeout) as response,
+        ):
             response.raise_for_status()
 
             for chunk in response.iter_bytes():
