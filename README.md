@@ -45,7 +45,7 @@ To generate a file with your information, you can follow these steps.
 2. Go to **Advanced Search**, select **Author**, and enter your name.
 
 3. On top of the search results, there should be an *Export* button. Click it
-   and select *BibTeX* (or *Tab delimited file*).
+   and select *Tab delimited file* (or some other supported format).
 
 4. Select all the records you want to export (maximum 500). For the **Record Content**,
    select **Full Record and Cited References**. Click export and save the file
@@ -66,8 +66,8 @@ uvtscholarly generate math \
     --candidate "prof. dr. John Smith" \
     --position cs1 \
     --source wos \
-    --pub-file path/to/your/publications.bib \
-    --cite-file path/to/citing/citations.bib
+    --pub-file path/to/your/publications.txt \
+    --cite-file path/to/citing/citations.txt
     --outfile john-smith-math.tex
 ```
 
