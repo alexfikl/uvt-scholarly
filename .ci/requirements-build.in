@@ -1,4 +1,5 @@
 editables
 hatchling
 pip
+poetry-core
 setuptools
