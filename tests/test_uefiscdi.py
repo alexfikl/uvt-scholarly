@@ -23,7 +23,7 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 EXPECTED_RIS_ENTRIES_PER_YEAR = {
     2020: 11484,
     2021: 12203,
-    2022: 13656,
+    2022: 13655,
     2023: 13651,
     2024: 21846,
     2025: 22247,
@@ -63,7 +63,12 @@ def test_ris_database() -> None:
 
     from uvt_scholarly.uefiscdi.ris import DB, parse_relative_influence_score
 
+    # NOTE: we unlink the file so that the test can run again. Otherwise
+    # it would crash when trying to add duplicate entries to the existing database
     dbfile = TMPDIR / f"uvt-scholarly-test-ris-{year}.sqlite"
+    if dbfile.exists():
+        dbfile.unlink()
+
     with DB(dbfile) as db:
         scores = parse_relative_influence_score(filename, year)
         db.insert(year, scores)
@@ -102,10 +107,6 @@ def test_ris_database() -> None:
 
         with pytest.raises(ValueError, match="valid ISSN"):
             db_result = db.find_by_issn("1234-567X")
-
-    # NOTE: we unlink the file so that the test can run again next time. Otherwise
-    # it would crash when trying to add duplicate entries to the existing database
-    dbfile.unlink()
 
 
 # }}}

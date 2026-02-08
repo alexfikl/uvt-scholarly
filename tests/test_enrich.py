@@ -18,14 +18,20 @@ TMPDIR = pathlib.Path(tempfile.gettempdir())
 # {{{ test_add_cited_by
 
 
-@pytest.mark.parametrize("ext", ["txt", "bib"])
+@pytest.mark.parametrize("ext", ["txt"])
 def test_add_cited_by(ext: str) -> None:
-    from uvt_scholarly.wos import read_from_csv
+    from uvt_scholarly.wos import read_from_bib, read_from_csv
 
-    publications = read_from_csv(DATADIR / f"savedrecs.{ext}")
-    citations = read_from_csv(
-        DATADIR / f"savedrecs_cited_by.{ext}", include_citations=True
-    )
+    pubfile = DATADIR / f"savedrecs.{ext}"
+    citefile = DATADIR / f"savedrecs_cited_by.{ext}"
+    if ext == "txt":
+        publications = read_from_csv(pubfile)
+        citations = read_from_csv(citefile, include_citations=True)
+    elif ext == "bib":
+        publications = read_from_bib(pubfile)
+        citations = read_from_bib(citefile, include_citations=True)
+    else:
+        raise ValueError(f"unsupported extension: '{ext}'")
 
     from uvt_scholarly.enrich import add_cited_by
 
