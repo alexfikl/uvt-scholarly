@@ -42,7 +42,7 @@ def filter_latex_format_pub(pub: Publication) -> str:
     parts.append(unicode_to_latex(authors))
 
     # title
-    parts.append(unicode_to_latex(pub.title))
+    parts.append(rf"\enquote{{{unicode_to_latex(pub.title)}}}")
 
     # journal
     parts.append(rf"\textit{{{unicode_to_latex(pub.journal)}}}")
@@ -50,7 +50,7 @@ def filter_latex_format_pub(pub: Publication) -> str:
     # volume + year
     parts.append(f"vol. {pub.volume} ({pub.year})")
     if pages := str(pub.pages):
-        parts.append(f"{pages}")
+        parts.append(f"pp. {pages}")
 
     # doi
     if pub.doi:
@@ -76,9 +76,13 @@ def filter_csv_format_pub(pub: Publication) -> str:
     parts.append(f"{pub.journal}")
 
     # volume + year
-    parts.append(f"vol. {pub.volume} ({pub.year})")
+    if pub.volume:
+        parts.append(f"vol. {pub.volume} ({pub.year})")
+    else:
+        parts.append(f"{pub.year}")
+
     if pages := str(pub.pages):
-        parts.append(f"{pages}".replace("--", "-"))
+        parts.append(f"pp. {pages}".replace("--", "-"))
 
     # doi
     if pub.doi:
@@ -332,8 +336,8 @@ def export_publications_csv(
 
         writer.writerow({
             PUBLICATION_FIELD_NAMES[1]: "Total",
-            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ris}",
-            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ris}",
+            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ris:.3f}",
+            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ris:.3f}",
         })
 
     filename = filename.with_stem(f"{filename.stem}.cites")
@@ -348,8 +352,8 @@ def export_publications_csv(
 
         i = 0
         for pub in candidate.publications:
-            for cited_by in pub.cited_by:
-                ris = pub.journal.scores[Score.RIS]
+            for j, cited_by in enumerate(pub.cited_by):
+                ris = cited_by.journal.scores[Score.RIS]
 
                 i += 1
                 writer.writerow(
@@ -358,7 +362,7 @@ def export_publications_csv(
                             CITATION_FIELD_NAMES,
                             [
                                 str(i),
-                                filter_csv_format_pub(pub),
+                                filter_csv_format_pub(pub) if j == 0 else "",
                                 filter_csv_format_pub(cited_by),
                                 f"{ris:.3f}",
                             ],
