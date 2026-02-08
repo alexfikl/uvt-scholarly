@@ -3,3 +3,4 @@ hatchling
 pip
 poetry-core
 setuptools
+setuptools-scm[toml]
