@@ -34,6 +34,31 @@ cached on your system.
 Then, we can go on to generate the needed documents. These all have some additional
 requirements that will be detailed below.
 
+## Preprocessing
+
+In most cases, the data downloaded from Web of Science will not be perfect. We
+can perform some simple preprocessing on it to bring it more in line with the
+following workflows.
+
+First, WoS allows downloading at most 500 entries per export. If you are particularly
+successful, this will not be sufficient, so you will have to download multiple
+files. They can be merged together using
+```
+uvtscholarly wos merge --outfile savedrecs.merged.txt savedrecs1.txt savedrecs2.txt
+```
+
+Second, most documents require some form of score or influence factor distributed
+by UEFISCDI. The journals in those lists all have a valid ISSN (or eISSN) and
+other metadata. To filter out entries from WoS that cannot be found in the
+UEFISCDI database, run
+```
+uvtscholarly wos filter --outfile savedrecs.filtered.txt savedrecs.txt
+```
+
+Applying these pre-processing steps is generally recommended, as it will reduce
+the number of entries in the files and allow for quicker document generation.
+Note that these documents will be filtered out anyway, if they still appear.
+
 ## UVT: Math Department
 
 The (minimal) requirements for a new position in the West University of Timișoara
