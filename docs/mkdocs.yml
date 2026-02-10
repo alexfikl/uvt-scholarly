@@ -1,0 +1,39 @@
+site_name: UVT Scholarly
+site_description: Convert WoS and Scopus data to UEFISCDI and CNATDCU criteria verification sheets
+site_author: Alex Fikl
+
+repo_url: https://github.com/alexfikl/uvt-scholarly
+repo_name: uvt-scholarly
+
+theme:
+  name: terminal
+  language: en
+  palette: light
+  features:
+    - navigation.side.indexes
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - API Reference: api.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - name: github
+      url: https://github.com/yourusername/your-project
