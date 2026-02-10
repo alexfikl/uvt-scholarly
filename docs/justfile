@@ -1,0 +1,13 @@
+PYTHON := 'python -X dev'
+
+_default:
+    @just --list
+
+[doc("Build documentation using mkdocs")]
+docs:
+    {{ PYTHON }} -m mkdocs build --config-file ../mkdocs.yml --clean --strict
+
+[doc("Serve the documentation using mkdocs")]
+serve:
+    {{ PYTHON }} -m mkdocs serve --config-file ../mkdocs.yml --clean --strict
+

@@ -15,7 +15,12 @@ theme:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Usage: usage.md
+  - Usage:
+    - Index: usage.md
+    - Web of Science: usage/wos.md
+    - Scopus: usage/scopus.md
+    - Mathematics: usage/math.md
+    - Computer Science: usage/cs.md
   - API Reference: api.md
 
 markdown_extensions:
@@ -36,4 +41,4 @@ extra_javascript:
 extra:
   social:
     - name: github
-      url: https://github.com/yourusername/your-project
+      url: https://github.com/alexfikl/uvt-scholarly
