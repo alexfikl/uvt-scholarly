@@ -29,14 +29,18 @@ markdown_extensions:
       permalink: true
   - tables
   - fenced_code
-  - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_style: default
+      noclasses: true
   - pymdownx.inlinehilite
   - pymdownx.arithmatex:
       generic: true
 
 extra_javascript:
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - js/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js
 
 extra:
   social:
