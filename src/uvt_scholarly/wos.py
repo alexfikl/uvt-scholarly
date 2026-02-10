@@ -28,7 +28,6 @@ log = make_logger(__name__)
 
 # {{{ Field Tags
 
-# https://support.clarivate.com/ScientificandAcademicResearch/s/article/Web-of-Science-Core-Collection-List-of-field-tags-in-output
 WOS_FIELD_TAGS = {
     "AB": "Abstract",
     "AF": "Author Full Name",
@@ -98,7 +97,9 @@ WOS_FIELD_TAGS = {
     "WC": "Web of Science Categories",
     "Z9": "Total Times Cited Count",
 }
-
+"""A list of fields present in the *Tab delimited files* exported by Web of
+Science (see the [official list of field tags](https://support.clarivate.com/ScientificandAcademicResearch/s/article/Web-of-Science-Core-Collection-List-of-field-tags-in-output)).
+"""
 
 # }}}
 
@@ -107,12 +108,20 @@ WOS_FIELD_TAGS = {
 
 @enum.unique
 class PublicationType(enum.Enum):
+    """Supported types of publications for the Web of Science exports."""
+
     Book = enum.auto()
+    """A standard book type."""
     Conference = enum.auto()
+    """A conference proceeding publication type."""
     Journal = enum.auto()
+    """A standard journal article type."""
     Patent = enum.auto()
+    """A publication of type patent."""
     Preprint = enum.auto()
+    """A preprint of a journal publication."""
     Series = enum.auto()
+    """A series of publications, e.g. book series or proceedings."""
 
 
 PUBLICATION_TYPE = {
