@@ -13,6 +13,8 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_LATEST_YEAR,
+    Score,
+    XLSXParser,
     is_valid_issn,
     normalize_issn,
     to_float,
@@ -56,11 +58,10 @@ RIF_INCORRECT_ISSN = {
 
 
 @dataclass(frozen=True, slots=True)
-class RelativeImpactFactor:
-    journal: str
-    issn: ISSN | None
-    eissn: ISSN | None
-    score: float
+class RelativeImpactFactor(Score):
+    @property
+    def name(self) -> str:
+        return "RIF"
 
     @staticmethod
     def from_strings(
@@ -79,36 +80,8 @@ class RelativeImpactFactor:
             score=to_float(score),
         )
 
-    @property
-    def issns(self) -> str | None:
-        return str(self.issn) if self.issn else None
 
-    @property
-    def eissns(self) -> str | None:
-        return str(self.eissn) if self.eissn else None
-
-    @property
-    def is_valid(self) -> bool:
-        if self.issn and not self.issn.is_valid:
-            return False
-
-        if self.eissn and not self.eissn.is_valid:
-            return False
-
-        if not self.journal:
-            return False
-
-        if self.score < 0.0:  # noqa: SIM103
-            return False
-
-        return True
-
-
-class RelativeImpactFactorPraser:
-    @property
-    def skip_header(self) -> bool:
-        return True
-
+class RelativeImpactFactorPraser(XLSXParser[RelativeImpactFactor]):
     def parse_row(  # noqa: PLR6301
         self,
         row: tuple[ReadOnlyCell, ...],
@@ -127,55 +100,6 @@ class RelativeImpactFactorPraser:
         score = str(row[3].value).strip()
 
         return RelativeImpactFactor.from_strings(journal, issn, eissn, score)
-
-    def parse(self, filename: pathlib.Path) -> tuple[RelativeImpactFactor, ...]:
-        result = []
-
-        import openpyxl
-
-        wb = openpyxl.load_workbook(filename, read_only=True)
-        if wb is None:
-            raise ValueError(f"could not load workbook from file: '{filename}'")
-
-        rows = wb.active.rows
-        if self.skip_header:
-            _ = next(rows)
-
-        from uvt_scholarly.utils import ParsingError
-
-        result = {}
-        for row in rows:
-            score = self.parse_row(row)
-
-            if score is None:
-                break
-
-            if not score.is_valid:
-                raise ParsingError(f"score on row {row[0].row} is not valid")
-
-            key = (str(score.issn), str(score.eissn))
-            if key in result:
-                issn = score.issn or score.eissn
-                log.warning(
-                    "Journal '%s' (RIF %.3f) with ISSN '%s' already exists: "
-                    "'%s' (RIF %.3f).",
-                    score.journal,
-                    score.score,
-                    issn,
-                    result[key].journal,
-                    result[key].score,
-                )
-
-                # NOTE: this is probably not a great idea, but we're trying to
-                # be generous and use the bigger score.
-                if result[key].score < score.score:
-                    result[key] = score
-
-                continue
-
-            result[key] = score
-
-        return tuple(result.values())
 
 
 class RelativeImpactFactor2025Parser(RelativeImpactFactorPraser):

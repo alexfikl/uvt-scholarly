@@ -4,10 +4,18 @@
 from __future__ import annotations
 
 import enum
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN, Score
 from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from openpyxl.cell import ReadOnlyCell
 
 log = make_logger(__name__)
 
@@ -16,7 +24,6 @@ UEFISCDI_CACHE_DIRNAME = "uefiscdi-cache"
 UEFISCDI_CACHE_DIR = UVT_SCHOLARLY_CACHE_DIR / UEFISCDI_CACHE_DIRNAME
 
 UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
-
 
 # {{{ misc
 
@@ -130,5 +137,112 @@ INDEX_DISPLAY_NAME = {
 """A mapping of citation indexes (as they appear in the UEFISCDI databases) to their
 full names.
 """
+
+# }}}
+
+
+# {{{ XLSXParser
+
+
+@dataclass(frozen=True, slots=True)
+class Score(ABC):
+    journal: str
+    issn: ISSN | None
+    eissn: ISSN | None
+    score: float
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @property
+    def issns(self) -> str | None:
+        return str(self.issn) if self.issn else None
+
+    @property
+    def eissns(self) -> str | None:
+        return str(self.eissn) if self.eissn else None
+
+    @property
+    def is_valid(self) -> bool:
+        if self.issn and not self.issn.is_valid:
+            return False
+
+        if self.eissn and not self.eissn.is_valid:
+            return False
+
+        if not self.journal:
+            return False
+
+        if self.score < 0.0:  # noqa: SIM103
+            return False
+
+        return True
+
+
+ScoreT = TypeVar("ScoreT", bound=Score)
+
+
+class XLSXParser(Generic[ScoreT], ABC):
+    @property
+    def skip_header(self) -> bool:
+        return True
+
+    @abstractmethod
+    def parse_row(self, row: tuple[ReadOnlyCell, ...]) -> ScoreT | None:
+        pass
+
+    def parse(self, filename: pathlib.Path) -> tuple[ScoreT, ...]:
+        result = []
+
+        import openpyxl
+
+        wb = openpyxl.load_workbook(filename, read_only=True)
+        if wb is None:
+            raise ValueError(f"could not load workbook from file: '{filename}'")
+
+        rows = wb.active.rows
+        if self.skip_header:
+            _ = next(rows)
+
+        from uvt_scholarly.utils import ParsingError
+
+        result = {}
+        for row in rows:
+            score = self.parse_row(row)
+
+            if score is None:
+                break
+
+            if not score.is_valid:
+                raise ParsingError(f"score on row {row[0].row} is not valid")
+
+            key = (str(score.issn), str(score.eissn))
+            if key in result:
+                issn = score.issn or score.eissn
+                log.warning(
+                    "Journal '%s' (%s %.3f) with ISSN '%s' already exists: "
+                    "'%s' (%s %.3f).",
+                    score.journal,
+                    score.name,
+                    score.score,
+                    issn,
+                    result[key].journal,
+                    score.name,
+                    result[key].score,
+                )
+
+                # NOTE: this is probably not a great idea, but we're trying to
+                # be generous and use the bigger score.
+                if result[key].score < score.score:
+                    result[key] = score
+
+                continue
+
+            result[key] = score
+
+        return tuple(result.values())
+
 
 # }}}
