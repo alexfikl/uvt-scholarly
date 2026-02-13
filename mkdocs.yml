@@ -1,6 +1,7 @@
 site_name: UVT Scholarly
 site_description: Convert WoS and Scopus data to UEFISCDI and CNATDCU criteria verification sheets
 site_author: Alex Fikl
+site_url: !ENV READTHEDOCS_CANONICAL_URL
 
 repo_url: https://github.com/alexfikl/uvt-scholarly
 repo_name: uvt-scholarly
