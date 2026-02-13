@@ -57,7 +57,7 @@ docs = [
     "mkdocs-autorefs",
     "mkdocs-terminal",
     "mkdocstrings-python",
-    "python-pymdown-extensions",
+    "pymdown-extensions",
 ]
 bibtex = [ "bibtexparser" ]
 

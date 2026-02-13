@@ -78,12 +78,18 @@ requirements_test_txt:
         pyproject.toml
 
 [private]
+requirements_docs_txt:
+    uv pip compile --upgrade --universal --python-version '3.11' \
+        --group docs \
+        -o docs/requirements.txt pyproject.toml
+
+[private]
 requirements_txt:
     uv pip compile --upgrade --universal --python-version '3.11' \
         -o requirements.txt pyproject.toml
 
 [doc('Pin dependency versions to requirements.txt')]
-pin: requirements_txt requirements_test_txt requirements_build_txt
+pin: requirements_txt requirements_test_txt requirements_build_txt requirements_docs_txt
 
 # }}}
 # {{{ develop
@@ -137,7 +143,7 @@ test:
 clean:
     rm -rf *.png
     rm -rf build dist
-    rm -rf docs/build.sphinx
+    rm -rf site
 
 [doc("Remove various temporary files and caches")]
 purge: clean
