@@ -12,7 +12,7 @@ click==8.3.1
     # via uvt-scholarly (pyproject.toml)
 colorama==0.4.6 ; sys_platform == 'win32'
     # via click
-cryptography==46.0.4
+cryptography==46.0.5
     # via msoffcrypto-tool
 et-xmlfile==2.0.0
     # via openpyxl
@@ -40,7 +40,7 @@ olefile==0.47
     # via msoffcrypto-tool
 openpyxl==3.1.5
     # via uvt-scholarly (pyproject.toml)
-platformdirs==4.5.1
+platformdirs==4.7.1
     # via uvt-scholarly (pyproject.toml)
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
