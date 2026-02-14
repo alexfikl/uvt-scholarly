@@ -141,7 +141,7 @@ full names.
 # }}}
 
 
-# {{{ XLSXParser
+# {{{ Score
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,6 +150,15 @@ class Score(ABC):
     issn: ISSN | None
     eissn: ISSN | None
     score: float
+
+    def __hash__(self) -> int:
+        return hash((self.issn, self.eissn))
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not type(self):
+            return False
+
+        return self.issn == other.issn and self.eissn == other.eissn
 
     @property
     @abstractmethod
@@ -183,6 +192,10 @@ class Score(ABC):
 
 ScoreT = TypeVar("ScoreT", bound=Score)
 
+# }}}
+
+# {{{ XLSXParser
+
 
 class XLSXParser(Generic[ScoreT], ABC):
     @property
@@ -198,7 +211,11 @@ class XLSXParser(Generic[ScoreT], ABC):
 
         import openpyxl
 
-        wb = openpyxl.load_workbook(filename, read_only=True)
+        # NOTE:
+        # - data_only: required because some files have formulas that we do
+        #   not want to evaluate (or can't; the ones found were invalid)
+        # - read_only: we are not going to be modifying these files.
+        wb = openpyxl.load_workbook(filename, data_only=True, read_only=True)
         if wb is None:
             raise ValueError(f"could not load workbook from file: '{filename}'")
 
@@ -216,10 +233,11 @@ class XLSXParser(Generic[ScoreT], ABC):
                 break
 
             if not score.is_valid:
+                breakpoint()
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
-            key = (str(score.issn), str(score.eissn))
-            if key in result:
+            if score in result:
+                other = result[score]
                 issn = score.issn or score.eissn
                 log.warning(
                     "Journal '%s' (%s %.3f) with ISSN '%s' already exists: "
@@ -228,19 +246,19 @@ class XLSXParser(Generic[ScoreT], ABC):
                     score.name,
                     score.score,
                     issn,
-                    result[key].journal,
+                    other.journal,
                     score.name,
-                    result[key].score,
+                    other.score,
                 )
 
                 # NOTE: this is probably not a great idea, but we're trying to
                 # be generous and use the bigger score.
-                if result[key].score < score.score:
-                    result[key] = score
+                if result[score].score < score.score:
+                    result[score] = score
 
                 continue
 
-            result[key] = score
+            result[score] = score
 
         return tuple(result.values())
 

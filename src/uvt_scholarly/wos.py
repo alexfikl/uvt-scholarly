@@ -325,12 +325,12 @@ def parse_wos_categories(text: str) -> tuple[Category, ...]:
     def from_string(cat: str) -> Category:
         if "," in cat:
             name, field = cat.split(",", maxsplit=1)
-            field = field.strip()
+            field = field.strip().capitalize()
         else:
             name = cat
             field = None
 
-        return Category(name.strip(), field)
+        return Category(name.strip().capitalize(), field)
 
     return tuple(from_string(cat.strip()) for cat in text.split(";"))
 

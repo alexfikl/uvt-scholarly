@@ -49,7 +49,7 @@ def test_parse_relative_influence_score(year: int) -> None:
         scores = parse_relative_influence_score(filename, year)
 
     nscores = len(scores)
-    assert nscores == EXPECTED_RIS_ENTRIES_PER_YEAR[year]
+    assert nscores == EXPECTED_RIS_ENTRIES_PER_YEAR[year], nscores
 
 
 @pytest.mark.xfail(raises=httpx.ReadTimeout)
@@ -145,10 +145,47 @@ def test_parse_relative_impact_factor(year: int) -> None:
         scores = parse_relative_impact_factor(filename, year)
 
     nscores = len(scores)
-    assert nscores == EXPECTED_RIF_ENTRIES_PER_YEAR[year]
+    assert nscores == EXPECTED_RIF_ENTRIES_PER_YEAR[year], nscores
 
 
 # }}}
+
+
+# {{{ test_parse_article_influence_score
+
+EXPECTED_AIS_ENTRIES_PER_YEAR = {
+    2020: 18683,
+    2021: 19862,
+    2022: 22270,
+    2023: 22094,
+    2024: 30820,
+    2025: 31550,
+}
+
+
+@pytest.mark.xfail(raises=httpx.ReadTimeout)
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
+def test_parse_article_influence_score(year: int) -> None:
+    pytest.importorskip("openpyxl")
+
+    from uvt_scholarly.publication import Score
+    from uvt_scholarly.uefiscdi.ais import parse_article_influence_score
+
+    url = UEFISCDI_DATABASE_URL[year][Score.AIS]
+    filename = TMPDIR / f"uvt-scholarly-test-ais-{year}.xlsx"
+
+    with block_timer(f"download-ais-{year}"):
+        download_file(url, filename)
+
+    with block_timer(f"parse-ais-{year}"):
+        scores = parse_article_influence_score(filename, year)
+
+    nscores = len(scores)
+    assert nscores == EXPECTED_AIS_ENTRIES_PER_YEAR[year], nscores
+
+
+# }}}
+
 
 if __name__ == "__main__":
     import sys
