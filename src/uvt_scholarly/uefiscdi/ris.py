@@ -70,7 +70,7 @@ RIS_MISSING_EISSN = {
 }
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, eq=False, slots=True)
 class RelativeInfluenceScore(Score):
     @property
     def name(self) -> str:
@@ -104,15 +104,17 @@ class RelativeInfluenceScore(Score):
 
 
 class RelativeInfluenceScoreParser(XLSXParser[RelativeInfluenceScore]):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 4
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> RelativeInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 4:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 4)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -125,15 +127,17 @@ class RelativeInfluenceScoreParser(XLSXParser[RelativeInfluenceScore]):
 
 
 class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 5
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> RelativeInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 5:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 5)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -146,15 +150,17 @@ class RelativeInfluenceScore2025Parser(RelativeInfluenceScoreParser):
 
 
 class RelativeInfluenceScore2020Parser(RelativeInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 3
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> RelativeInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 3:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 3)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 

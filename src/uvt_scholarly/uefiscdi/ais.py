@@ -58,7 +58,7 @@ AIS_INDEX_NAMES = {
 }
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, eq=False, slots=True)
 class ArticleInfluenceScore(Score):
     index: Index
     category: tuple[Category, ...]
@@ -109,15 +109,17 @@ class ArticleInfluenceScore(Score):
 
 
 class ArticleInfluenceScoreParser(XLSXParser[ArticleInfluenceScore]):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 6
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> ArticleInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 6:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 6)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -134,15 +136,13 @@ class ArticleInfluenceScoreParser(XLSXParser[ArticleInfluenceScore]):
 
 
 class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> ArticleInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 6:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 6)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -159,15 +159,17 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
 
 
 class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 7
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> ArticleInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 7:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 7)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -185,15 +187,17 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
 
 
 class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    @property
+    def ncolumns(self) -> int:
+        return 7
+
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> ArticleInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 7:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 7)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 
@@ -210,15 +214,13 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
 
 
 class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
-    def parse_row(  # noqa: PLR6301
+    def parse_row(
         self,
         row: tuple[ReadOnlyCell, ...],
     ) -> ArticleInfluenceScore | None:
         from openpyxl.cell.read_only import EmptyCell
 
-        if len(row) != 6:
-            raise ValueError(f"unexpected number of columns: {len(row)} (expected 6)")
-
+        assert len(row) == self.ncolumns
         if isinstance(row[-1], EmptyCell):
             return None
 

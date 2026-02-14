@@ -144,7 +144,7 @@ full names.
 # {{{ Score
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, eq=False, slots=True)
 class Score(ABC):
     journal: str
     issn: ISSN | None
@@ -202,6 +202,11 @@ class XLSXParser(Generic[ScoreT], ABC):
     def skip_header(self) -> bool:
         return True
 
+    @property
+    @abstractmethod
+    def ncolumns(self) -> int:
+        pass
+
     @abstractmethod
     def parse_row(self, row: tuple[ReadOnlyCell, ...]) -> ScoreT | None:
         pass
@@ -227,13 +232,18 @@ class XLSXParser(Generic[ScoreT], ABC):
 
         result = {}
         for row in rows:
+            if len(row) != self.ncolumns:
+                raise ParsingError(
+                    f"unexpected number of columns on row {row[0].row}: "
+                    f"{len(row)} (expected {self.ncolumns})"
+                )
+
             score = self.parse_row(row)
 
             if score is None:
                 break
 
             if not score.is_valid:
-                breakpoint()
                 raise ParsingError(f"score on row {row[0].row} is not valid")
 
             if score in result:
@@ -253,7 +263,7 @@ class XLSXParser(Generic[ScoreT], ABC):
 
                 # NOTE: this is probably not a great idea, but we're trying to
                 # be generous and use the bigger score.
-                if result[score].score < score.score:
+                if other.score < score.score:
                     result[score] = score
 
                 continue
