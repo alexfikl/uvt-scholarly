@@ -262,6 +262,14 @@ def _decrypt_file(filename: pathlib.Path, password: str) -> pathlib.Path:
 def parse_article_influence_score(
     filename: pathlib.Path, version: int
 ) -> tuple[ArticleInfluenceScore, ...]:
+    """Read AIS scores from the given *file*.
+
+    Parameters:
+        version: the year the list in *filename* was published.
+
+    Raises:
+        uvt_scholarly.utils.ParsingError: if entries in the file are not valid.
+    """
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -346,6 +354,18 @@ def store_article_influence_score(
     years: set[int] | None = None,
     force: bool = False,
 ) -> None:
+    """Download AIS scores for the given *years* and store them in *filename*.
+
+    Parameters:
+        years: A list of years for which to download the AIS scores. By default,
+            all the years in
+            [uvt_scholarly.uefiscdi.UEFISCDI_DATABASE_URL][] are downloaded.
+        force: If *True*, all documents are re-downloaded (even if cached).
+
+    Raises:
+        uvt_scholarly.utils.ParsingError: if any of the documents fail to parse.
+        uvt_scholarly.utils.DownloadError: if any of the documents do now download.
+    """
     if years is None:
         years = set(UEFISCDI_DATABASE_URL)
 

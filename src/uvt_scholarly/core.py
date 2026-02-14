@@ -14,22 +14,32 @@ if TYPE_CHECKING:
 
 log = make_logger(__name__)
 
-CORE_COLLECTION_NAMES = {
+CORE_COLLECTION_NAMES = frozenset({
     "ICORE2026",
     "CORE2023",
     "CORE2021",
     "CORE2020",
-}
+})
+"""A set of CORE collection names."""
 
 CORE_COLLECTION_URL = "https://portal.core.edu.au/conf-ranks/?search=&by=all&source={source}&sort=atitle&page=1&do=Export"
+"""Download URL for the CORE rankings."""
 
 
-EXTRA_CORE_CLASSIFICATIONS = {
+EXTRA_CORE_CLASSIFICATIONS: dict[str, str] = {
     "CSE": "Computer Systems Engineering",
 }
+"""Additional CORE classifications not available in
+[ANZSRC][uvt_scholarly.anzsrc.ANZSRC_CLASSIFICATIONS].
+"""
 
 
 def get_url_for_collection(collection: str) -> str:
+    """
+    Returns:
+        A URL for the given *collection* that can be used to download the
+            rankings. The download file is usually a CSV file.
+    """
     if collection not in CORE_COLLECTION_NAMES:
         raise ValueError(f"unknown CORE collection: '{collection}'")
 
@@ -43,6 +53,8 @@ def get_url_for_collection(collection: str) -> str:
 
 @enum.unique
 class Rank(enum.Enum):
+    """Known ranks from the CORE collections."""
+
     S = enum.auto()
     """The ``A*`` ranking in the CORE collection."""
     A = enum.auto()
@@ -76,10 +88,10 @@ RANK_TO_NAME = {
     Rank.Published: "Published",
     Rank.Multiconference: "Multiconference",
 }
-"""A mapping from the :class:`Rank` enumeration to an appropriate display string."""
+"""A mapping from the [Rank][] enumeration to an appropriate display string."""
 
 CORE_NAME_TO_RANK = {name: rank for rank, name in RANK_TO_NAME.items()}
-"""A mapping from the CORE rank to the :class:`Rank` enumeration."""
+"""A mapping from the CORE rank name to the [Rank][] enumeration."""
 
 # }}}
 
@@ -93,26 +105,33 @@ class Conference:
     acronym: str
     """The acronym of the conference, as it appears in the CORE collection."""
     source: str
-    """The name of the collection the conference classification is from."""
+    """The name of the collection the conference classification is from
+    (should be one of [CORE_COLLECTION_NAMES][]).
+    """
     rank: Rank
-    """The rank of the journal in the CORE collection."""
+    """The rank of the conference in the CORE collection."""
     primary_fields: tuple[str, ...]
     """The code for the primary Field of Research of this conference. Use
-    :func:`get_primary_field_name` to get a display name for this code.
+    [get_primary_field_name][] to get a display name for these codes.
     """
 
     identifier: int
-    """A unique identifier of the conference in the collection."""
+    """A unique identifier of the conference in the collection [source][].
+    This is usually the a numeric index into the collection list.
+    """
 
 
-def get_primary_field_name(code: str) -> str:
+def get_primary_field_name(code: int | str) -> str:
     """A display name for the primary field code of a conference."""
     from uvt_scholarly.anzsrc import ANZSRC_CLASSIFICATIONS
 
-    if (result := ANZSRC_CLASSIFICATIONS.get(code)) is not None:
+    if isinstance(code, str) and code.isdigit():
+        code = int(code)
+
+    if (result := ANZSRC_CLASSIFICATIONS.get(code)) is not None:  # ty: ignore[invalid-argument-type]
         return result
 
-    if (result := EXTRA_CORE_CLASSIFICATIONS.get(code)) is not None:
+    if (result := EXTRA_CORE_CLASSIFICATIONS.get(code)) is not None:  # ty: ignore[invalid-argument-type]
         return result
 
     raise ValueError(f"unknown field of research for classification: {code!r}")
@@ -144,6 +163,20 @@ def parse_core_csv(
     encoding: str = "utf-8",
     delimiter: str = ",",
 ) -> tuple[Conference, ...]:
+    """Read all the conferences from the collection given in *filename*.
+
+    Parameters:
+        delimiter: The delimiter for the CSV file used by the CORE collections.
+            This should not be modified, as all current collections use a standard
+            command separated file.
+
+    Returns:
+        A sequence of all the conferences in the collection.
+
+    Raises:
+        uvt_scholarly.utils.ParsingError: if some error is encountered during
+            reading the file, e.g. unknown rank for a conference.
+    """
     import csv
 
     with open(filename, encoding=encoding) as f:
@@ -151,6 +184,7 @@ def parse_core_csv(
 
         from uvt_scholarly.utils import ParsingError
 
+        # FIXME: should deduplicate? Maybe based on the acronym
         result = []
         for row in reader:
             acronym = row["Acronym"].strip()

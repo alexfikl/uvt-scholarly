@@ -23,9 +23,10 @@ log = make_logger(__name__)
 # {{{ config
 
 PROJECT_NAME = "uvt-scholarly"
+"""Default name of the project. Users should query `importlib.metadata` instead."""
 
 UVT_SCHOLARLY_CACHE_DIR = pathlib.Path(platformdirs.user_cache_dir(PROJECT_NAME))
-
+"""The path used to cache results and intermediate metadata by the library."""
 
 # }}}
 
@@ -37,7 +38,7 @@ class ScholarlyError(Exception):
 
 
 class ParsingError(ScholarlyError):
-    """Exception raised while parsing a score file."""
+    """Exception raised while parsing (or reading and validating) an input file."""
 
 
 class DownloadError(ScholarlyError):
@@ -88,12 +89,12 @@ def download_file(
 class BlockTimer:
     """A context manager for timing blocks of code.
 
-    .. code:: python
-
+    ```python
         with BlockTimer("my-code-block") as bt:
             # ... do some work ...
 
         print(bt)
+    ```
     """
 
     name: str = "block"
@@ -101,19 +102,19 @@ class BlockTimer:
 
     t_wall_start: float = field(init=False)
     t_wall: float = field(init=False)
-    """Total wall time (set after ``__exit__``), obtained from
-    :func:`time.perf_counter`.
+    """Total wall time (set after `__exit__`), obtained from
+    [time.perf_counter][].
     """
 
     t_proc_start: float = field(init=False)
     t_proc: float = field(init=False)
-    """Total process time (set after ``__exit__``), obtained from
-    :func:`time.process_time`.
+    """Total process time (set after `__exit__`), obtained from
+    [time.process_time][].
     """
 
     @property
     def t_cpu(self) -> float:
-        """Total CPU time, obtained from ``t_proc / t_wall``."""
+        """Total CPU time, obtained from `t_proc / t_wall`."""
         return self.t_proc / self.t_wall
 
     def __enter__(self) -> BlockTimer:

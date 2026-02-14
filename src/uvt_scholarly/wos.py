@@ -133,12 +133,14 @@ PUBLICATION_TYPE = {
     # NOTE: Not mentioned in documentation?
     "C": PublicationType.Conference,
 }
+"""Initial of the publication type (as used in the Web of Science exported files)
+to a [PublicationType][].
+"""
 
 # }}}
 
 # {{{ document type
 
-# https://support.clarivate.com/ScientificandAcademicResearch/s/article/Web-of-Science-Core-Collection-Document-Type-Descriptions
 DOCUMENT_TYPE = {
     "Art Exhibit Review": DocumentType.Review,
     "Article": DocumentType.Article,
@@ -188,6 +190,10 @@ DOCUMENT_TYPE = {
     "Note": DocumentType.Other,
     "TV Review, Radio Review, Video Review": DocumentType.Review,
 }
+"""A list of known Web of Science
+[document types](https://support.clarivate.com/ScientificandAcademicResearch/s/article/Web-of-Science-Core-Collection-Document-Type-Descriptions)
+to our own [uvt_scholarly.publication.DocumentType][].
+"""
 
 # }}}
 
@@ -414,6 +420,23 @@ def read_from_csv(
     delimiter: str = "\t",
     include_citations: bool = False,
 ) -> tuple[Publication, ...]:
+    """Read publications from a Web of Science exported CSV file.
+
+    In the Web of Science export list, this is called a *Tab delimited file*.
+    When exporting, it is recommended to use the **Full Record** option to ensure
+    that all the required fields are available. However, this function only
+    uses the fields required to fill out a [uvt_scholarly.publication.Publication][].
+
+    Parameters:
+        delimiter: A delimiter to be used when reading the file. This should
+            not be changed, as all exported documents use a TAB delimiter.
+        include_citations: If *True*, we also look for the `Cited-References`
+            entry for each publication and attempt to parse all the citations.
+
+    Returns:
+        A list of all the publications in the given *file*. Note that entries
+            that fail to parse for whatever reason (e.g. invalid DOI) are ignored.
+    """
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -502,6 +525,25 @@ def read_from_bib(
     encoding: str = "utf-8",
     include_citations: bool = False,
 ) -> tuple[Publication, ...]:
+    """Read publications from a Web of Science exported BibTeX file.
+
+    In the Web of Science export list, this is called a *BibTeX*.
+    When exporting, it is recommended to use the **Full Record** option to ensure
+    that all the required fields are available. However, this function only
+    uses the fields required to fill out a [uvt_scholarly.publication.Publication][].
+
+    /// note
+    This function requires the `bibtexparser` library to read the BibTeX file.
+    ///
+
+    Parameters:
+        include_citations: If *True*, we also look for the `Cited-References`
+            entry for each publication and attempt to parse all the citations.
+
+    Returns:
+        A list of all the publications in the given *file*. Note that entries
+            that fail to parse for whatever reason (e.g. invalid DOI) are ignored.
+    """
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -581,6 +623,13 @@ def read_pubs(
     encoding: str = "utf-8",
     include_citations: bool = False,
 ) -> tuple[Publication, ...]:
+    """Read a list of publications from a Web of Science exported file.
+
+    This function calls to [read_from_csv][], [read_from_bib][], etc. as
+    appropriate to read all the entries to the file. The format is determined by
+    the extension of the file.
+    """
+
     if filename.suffix.lower() in {".txt", ".csv", ".tsv"}:
         return read_from_csv(
             filename, encoding=encoding, include_citations=include_citations
@@ -607,6 +656,22 @@ def merge_csv_files(
     *,
     overwrite: bool = False,
 ) -> None:
+    """Merge publications from multiple files into a single file.
+
+    This function supports duplicate entries between the files and will remove
+    and such entries. The deduplication is based on the Web of Science ID (UT
+    column).
+
+    Parameters:
+        filenames: a list of files to merge.
+        outfile: the file to which the merged entries are written.
+        overwrite: If *True* and *outfile* exists, it will be overwritten.
+
+    Raises:
+        FileExistsError: if *outfile* exists and *overwrite* is *False*.
+        ValueError: if the filenames cannot be merged for whatever reason, e.g.
+            columns do not match.
+    """
     if not filenames:
         return
 
@@ -683,6 +748,29 @@ def filter_csv_publications(
     score: Score = Score.RIS,
     overwrite: bool = False,
 ) -> None:
+    """Filter out publications from *filename*.
+
+    This function removes publications from *filename* and writes the result to
+    *outfile*. Publications are removed if they do not satisfy the following
+    criteria:
+
+    1. Both the ISSN and eISSN need to be valid (or *None*).
+    2. The DOI should be valid.
+    3. If *dbfile* is given, the journals for each publication are searched
+       in an UEFISCDI [Database][uvt_scholarly.uefiscdi.Database] for
+       the chosen *score*. If it is not in the database, the publication will be
+       removed.
+
+    Parameters:
+        filename: An inputs CSV file to filter publications from.
+        outfile: The output CSV file to write the results to.
+        dbfile: If given, the path to an `sqlite3` database for UEFISCDI
+            journal scores (e.g. see
+            [store_article_influence_score][uvt_scholarly.uefiscdi.ais.store_article_influence_score]).
+
+    Raises:
+        ValueError: if the database for *score* does not exist.
+    """
     if not filename.exists():
         raise FileNotFoundError(filename)
 

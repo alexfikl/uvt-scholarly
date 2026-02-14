@@ -50,6 +50,8 @@ EMPTY_ISSN = {"0", "N/A", "****-****"}
 
 
 def normalize_issn(issn: str) -> ISSN | None:
+    """A helper function to normalize ISSNs from UEFISCDI documents."""
+
     issn = issn.strip().upper()
     if issn in EMPTY_ISSN:
         return None
@@ -58,6 +60,7 @@ def normalize_issn(issn: str) -> ISSN | None:
 
 
 def is_valid_issn(text: str | ISSN) -> bool:
+    """Check if the given text is a valid ISSN."""
     if isinstance(text, str):
         try:
             text = ISSN.from_string(text)
@@ -126,10 +129,20 @@ UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 
 @enum.unique
 class Edition(enum.Enum):
+    """The citation index to which a given score belongs to.
+
+    Many relative scores are generally computed per field of research. These
+    are the citation indices used by the UEFISCDI (by way of Web of Science).
+    """
+
     AHCI = enum.auto()
+    """Arts Humanities Citation Index."""
     ESCI = enum.auto()
+    """Emerging Sources Citation Index."""
     SCIE = enum.auto()
+    """Science Citation Index Expanded."""
     SSCI = enum.auto()
+    """Social Sciences Citation Index."""
 
 
 EDITION_DISPLAY_NAME = {
@@ -138,7 +151,7 @@ EDITION_DISPLAY_NAME = {
     Edition.SCIE: "Science Citation Index Expanded",
     Edition.SSCI: "Social Sciences Citation Index",
 }
-"""A mapping of citation editions (as they appear in the UEFISCDI databases) to their
+"""A mapping of citation indices (as they appear in the UEFISCDI databases) to their
 full names.
 """
 
@@ -150,10 +163,16 @@ full names.
 
 @dataclass(frozen=True, eq=False, slots=True)
 class Score(ABC):
+    """A base class for parsed scores from UEFISCDI documents."""
+
     journal: str
+    """The journal this score is for."""
     issn: ISSN | None
+    """The ISSN of the journal, if any."""
     eissn: ISSN | None
+    """The eISSN of the journal, if any."""
     score: float
+    """The score of the journal. This value can also be zero if no score is given."""
 
     def __hash__(self) -> int:
         return hash((self.issn, self.eissn))
@@ -167,18 +186,26 @@ class Score(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        pass
+        """An identifier name for the score, e.g. RIS."""
 
     @property
     def issns(self) -> str | None:
+        """A string variant of the ISSN."""
         return str(self.issn) if self.issn else None
 
     @property
     def eissns(self) -> str | None:
+        """A string variant of the eISSN."""
         return str(self.eissn) if self.eissn else None
 
     @property
     def is_valid(self) -> bool:
+        """Checks if the score is valid.
+
+        In general, the score is valid if it has a non-empty journal name, valid
+        ISSN and eISSN and the value of the numerical score is positive. Subclasses
+        can check additional requirements.
+        """
         if self.issn and not self.issn.is_valid:
             return False
 
@@ -195,6 +222,7 @@ class Score(ABC):
 
 
 ScoreT = TypeVar("ScoreT", bound=Score)
+"""An invariant [typing.TypeVar][] for [Score][]."""
 
 # }}}
 
@@ -202,20 +230,30 @@ ScoreT = TypeVar("ScoreT", bound=Score)
 
 
 class XLSXParser(Generic[ScoreT], ABC):
+    """A parser / reader for XLSX score files from the UEFISCDI."""
+
     @property
     def skip_header(self) -> bool:
+        """If *True*, the first row in the file is skipped."""
         return True
 
     @property
     @abstractmethod
     def ncolumns(self) -> int:
-        pass
+        """Number of columns in the parsed file."""
 
     @abstractmethod
     def parse_row(self, row: tuple[ReadOnlyCell, ...]) -> ScoreT | None:
-        pass
+        """Parse a row from the file and return the [Score][]."""
 
     def parse(self, filename: pathlib.Path) -> tuple[ScoreT, ...]:
+        """Read an UEFISCDI XLSX file and return the valid scores.
+
+        Raises:
+            uvt_scholarly.utils.ParsingError: if any of the scores are not valid.
+                Note that all the scores from [UEFISCDI_DATABASE_URL][] are
+                known to parse correctly.
+        """
         result = []
 
         import openpyxl
@@ -294,11 +332,24 @@ def astuple(score: Score) -> tuple[str | None, ...]:
 
 
 class Database(Generic[ScoreT]):
+    """A context manager that can be used to add scores to a [sqlite3][] database.
+
+    This class will handle creating the database from a given schema and an
+    index for efficient searching.
+    """
+
     name: ClassVar[str]
+    """The name of the database."""
     schema: ClassVar[str]
+    """A schema for the database. Note that the database name should match [name][]."""
     index: ClassVar[str]
+    """An statement used to create an index for the database. Note that the
+    database and index names should match [name][].
+    """
 
     filename: pathlib.Path
+    """The file containing the database."""
+
     conn: sqlite3.Connection | None
 
     def __init__(self, filename: pathlib.Path) -> None:

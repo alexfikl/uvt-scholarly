@@ -12,11 +12,13 @@ if TYPE_CHECKING:
 
 log = make_logger(__name__)
 
-# See: https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/latest-release
-ANZSRC_FOR_URL = "https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/2020/anzsrc2020_for.xlsx"
+# See:
+ANZSRC_FOR_URL: str = "https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/2020/anzsrc2020_for.xlsx"
+"""The full URL for the ANZSRC classification. The latest version can be found at
+the [official website](https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/latest-release).
+"""
 
-# NOTE: this list was generated using `parse_research_classification`
-ANZSRC_CLASSIFICATIONS = {
+ANZSRC_CLASSIFICATIONS: dict[int, str] = {
     30: "Agricultural, Veterinary and Food Sciences",
     3001: "Agricultural biotechnology",
     3002: "Agriculture, land and farm management",
@@ -254,10 +256,15 @@ ANZSRC_CLASSIFICATIONS = {
     5205: "Social and personality psychology",
     5299: "Other psychology",
 }
+"""A list of codes to the *main* fields of researched in the ANZSRC."""
 
 
-def get_name_from_code(code: str) -> str:
-    if code.isdigit():
+def get_name_from_code(code: int | str) -> str:
+    """
+    Returns:
+        The full name of a Field of Research based on its code.
+    """
+    if isinstance(code, int) or code.isdigit():
         return ANZSRC_CLASSIFICATIONS[int(code)]
 
     raise ValueError(f"code is not a known classification: '{code}'")
@@ -267,6 +274,11 @@ def get_name_from_code(code: str) -> str:
 
 
 def parse_research_classification(filename: pathlib.Path) -> dict[int, str]:
+    """Construct the [ANZSRC_CLASSIFICATIONS] list.
+
+    This function takes the data from [ANZSRC_FOR_URL][] and converts it into
+    a helpful dictionary.
+    """
     import openpyxl
 
     wb = openpyxl.load_workbook(filename, read_only=True)

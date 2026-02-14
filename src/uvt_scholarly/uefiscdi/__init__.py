@@ -10,7 +10,10 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_DB_FILE,
     UEFISCDI_DEFAULT_PASSWORD,
     UEFISCDI_DEFAULT_VERSION,
+    Database,
     Edition,
+    Score,
+    XLSXParser,
 )
 
 __all__ = (
@@ -20,5 +23,8 @@ __all__ = (
     "UEFISCDI_DB_FILE",
     "UEFISCDI_DEFAULT_PASSWORD",
     "UEFISCDI_DEFAULT_VERSION",
+    "Database",
     "Edition",
+    "Score",
+    "XLSXParser",
 )
