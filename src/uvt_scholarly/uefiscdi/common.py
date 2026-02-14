@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import enum
+import sqlite3
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, TypeVar
+from dataclasses import astuple, dataclass, fields
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN, Score
@@ -14,6 +15,8 @@ from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:
     import pathlib
+    from collections.abc import Sequence
+    from types import TracebackType
 
     from openpyxl.cell import ReadOnlyCell
 
@@ -271,6 +274,107 @@ class XLSXParser(Generic[ScoreT], ABC):
             result[score] = score
 
         return tuple(result.values())
+
+
+# }}}
+
+
+# {{{ Database
+
+
+class Database(Generic[ScoreT]):
+    name: ClassVar[str]
+    schema: ClassVar[str]
+    index: ClassVar[str]
+
+    filename: pathlib.Path
+    conn: sqlite3.Connection | None
+
+    def __init__(self, filename: pathlib.Path) -> None:
+        self.filename = filename
+        self.conn = None
+
+    def init(self) -> None:
+        self.conn = conn = sqlite3.connect(self.filename)
+
+        # NOTE: this should only be executed on creation, but it's not a problem
+        conn.execute(self.schema)
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+
+    def __enter__(self) -> Database:
+        self.init()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        if self.conn:
+            # NOTE: we only create the index on exist so that the database
+            # already contains all the rows. This should be more efficient.
+            self.conn.execute(self.index)
+
+            self.conn.commit()
+            self.conn.close()
+
+        self.conn = None
+
+    def insert(self, year: int, rif: Sequence[ScoreT]) -> None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not rif:
+            return
+
+        columns = ", ".join(f.name for f in fields(rif[0]))
+        values = ", ".join("?" for _ in fields(rif[0]))
+
+        self.conn.executemany(
+            f"""
+            INSERT INTO {self.name} (year, {columns})
+            VALUES (?, {values})
+            """,  # noqa: S608
+            ((year, *astuple(r)) for r in rif),
+        )
+
+    def find_by_issn_impl(self, text: ISSN, year: int) -> ScoreT | None:
+        raise NotImplementedError(f"{type(self)} does not implement 'find_by_issn'")
+
+    def find_by_issn(self, text: str | ISSN, year: int) -> ScoreT | None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not is_valid_issn(text):
+            raise ValueError(f"not a valid ISSN: '{text}'")
+
+        if year not in UEFISCDI_DATABASE_URL:
+            raise ValueError(f"unsupported year: '{year}'")
+
+        return self.find_by_issn_impl(
+            text if isinstance(text, ISSN) else ISSN.from_string(text), year
+        )
+
+    def max_score_by_issn(self, text: str | ISSN, past: int = 5) -> float | None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not is_valid_issn(text):
+            raise ValueError(f"not a valid ISSN: '{text}'")
+
+        result = self.conn.execute(
+            f"""
+            SELECT MAX(score)
+            FROM {self.name}
+            WHERE (issn = ? OR eissn = ?) AND year >= ?
+            """,  # noqa: S608
+            (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
+        )
+
+        row = result.fetchone()
+        return row[0]
 
 
 # }}}

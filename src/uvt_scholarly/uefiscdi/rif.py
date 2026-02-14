@@ -3,27 +3,23 @@
 
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import ISSN
 from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
-    UEFISCDI_LATEST_YEAR,
+    Database,
     Score,
     XLSXParser,
-    is_valid_issn,
     normalize_issn,
     to_float,
 )
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Sequence
-    from types import TracebackType
 
     from openpyxl.cell import ReadOnlyCell
 
@@ -175,96 +171,38 @@ def parse_relative_impact_factor(
 
 # }}}
 
-# {{{ DB creation
-
-RIF_DB_NAME = "relative_impact_factors"
-
-RIF_SCHEMA = f"""
-CREATE TABLE IF NOT EXISTS {RIF_DB_NAME} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    year INTEGER NOT NULL,
-    journal TEXT NOT NULL,
-    issn TEXT NULL,
-    eissn TEXT NULL,
-    score REAL NOT NULL,
-    UNIQUE(year, issn, eissn)
-);
-"""
-
-RIF_INDEX = f"""
-CREATE INDEX IF NOT EXISTS {RIF_DB_NAME}_index
-    ON {RIF_DB_NAME} (year, issn, eissn);
-"""
+# {{{ store_relative_impact_factor
 
 
-class DB:
-    filename: pathlib.Path
-    name: str
-    conn: sqlite3.Connection | None
+class RelativeImpactFactorDatabase(Database[RelativeImpactFactor]):
+    name: ClassVar[str] = "relative_impact_factors"
+    schema: ClassVar[str] = f"""
+        CREATE TABLE IF NOT EXISTS {name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER NOT NULL,
+            journal TEXT NOT NULL,
+            issn TEXT NULL,
+            eissn TEXT NULL,
+            score REAL NOT NULL,
+            UNIQUE(year, issn, eissn)
+        );
+    """
+    index: ClassVar[str] = f"""
+        CREATE INDEX IF NOT EXISTS {name}_index
+            ON {name} (year, issn, eissn);
+    """
 
-    def __init__(self, filename: pathlib.Path) -> None:
-        # TODO: this should be nicely generalized for all the scores. We don't
-        # really need more copies of this class...
-        self.filename = filename
-        self.name = RIF_DB_NAME
-        self.conn = None
-
-    def __enter__(self) -> DB:
-        self.conn = conn = sqlite3.connect(self.filename)
-
-        # NOTE: this should only be executed on creation, but it's not a problem
-        conn.execute(RIF_SCHEMA)
-        conn.execute("PRAGMA journal_mode = WAL;")
-        conn.execute("PRAGMA synchronous = NORMAL;")
-
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        if self.conn:
-            # NOTE: we only create the index on exist so that the database
-            # already contains all the rows. This should be more efficient.
-            self.conn.execute(RIF_INDEX)
-
-            self.conn.commit()
-            self.conn.close()
-
-        self.conn = None
-
-    def insert(self, year: int, rif: Sequence[RelativeImpactFactor]) -> None:
-        if self.conn is None:
-            raise ValueError(f"not connected to database '{self.filename}'")
-
-        self.conn.executemany(
-            f"""
-            INSERT INTO {self.name} (year, journal, issn, eissn, score)
-            VALUES (?, ?, ?, ?, ?)
-            """,  # noqa: S608
-            ((year, r.journal, r.issns, r.eissns, r.score) for r in rif),
-        )
-
-    def find_by_issn(self, text: str | ISSN) -> RelativeImpactFactor | None:
-        if self.conn is None:
-            raise ValueError(f"not connected to database '{self.filename}'")
-
-        if not is_valid_issn(text):
-            raise ValueError(f"not a valid ISSN: '{text}'")
-
+    def find_by_issn_impl(self, text: ISSN, year: int) -> RelativeImpactFactor | None:
+        assert self.conn is not None
         result = self.conn.execute(
             f"""
             SELECT journal, issn, eissn, score
             FROM {self.name}
-            WHERE issn = ? OR eissn = ?
+            WHERE (issn = ? OR eissn = ?) AND year = ?
             """,  # noqa: S608
-            (str(text), str(text)),
+            (str(text), str(text), year),
         )
 
-        # NOTE: we make sure the entries are unique by ISSN, so there's no reason
-        # this matches more than one result in the database (right?)
         for journal, issn, eissn, score in result.fetchall():
             return RelativeImpactFactor(
                 journal=journal,
@@ -274,30 +212,6 @@ class DB:
             )
 
         return None
-
-    def max_score_by_issn(self, text: str | ISSN, past: int = 5) -> float | None:
-        if self.conn is None:
-            raise ValueError(f"not connected to database '{self.filename}'")
-
-        if not is_valid_issn(text):
-            raise ValueError(f"not a valid ISSN: '{text}'")
-
-        result = self.conn.execute(
-            f"""
-            SELECT MAX(score)
-            FROM {self.name}
-            WHERE (issn = ? OR eissn = ?) AND year >= ?
-            """,  # noqa: S608
-            (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
-        )
-
-        row = result.fetchone()
-        return row[0]
-
-
-# }}}
-
-# {{{ store_relative_impact_factor
 
 
 def store_relative_impact_factor(
@@ -319,7 +233,7 @@ def store_relative_impact_factor(
     from uvt_scholarly.publication import Score
     from uvt_scholarly.utils import download_file
 
-    with DB(filename) as db:
+    with RelativeImpactFactorDatabase(filename) as db:
         for i, year in enumerate(years):
             url = UEFISCDI_DATABASE_URL[year][Score.RIF]
 

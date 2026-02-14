@@ -18,6 +18,7 @@ from uvt_scholarly.publication import (
     Pages,
     Publication,
     ResearcherID,
+    Score,
 )
 
 if TYPE_CHECKING:
@@ -679,6 +680,7 @@ def filter_csv_publications(
     outfile: pathlib.Path,
     *,
     dbfile: pathlib.Path | None = None,
+    score: Score = Score.RIS,
     overwrite: bool = False,
 ) -> None:
     if not filename.exists():
@@ -689,9 +691,22 @@ def filter_csv_publications(
 
     db = None
     if dbfile is not None and dbfile.exists():
-        from uvt_scholarly.uefiscdi.ris import DB
+        if score == Score.RIS:
+            from uvt_scholarly.uefiscdi.ris import (
+                RelativeInfluenceScoreDatabase as Database,
+            )
+        elif score == Score.RIF:
+            from uvt_scholarly.uefiscdi.rif import (
+                RelativeImpactFactorDatabase as Database,
+            )
+        elif score == Score.AIS:
+            from uvt_scholarly.uefiscdi.ais import (
+                ArticleInfluenceScoreDatabase as Database,
+            )
+        else:
+            raise ValueError(f"unsupported database: {score}")
 
-        db = DB(dbfile)
+        db = Database(dbfile)
         db.init()
 
     import csv

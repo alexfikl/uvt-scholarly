@@ -47,11 +47,11 @@ def _add_ris_scores(
     *,
     past: int = 5,
 ) -> tuple[Publication, ...]:
-    from uvt_scholarly.uefiscdi.ris import DB
+    from uvt_scholarly.uefiscdi.ris import RelativeInfluenceScoreDatabase
 
     result = []
 
-    with DB(dbfile) as db:
+    with RelativeInfluenceScoreDatabase(dbfile) as db:
         for pub in pubs:
             if Score.RIS in pub.journal.scores:
                 continue
@@ -87,11 +87,11 @@ def _add_rif_scores(
     *,
     past: int = 5,
 ) -> tuple[Publication, ...]:
-    from uvt_scholarly.uefiscdi.rif import DB
+    from uvt_scholarly.uefiscdi.rif import RelativeImpactFactorDatabase
 
     result = []
 
-    with DB(dbfile) as db:
+    with RelativeImpactFactorDatabase(dbfile) as db:
         for pub in pubs:
             if Score.RIF in pub.journal.scores:
                 continue
@@ -129,6 +129,9 @@ def add_scores(
 
     if Score.RIF in scores:
         pubs = _add_rif_scores(pubs, dbfile, past=past)
+
+    # if Score.AIS in scores:
+    #     pubs = _add_ais_scores(pubs, dbfile, past=past)
 
     return pubs
 

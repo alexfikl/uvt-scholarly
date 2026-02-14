@@ -64,7 +64,10 @@ def test_ris_database() -> None:
     filename = TMPDIR / f"uvt-scholarly-test-ris-{year}.xlsx"
     download_file(url, filename)
 
-    from uvt_scholarly.uefiscdi.ris import DB, parse_relative_influence_score
+    from uvt_scholarly.uefiscdi.ris import (
+        RelativeInfluenceScoreDatabase,
+        parse_relative_influence_score,
+    )
 
     # NOTE: we unlink the file so that the test can run again. Otherwise
     # it would crash when trying to add duplicate entries to the existing database
@@ -72,11 +75,11 @@ def test_ris_database() -> None:
     if dbfile.exists():
         dbfile.unlink()
 
-    with DB(dbfile) as db:
+    with RelativeInfluenceScoreDatabase(dbfile) as db:
         scores = parse_relative_influence_score(filename, year)
         db.insert(year, scores)
 
-    with DB(dbfile) as db:
+    with RelativeInfluenceScoreDatabase(dbfile) as db:
         search_issn = "2054-4251"
         search_result = None
 
@@ -92,7 +95,7 @@ def test_ris_database() -> None:
             search_result.issn,
         )
 
-        db_result = db.find_by_issn(search_issn)
+        db_result = db.find_by_issn(search_issn, year)
         assert search_result == db_result
 
         # NOTE scores seem to have 3-4 digits max, but they're floating point
@@ -102,14 +105,14 @@ def test_ris_database() -> None:
         assert abs(db_score - search_result.score) < 1.0e-14
 
         # NOTE: it's hard to find an unused ISSN that is also valid
-        db_result = db.find_by_issn("1234-5679")
+        db_result = db.find_by_issn("1234-5679", year)
         assert db_result is None
 
-        score = db.max_score_by_issn("1234-5679")
+        score = db.max_score_by_issn("1234-5679", year)
         assert score is None
 
         with pytest.raises(ValueError, match="valid ISSN"):
-            db_result = db.find_by_issn("1234-567X")
+            db_result = db.find_by_issn("1234-567X", year)
 
 
 # }}}

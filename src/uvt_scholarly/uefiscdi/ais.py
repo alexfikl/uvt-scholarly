@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import pathlib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.publication import ISSN, Category
 from uvt_scholarly.uefiscdi.common import (
+    UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_DEFAULT_PASSWORD,
+    Database,
     Index,
     Score,
     XLSXParser,
@@ -21,13 +24,12 @@ from uvt_scholarly.uefiscdi.common import (
 if TYPE_CHECKING:
     from openpyxl.cell import ReadOnlyCell
 
-    from uvt_scholarly.publication import Category
-
 log = make_logger(__name__)
 
 
 # {{{ parse_article_influence_score
 
+# NOTE: these seem to be the same across all the UEFISCDI databases?
 AIS_INCORRECT_ISSN = {
     # eISSN: World Journal for Pediatric and Congenital Heart Surgery
     "2150-0136": "2150-136X",
@@ -61,7 +63,7 @@ AIS_INDEX_NAMES = {
 @dataclass(frozen=True, eq=False, slots=True)
 class ArticleInfluenceScore(Score):
     index: Index
-    category: tuple[Category, ...]
+    category: Category
 
     def __hash__(self) -> int:
         return hash((self.issn, self.eissn, self.category, self.index))
@@ -104,7 +106,7 @@ class ArticleInfluenceScore(Score):
             eissn=normalize_issn(AIS_INCORRECT_ISSN.get(eissn, eissn)),
             score=to_float(score),
             index=Index[index.strip().upper()],
-            category=parse_wos_categories(category),
+            category=parse_wos_categories(category)[0],
         )
 
 
@@ -279,6 +281,94 @@ def parse_article_influence_score(
         return parser.parse(decrypted_filename)
     except Exception as exc:
         raise ParsingError() from exc
+
+
+# }}}
+
+
+# {{{ store_article_influence_score
+
+
+class ArticleInfluenceScoreDatabase(Database):
+    name: ClassVar[str] = "article_influence_scores"
+    schema: ClassVar[str] = f"""
+        CREATE TABLE IF NOT EXISTS {name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER NOT NULL,
+            journal TEXT NOT NULL,
+            issn TEXT NULL,
+            eissn TEXT NULL,
+            index TEXT NOT NULL,
+            category TEXT NOT NULL,
+            score REAL NOT NULL,
+            UNIQUE(year, issn, eissn, index, category)
+        );
+    """
+    index: ClassVar[str] = f"""
+        CREATE INDEX IF NOT EXISTS {name}_index
+            ON {name} (year, issn, eissn, index, category);
+    """
+
+    def find_by_issn_impl(self, text: ISSN, year: int) -> ArticleInfluenceScore | None:
+        assert self.conn is not None
+        result = self.conn.execute(
+            f"""
+            SELECT journal, issn, eissn, category, index, score
+            FROM {self.name}
+            WHERE (issn = ? OR eissn = ?) AND year = ?
+            """,  # noqa: S608
+            (str(text), str(text), year),
+        )
+
+        from uvt_scholarly.wos import parse_wos_categories
+
+        for journal, issn, eissn, category, index, score in result.fetchall():
+            return ArticleInfluenceScore(
+                journal=journal,
+                issn=ISSN.from_string(issn) if issn else None,
+                eissn=ISSN.from_string(eissn) if eissn else None,
+                index=Index[index],
+                category=parse_wos_categories(category)[0],
+                score=score,
+            )
+
+        return None
+
+
+def store_article_influence_score(
+    filename: pathlib.Path,
+    *,
+    years: set[int] | None = None,
+    force: bool = False,
+) -> None:
+    if years is None:
+        years = set(UEFISCDI_DATABASE_URL)
+
+    if unknown := years - set(UEFISCDI_DATABASE_URL):
+        raise ValueError(f"unsupported years: {unknown}")
+
+    dirname = filename.parent / UEFISCDI_CACHE_DIRNAME
+    if not dirname.exists():
+        dirname.mkdir(parents=True)
+
+    from uvt_scholarly.publication import Score
+    from uvt_scholarly.utils import download_file
+
+    with ArticleInfluenceScoreDatabase(filename) as db:
+        for i, year in enumerate(years):
+            url = UEFISCDI_DATABASE_URL[year][Score.AIS]
+
+            xlsxfile = dirname / f"uvt-scholarly-AIS-{year}.xlsx"
+            download_file(url, xlsxfile, force=force)
+
+            log.info("Processing AIS scores for %d: '%s'.", year, xlsxfile)
+            scores = parse_article_influence_score(xlsxfile, year)
+
+            log.info("Inserting AIS scores for %d into database.", year)
+            db.insert(year, scores)
+
+            if i != len(years) - 1:
+                log.info("")
 
 
 # }}}
