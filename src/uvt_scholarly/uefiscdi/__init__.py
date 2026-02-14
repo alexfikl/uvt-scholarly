@@ -4,27 +4,27 @@
 from __future__ import annotations
 
 from uvt_scholarly.uefiscdi.common import (
-    EDITION_DISPLAY_NAME,
+    CITATION_INDEX_DISPLAY_NAME,
     UEFISCDI_CACHE_DIR,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_DB_FILE,
     UEFISCDI_DEFAULT_PASSWORD,
     UEFISCDI_DEFAULT_VERSION,
+    CitationIndex,
     Database,
-    Edition,
     Score,
     XLSXParser,
 )
 
 __all__ = (
-    "EDITION_DISPLAY_NAME",
+    "CITATION_INDEX_DISPLAY_NAME",
     "UEFISCDI_CACHE_DIR",
     "UEFISCDI_DATABASE_URL",
     "UEFISCDI_DB_FILE",
     "UEFISCDI_DEFAULT_PASSWORD",
     "UEFISCDI_DEFAULT_VERSION",
+    "CitationIndex",
     "Database",
-    "Edition",
     "Score",
     "XLSXParser",
 )

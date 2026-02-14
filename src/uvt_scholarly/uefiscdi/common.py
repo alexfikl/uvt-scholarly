@@ -124,11 +124,11 @@ UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 # }}}
 
 
-# {{{ Edition
+# {{{ CitationIndex
 
 
 @enum.unique
-class Edition(enum.Enum):
+class CitationIndex(enum.Enum):
     """The citation index to which a given score belongs to.
 
     Many relative scores are generally computed per field of research. These
@@ -145,11 +145,11 @@ class Edition(enum.Enum):
     """Social Sciences Citation Index."""
 
 
-EDITION_DISPLAY_NAME = {
-    Edition.AHCI: "Arts Humanities Citation Index",
-    Edition.ESCI: "Emerging Sources Citation Index",
-    Edition.SCIE: "Science Citation Index Expanded",
-    Edition.SSCI: "Social Sciences Citation Index",
+CITATION_INDEX_DISPLAY_NAME = {
+    CitationIndex.AHCI: "Arts Humanities Citation Index",
+    CitationIndex.ESCI: "Emerging Sources Citation Index",
+    CitationIndex.SCIE: "Science Citation Index Expanded",
+    CitationIndex.SSCI: "Social Sciences Citation Index",
 }
 """A mapping of citation indices (as they appear in the UEFISCDI databases) to their
 full names.
