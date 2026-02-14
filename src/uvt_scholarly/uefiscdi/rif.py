@@ -243,7 +243,7 @@ def store_relative_impact_factor(
             log.info("Processing RIF scores for %d: '%s'.", year, xlsxfile)
             scores = parse_relative_impact_factor(xlsxfile, year)
 
-            log.info("Inserting RIF scores for %d into database.", year)
+            log.info("Inserting %d RIF scores for %d into database.", len(scores), year)
             db.insert(year, scores)
 
             if i != len(years) - 1:

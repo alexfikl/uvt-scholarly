@@ -275,7 +275,7 @@ def store_relative_influence_score(
             log.info("Processing RIS scores for %d: '%s'.", year, xlsxfile)
             scores = parse_relative_influence_score(xlsxfile, year)
 
-            log.info("Inserting RIS scores for %d into database.", year)
+            log.info("Inserting %d RIF scores for %d into database.", len(scores), year)
             db.insert(year, scores)
 
             if i != len(years) - 1:

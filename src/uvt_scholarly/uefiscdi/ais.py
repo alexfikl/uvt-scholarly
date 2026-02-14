@@ -14,7 +14,7 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_DATABASE_URL,
     UEFISCDI_DEFAULT_PASSWORD,
     Database,
-    Index,
+    Edition,
     Score,
     XLSXParser,
     normalize_issn,
@@ -54,7 +54,7 @@ AIS_INCORRECT_ISSN = {
 }
 
 # NOTE: seems to only be used in the 2021 version
-AIS_INDEX_NAMES = {
+AIS_EDITION_NAMES = {
     "SCIENCE": "SCIE",
     "SOCIAL SCIENCES": "SSCI",
 }
@@ -62,11 +62,11 @@ AIS_INDEX_NAMES = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class ArticleInfluenceScore(Score):
-    index: Index
+    edition: Edition
     category: Category
 
     def __hash__(self) -> int:
-        return hash((self.issn, self.eissn, self.category, self.index))
+        return hash((self.issn, self.eissn, self.category, self.edition))
 
     def __eq__(self, other: object) -> bool:
         if type(other) is not type(self):
@@ -75,12 +75,12 @@ class ArticleInfluenceScore(Score):
         return (
             self.issn == other.issn
             and self.eissn == other.eissn
-            and self.index == other.index
+            and self.edition == other.edition
         )
 
     @property
     def name(self) -> str:
-        return f"AIS[{self.index.name}]"
+        return f"AIS[{self.edition.name}]"
 
     @staticmethod
     def from_strings(
@@ -88,7 +88,7 @@ class ArticleInfluenceScore(Score):
         issn: str,
         eissn: str,
         category: str,
-        index: str,
+        edition: str,
         score: str,
     ) -> ArticleInfluenceScore:
         from uvt_scholarly.wos import parse_wos_categories
@@ -97,15 +97,15 @@ class ArticleInfluenceScore(Score):
         eissn = eissn.strip().upper()
 
         # NOTE: some entries have "AHCI, SSCI" or something. Not quite sure why..
-        if "," in index:
-            index, _ = index.split(",", maxsplit=1)
+        if "," in edition:
+            edition, _ = edition.split(",", maxsplit=1)
 
         return ArticleInfluenceScore(
             journal=journal.strip(),
             issn=normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn)),
             eissn=normalize_issn(AIS_INCORRECT_ISSN.get(eissn, eissn)),
             score=to_float(score),
-            index=Index[index.strip().upper()],
+            edition=Edition[edition.strip().upper()],
             category=parse_wos_categories(category)[0],
         )
 
@@ -129,11 +129,11 @@ class ArticleInfluenceScoreParser(XLSXParser[ArticleInfluenceScore]):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         category = str(row[3].value).strip()
-        index = str(row[4].value).strip()
+        edition = str(row[4].value).strip()
         score = str(row[5].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, index, score
+            journal, issn, eissn, category, edition, score
         )
 
 
@@ -151,12 +151,12 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
-        # NOTE: column is `CATEGORY - INDEX` in this version of the file
-        category, index = str(row[3].value).strip().rsplit("-", maxsplit=1)
+        # NOTE: column is `CATEGORY - EDITION` in this version of the file
+        category, edition = str(row[3].value).strip().rsplit("-", maxsplit=1)
         score = str(row[4].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, index, score
+            journal, issn, eissn, category, edition, score
         )
 
 
@@ -179,12 +179,12 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[3].value).strip()
-        index = str(row[4].value).strip()
-        # NOTE: column is `CATEGORY - INDEX` in this version of the file
+        edition = str(row[4].value).strip()
+        # NOTE: column is `CATEGORY - EDITION` in this version of the file
         category, _ = str(row[5].value).strip().rsplit("-", maxsplit=1)
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, index, score
+            journal, issn, eissn, category, edition, score
         )
 
 
@@ -207,11 +207,16 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[3].value).strip()
-        index = str(row[4].value).strip()
+        edition = str(row[4].value).strip()
         category = str(row[5].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, AIS_INDEX_NAMES.get(index, index), score
+            journal,
+            issn,
+            eissn,
+            category,
+            AIS_EDITION_NAMES.get(edition, edition),
+            score,
         )
 
 
@@ -229,11 +234,11 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         score = str(row[2].value).strip()
-        index = str(row[3].value).strip()
+        edition = str(row[3].value).strip()
         category = str(row[4].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, "N/A", category, index, score
+            journal, issn, "N/A", category, edition, score
         )
 
 
@@ -298,22 +303,22 @@ class ArticleInfluenceScoreDatabase(Database):
             journal TEXT NOT NULL,
             issn TEXT NULL,
             eissn TEXT NULL,
-            index TEXT NOT NULL,
+            edition TEXT NOT NULL,
             category TEXT NOT NULL,
             score REAL NOT NULL,
-            UNIQUE(year, issn, eissn, index, category)
+            UNIQUE(year, issn, eissn, edition, category)
         );
     """
     index: ClassVar[str] = f"""
         CREATE INDEX IF NOT EXISTS {name}_index
-            ON {name} (year, issn, eissn, index, category);
+            ON {name} (year, issn, eissn, edition, category);
     """
 
     def find_by_issn_impl(self, text: ISSN, year: int) -> ArticleInfluenceScore | None:
         assert self.conn is not None
         result = self.conn.execute(
             f"""
-            SELECT journal, issn, eissn, category, index, score
+            SELECT journal, issn, eissn, category, edition, score
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year = ?
             """,  # noqa: S608
@@ -322,12 +327,12 @@ class ArticleInfluenceScoreDatabase(Database):
 
         from uvt_scholarly.wos import parse_wos_categories
 
-        for journal, issn, eissn, category, index, score in result.fetchall():
+        for journal, issn, eissn, category, edition, score in result.fetchall():
             return ArticleInfluenceScore(
                 journal=journal,
                 issn=ISSN.from_string(issn) if issn else None,
                 eissn=ISSN.from_string(eissn) if eissn else None,
-                index=Index[index],
+                edition=Edition[edition],
                 category=parse_wos_categories(category)[0],
                 score=score,
             )
@@ -364,7 +369,7 @@ def store_article_influence_score(
             log.info("Processing AIS scores for %d: '%s'.", year, xlsxfile)
             scores = parse_article_influence_score(xlsxfile, year)
 
-            log.info("Inserting AIS scores for %d into database.", year)
+            log.info("Inserting %d AIS scores for %d into database.", len(scores), year)
             db.insert(year, scores)
 
             if i != len(years) - 1:

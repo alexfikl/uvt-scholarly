@@ -6,7 +6,7 @@ from __future__ import annotations
 import enum
 import sqlite3
 from abc import ABC, abstractmethod
-from dataclasses import astuple, dataclass, fields
+from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from uvt_scholarly.logging import make_logger
@@ -43,6 +43,7 @@ def to_float(value: str, default: float = 0.0) -> float:
 
 
 # NOTE:
+#   - "N/A" seems to be the common value
 #   - "0" appears in RIS/2023
 #   - "****-****" appears in RIS/2021
 EMPTY_ISSN = {"0", "N/A", "****-****"}
@@ -120,24 +121,24 @@ UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 # }}}
 
 
-# {{{ Index
+# {{{ Edition
 
 
 @enum.unique
-class Index(enum.Enum):
+class Edition(enum.Enum):
     AHCI = enum.auto()
     ESCI = enum.auto()
     SCIE = enum.auto()
     SSCI = enum.auto()
 
 
-INDEX_DISPLAY_NAME = {
-    Index.AHCI: "Arts Humanities Citation Index",
-    Index.ESCI: "Emerging Sources Citation Index",
-    Index.SCIE: "Science Citation Index Expanded",
-    Index.SSCI: "Social Sciences Citation Index",
+EDITION_DISPLAY_NAME = {
+    Edition.AHCI: "Arts Humanities Citation Index",
+    Edition.ESCI: "Emerging Sources Citation Index",
+    Edition.SCIE: "Science Citation Index Expanded",
+    Edition.SSCI: "Social Sciences Citation Index",
 }
-"""A mapping of citation indexes (as they appear in the UEFISCDI databases) to their
+"""A mapping of citation editions (as they appear in the UEFISCDI databases) to their
 full names.
 """
 
@@ -280,6 +281,16 @@ class XLSXParser(Generic[ScoreT], ABC):
 
 
 # {{{ Database
+
+
+def astuple(score: Score) -> tuple[str | None, ...]:
+    result = []
+    for f in fields(score):  # ty: ignore[invalid-argument-type]
+        field = getattr(score, f.name)
+
+        result.append(str(field) if field is not None else None)
+
+    return tuple(result)
 
 
 class Database(Generic[ScoreT]):

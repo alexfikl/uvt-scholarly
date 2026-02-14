@@ -101,6 +101,16 @@ def download(
         UEFISCDI_DB_FILE.unlink()
         ctx.exit(1)
 
+    from uvt_scholarly.uefiscdi.ais import store_article_influence_score
+
+    try:
+        store_article_influence_score(UEFISCDI_DB_FILE, force=force)
+    except ScholarlyError as exc:
+        log.error("Failed to download AIS scores.", exc_info=exc)
+
+        UEFISCDI_DB_FILE.unlink()
+        ctx.exit(1)
+
 
 # }}}
 
