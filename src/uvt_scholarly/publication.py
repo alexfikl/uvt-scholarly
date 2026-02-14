@@ -26,11 +26,11 @@ log = make_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class ResearcherID:
-    """A parsed `ResearcherID <https://en.wikipedia.org/wiki/ResearcherID>`__."""
+    """A parsed [ResearcherID](https://en.wikipedia.org/wiki/ResearcherID)."""
 
     parts: tuple[str, str, str]
     """The three parts of the ResearcherID, which generally has the form
-    ``X[XX]-NNNN-NNNN``, which an ASCII letter as the first part and two 4-digit
+    `X[XX]-NNNN-NNNN`, which an ASCII letter as the first part and two 4-digit
     numeric identifiers.
     """
 
@@ -42,7 +42,11 @@ class ResearcherID:
 
     @staticmethod
     def from_string(rid: str) -> ResearcherID:
-        """Convert some text into a :class:`ResearcherID` instance."""
+        """Convert some text into a [ResearcherID][] instance.
+
+        Some basic structural checks are performed on the input string to ensure
+        that it can represents a `ResearcherID` (e.g. length of parts).
+        """
 
         if "-" not in rid:
             raise ValueError(
@@ -64,16 +68,16 @@ class ResearcherID:
 
     @property
     def year(self) -> int:
-        """The year the ResearcherID was registered. This is only the last 4 digits
+        """The year the `ResearcherID` was registered. This is only the last 4 digits
         of the identifier.
         """
         return int(self.parts[-1])
 
     @property
     def is_valid(self) -> bool:
-        """*True* if the :class:`ResearcherID` is valid.
+        """*True* if the [ResearcherID][] is valid.
 
-        Note that there is no standardized format for the ResearcherID, so this
+        Note that there is no standardized format for the `ResearcherID`, so this
         validation should be taken with a grain of salt. It mainly checks that
         values found in the wild are considered valid.
         """
@@ -106,11 +110,11 @@ class ResearcherID:
 
 @dataclass(frozen=True, slots=True)
 class ORCiD:
-    """A parsed `ORCiD <https://en.wikipedia.org/wiki/ORCID>`__."""
+    """A parsed [ORCiD](https://en.wikipedia.org/wiki/ORCID)."""
 
     parts: tuple[str, str, str, str]
     """The four parts of the ORCiD, which generally has the form
-    ``NNNN-NNNN-NNNN-NNNN``.
+    `NNNN-NNNN-NNNN-NNNN`.
     """
 
     def __str__(self) -> str:
@@ -121,7 +125,11 @@ class ORCiD:
 
     @staticmethod
     def from_string(orcid: str) -> ORCiD:
-        """Convert some text into an :class:`ORCiD` instance."""
+        """Convert some text into an [ORCiD][] instance.
+
+        Some basic structural checks are performed on the input string to ensure
+        that it can represents a `ORCiD` (e.g. length of parts).
+        """
 
         if "-" not in orcid:
             raise ValueError(
@@ -143,7 +151,7 @@ class ORCiD:
 
     @property
     def is_valid(self) -> bool:
-        """*True* if the :class:`ORCiD` is valid."""
+        """*True* if the [ORCiD][] is valid."""
 
         if any(len(part) != 4 for part in self.parts):
             return False
@@ -185,7 +193,7 @@ class Author:
     """
     last_name: str
     """Last name of the author. This can contain additional parts as well, e.g.
-    ``von Neumann``.
+    `von Neumann`.
     """
 
     affiliations: tuple[str, ...] = ()
@@ -193,9 +201,9 @@ class Author:
     a particular publication, not a general list over time.
     """
     researcherid: ResearcherID | None = None
-    """The ResearcherID for the author."""
+    """The [ResearcherID](https://en.wikipedia.org/wiki/ResearcherID) for the author."""
     orcid: ORCiD | None = None
-    """The ORCiD for the author."""
+    """The [ORCiD](https://orcid.org/) for the author."""
 
 
 # }}}
@@ -208,18 +216,22 @@ class Score(enum.Enum):
     """Supported types of Journal scores."""
 
     AIS = enum.auto()
+    """Article Influence Score."""
     JIF = enum.auto()
+    """Journal Impact Factor."""
     RIF = enum.auto()
+    """Relative Impact Factor."""
     RIS = enum.auto()
+    """Relative Influence Score."""
 
 
-SCORE_FULL_NAME = {
+SCORE_FULL_NAME: dict[Score, str] = {
     Score.AIS: "Article Influence Score",
     Score.JIF: "Journal Impact Factor",
     Score.RIF: "Relative Impact Factor",
     Score.RIS: "Relative Influence Score",
 }
-"""A mapping from journal scores to commonly used acronyms."""
+"""A mapping from journal scores to their full names."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -242,7 +254,8 @@ class Journal:
 
 # {{{ DOI
 
-DOI_RESOLVER = "https://doi.org"
+DOI_RESOLVER: str = "https://doi.org"
+"""Default resolver for the [DOI][] class."""
 
 
 def _lowercase_ascii(text: str) -> str:
@@ -251,15 +264,27 @@ def _lowercase_ascii(text: str) -> str:
 
 @dataclass(frozen=True, slots=True)
 class DOI:
-    """A parsed `Digital Object Identifier <https://en.wikipedia.org/wiki/Digital_object_identifier>__`."""
+    """A parsed [Digital Object Identifier](https://en.wikipedia.org/wiki/Digital_object_identifier).
+
+    The DOI has a standard form `NN.RRRR/suffix`, where the first part is the
+    [namespace][], the second part is the [registrant][] and the last part is
+    the [item][] suffix.
+
+    /// note
+    When comparing two DOIs for equality, the suffix partially compares
+    in a case-insensitive way. In particular, all ASCII letters from the
+    suffix are considered to be case-insensitive, but other Unicode letters
+    are compared in a case-sensitive fashion.
+    ///
+    """
 
     namespace: str
-    """The namespace for the identifier. This is usually ``10`` for scientific
+    """The namespace for the identifier. This is usually `10` for scientific
     publications."""
     registrant: str
     """The registrant for this identifier. There is no official list of all
     registrants, but some information can be obtained, e.g., from Crossref by
-    querying ``https://api.crossref.org/prefixes/10.1038``.
+    querying `https://api.crossref.org/prefixes/10.1038`.
     """
     item: str
     """The unique identifier for this item."""
@@ -303,7 +328,11 @@ class DOI:
 
     @staticmethod
     def from_string(doi: str) -> DOI:
-        """Convert some text into a :class:`DOI` instance."""
+        """Convert some text into a [DOI][] instance.
+
+        Some basic structural checks are performed on the input string to ensure
+        that it can represents a `DOI` (e.g. length of parts).
+        """
 
         if "/" not in doi:
             raise ValueError(f"DOI has a form 'prefix/suffix': {doi!r}")
@@ -326,8 +355,8 @@ class DOI:
 
         Note that this just checks the general format of the DOI, e.g. size,
         allowed characters, etc. The only official way to verify if a DOI is valid
-        is to resolve it. This can be done using :meth:`resolve`, which effectively
-        checks if :attr:`url` is redirects successfully.
+        is to resolve it. This can be done using [resolve][], which effectively
+        checks if [url][] is redirects successfully.
         """
 
         if self.namespace != "10":
@@ -353,12 +382,14 @@ class DOI:
 
     def resolve(self, client: httpx.Client | None = None) -> bool:
         """
-        :arg client: a client used for the HTTP request. This function automatically
-            creates a client if none is provided. However, if checking many DOIs
-            at once, it is recommended to create a client, so that requests can be
-            handled more efficiently.
+        Parameters:
+            client: A client used for the HTTP request. This function
+                automatically creates a client if none is provided. However, if
+                checking many DOIs at once, it is recommended to create a client,
+                so that requests can be handled more efficiently.
 
-        :returns: *True* if the current DOI redirects correctly.
+        Returns:
+            *True* if the current DOI redirects correctly.
         """
         # TODO: we should cache this result and just return it on the next call
 
@@ -389,10 +420,10 @@ class DOI:
 
 @dataclass(frozen=True, slots=True)
 class ISSN:
-    """A parsed `International Standard Serial Number <https://en.wikipedia.org/wiki/ISSN>`__."""
+    """A parsed [International Standard Serial Number](https://en.wikipedia.org/wiki/ISSN)."""
 
     parts: tuple[str, str]
-    """The two parts of the ISSN, which generally has the form ``NNNN-NNNN``."""
+    """The two parts of the ISSN, which generally has the form `NNNN-NNNC`."""
 
     def __str__(self) -> str:
         return f"{self.parts[0]}-{self.parts[1]}"
@@ -402,7 +433,11 @@ class ISSN:
 
     @staticmethod
     def from_string(issn: str) -> ISSN:
-        """Convert some text into an :class:`ISSN` instance."""
+        """Convert some text into an [ISSN][] instance.
+
+        Some basic structural checks are performed on the input string to ensure
+        that it can represents a `ISSN` (e.g. length of parts).
+        """
 
         if "-" not in issn:
             raise ValueError(f"ISSN missing dash (expected NNNN-NNNC): {issn!r}")
@@ -458,9 +493,9 @@ class Category:
     """A category for a publication."""
 
     name: str
-    """The main name of the category, e.g. Mathematics."""
+    """The main name of the category, e.g. `Mathematics`."""
     field: str | None
-    """A sub-category or sub-field in the main category."""
+    """A sub-category or sub-field in the main category, e.g. `Applied`."""
 
     def __str__(self) -> str:
         return f"{self.name}, {self.field}" if self.field else self.name
@@ -485,7 +520,7 @@ class Pages:
     """The ending page identifier. This can be missing for some journals."""
     count: int | None
     """A total page count. If all values are numeric, this should correspond to
-    just ``end - start``.
+    just `end - start + 1`.
     """
 
     def __str__(self) -> str:
@@ -502,13 +537,21 @@ class DocumentType(enum.Enum):
     """A enumeration of supported document types."""
 
     Article = enum.auto()
+    """A standard journal article."""
     Book = enum.auto()
+    """A standard book."""
     BookChapter = enum.auto()
+    """A chapter from a book."""
     Dataset = enum.auto()
+    """A published dataset."""
     Other = enum.auto()
+    """An unknown or unsupported type of document."""
     ProceedingsPaper = enum.auto()
+    """A published paper in conference proceedings."""
     Review = enum.auto()
+    """A review paper."""
     Report = enum.auto()
+    """A technical report."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -569,8 +612,7 @@ class Publication:
 
     cited_by_count: int
     """A total number of citations for this publication. This value is generally
-    exported from a repository and does not necessarily match :attr:`citations`.
-    When the publication is "finalized", it should match.
+    exported from a repository and does not necessarily match [citations][].
     """
     cited_by: tuple[Publication, ...]
     """A list of publications that have cited this publication."""

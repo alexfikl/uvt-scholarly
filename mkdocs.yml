@@ -26,21 +26,42 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       handlers:
           python:
               paths: [src]
+              inventories:
+                - https://docs.python.org/3/objects.inv
               options:
                   show_source: false
                   show_root_heading: false
+                  show_root_members_full_path: true
                   heading_level: 3
+                  show_bases: true
+                  annotations_path: brief
+                  show_signature: true
+                  show_signature_annotations: true
+                  show_signature_type_parameters: true
+                  signature_crossrefs: true
+                  members_order: source
+                  separate_signature: true
+                  scoped_crossrefs: true
+                  docstring_section_style: list
 
 markdown_extensions:
   - admonition
   - toc:
       permalink: true
   - tables
-  - fenced_code
+  - pymdownx.blocks.details:
+      types:
+        - name: note
+          class: 'terminal-alert terminal-alert-primary'
+          title: Note
+        - name: warning
+          class: 'terminal-alert terminal-alert-error'
+          title: Warning
   - pymdownx.superfences
   - pymdownx.highlight:
       use_pygments: true
@@ -53,6 +74,9 @@ markdown_extensions:
 extra_javascript:
   - js/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js
+
+extra_css:
+  - css/custom.css
 
 extra:
   social:

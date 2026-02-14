@@ -1,9 +1,11 @@
-# API Reference
+# Publication
 
-## UEFISCDI
+::: uvt_scholarly.publication
+
+# UEFISCDI
 
 <!-- ::: uvt_scholarly.uefiscdi -->
 
-## Web of Science
+# Web of Science
 
 ::: uvt_scholarly.wos
