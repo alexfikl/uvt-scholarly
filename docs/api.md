@@ -2,6 +2,8 @@
 
 ::: uvt_scholarly.publication
 
+::: uvt_scholarly.enrich
+
 # UEFISCDI
 
 ::: uvt_scholarly.uefiscdi
