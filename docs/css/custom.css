@@ -10,6 +10,14 @@
     border-left: 4px solid var(--md-primary-fg-color);
 }
 
+/* indent mkdocstrings function contents */
+.doc-function .doc-contents {
+    margin-left: 1.5rem;
+    padding-left: 1rem;
+
+    border-left: 4px solid var(--md-primary-fg-color);
+}
+
 /* remove indentation for nested objects inside the class */
 .doc-class .doc-contents .doc-contents {
     margin-left: 0;

@@ -68,6 +68,8 @@ RIS_MISSING_EISSN = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class RelativeInfluenceScore(Score):
+    """The RIF for a given publication."""
+
     @property
     def name(self) -> str:
         return "RIS"
@@ -79,6 +81,11 @@ class RelativeInfluenceScore(Score):
         eissn: str,
         score: str,
     ) -> RelativeInfluenceScore:
+        """Convert the given data into an [RelativeInfluenceScore][].
+
+        The given data is normalized and cleaned up, as appropriate. This function
+        can raise if the data is incorrect (e.g. a non-numeric *score*).
+        """
         from uvt_scholarly.uefiscdi.common import EMPTY_ISSN
 
         journal = journal.strip()
@@ -170,6 +177,14 @@ class RelativeInfluenceScore2020Parser(RelativeInfluenceScoreParser):
 def parse_relative_influence_score(
     filename: pathlib.Path, version: int
 ) -> tuple[RelativeInfluenceScore, ...]:
+    """Read RIS scores from the given *file*.
+
+    Parameters:
+        version: the year the list in *filename* was published.
+
+    Raises:
+        uvt_scholarly.utils.ParsingError: if entries in the file are not valid.
+    """
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -249,6 +264,18 @@ def store_relative_influence_score(
     years: int | set[int] | None = None,
     force: bool = False,
 ) -> None:
+    """Download RIS scores for the given *years* and store them in *filename*.
+
+    Parameters:
+        years: A list of years for which to download the RIS scores. By default,
+            all the years in
+            [uvt_scholarly.uefiscdi.UEFISCDI_DATABASE_URL][] are downloaded.
+        force: If *True*, all documents are re-downloaded (even if cached).
+
+    Raises:
+        uvt_scholarly.utils.ParsingError: if any of the documents fail to parse.
+        uvt_scholarly.utils.DownloadError: if any of the documents do now download.
+    """
     if years is None:
         years = set(UEFISCDI_DATABASE_URL)
 

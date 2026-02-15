@@ -62,8 +62,12 @@ AIS_EXTRA_CITATION_INDEX_NAMES = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class ArticleInfluenceScore(Score):
+    """The AIS for a given publication."""
+
     cindex: CitationIndex
+    """The citation index this score is a part of."""
     category: Category
+    """The category the publication is part of (scores are relative to the category)."""
 
     def __hash__(self) -> int:
         return hash((self.issn, self.eissn, self.category, self.cindex))
@@ -91,6 +95,11 @@ class ArticleInfluenceScore(Score):
         cindex: str,
         score: str,
     ) -> ArticleInfluenceScore:
+        """Convert the given data into an [ArticleInfluenceScore][].
+
+        The given data is normalized and cleaned up, as appropriate. This function
+        can raise if the data is incorrect (e.g. a non-numeric *score*).
+        """
         from uvt_scholarly.wos import parse_wos_categories
 
         issn = issn.strip().upper()

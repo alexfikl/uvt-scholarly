@@ -6,9 +6,17 @@
 
 ::: uvt_scholarly.uefiscdi
 
-## Article Influence Score
+## Article Influence Score (AIS)
 
 ::: uvt_scholarly.uefiscdi.ais
+
+## Relative Influence Score (RIS)
+
+::: uvt_scholarly.uefiscdi.ris
+
+## Relative Impact Factor (RIF)
+
+::: uvt_scholarly.uefiscdi.rif
 
 # Web of Science
 
