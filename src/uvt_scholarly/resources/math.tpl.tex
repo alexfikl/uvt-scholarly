@@ -10,7 +10,7 @@
 \selectlanguage{romanian}
 
 \usepackage{geometry}
-\geometry{top=2cm, left=1cm, right=1cm, bottom=2cm}
+\geometry{top=2cm, left=1cm, right=1cm, bottom=2cm,showframe}
 
 \usepackage[table]{xcolor}
 
@@ -25,15 +25,8 @@
 \renewcommand{\UrlFont}{\bfseries\ttfamily}
 
 \usepackage{csquotes}
+\usepackage{longtable}
 \usepackage[shortlabels]{enumitem}
-
-\usepackage{tabularray}
-\UseTblrLibrary{longtblr}
-\SetTblrTemplate{caption}{empty}
-\SetTblrTemplate{capcont}{empty}
-
-\DeclareTblrTemplate{contfoot-text}{normal}{Continuat pe pagina următoare}
-\SetTblrTemplate{contfoot-text}{normal}
 
 % }}} END
 
@@ -91,21 +84,27 @@ Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 {
 \renewcommand{\arraystretch}{1.5}
 
-\begin{tblr}{width=\textwidth, colspec={|l|X|X|}, hlines, vlines}
-\SetRow{bg=TableYellow}
+\newlength{\colwidth}
+\setlength{\colwidth}{5.5em}
+
+\begin{tabular}{
+    |m{\colwidth}
+    |p{\dimexpr(\textwidth-\colwidth-6\tabcolsep-4\arrayrulewidth)/2}
+    |p{\dimexpr(\textwidth-\colwidth-6\tabcolsep-4\arrayrulewidth)/2}|} \hline
+\rowcolor{TableYellow}
 \textbf{Indicator}
 & \textbf{Standard pentru \TplVar{criteria.position_name}}
-& \textbf{Valoarea realizată a indicatorului} \\
+& \textbf{Valoarea realizată a indicatorului} \\\hline
 S &
 $\ge \TplVar{criteria.min_ris}$ &
-\TplVar{'{:.3f}'.format(candidate.ris)} \\
+\TplVar{'{:.3f}'.format(candidate.ris)} \\\hline
 S\textsubscript{recent} &
 $\ge \TplVar{criteria.min_recent_ris}$ &
-\TplVar{'{:.3f}'.format(candidate.recent_ris)} \\
+\TplVar{'{:.3f}'.format(candidate.recent_ris)} \\\hline
 C &
 $\ge \TplVar{criteria.min_citations}$ &
-\TplVar{candidate.total_citations} \\
-\end{tblr}
+\TplVar{candidate.total_citations} \\\hline
+\end{tabular}
 }
 
 {\footnotesize
@@ -144,38 +143,66 @@ $\ge \TplVar{criteria.min_citations}$ &
 \bigskip
 
 {\footnotesize
+\renewcommand{\arraystretch}{1.35}
 
-\begin{longtblr}{
-    colspec={|Q[wd=1.5em,c]
-             |X
-             |Q[wd=4em,c]
-             |Q[wd=2.9em,c]
-             |Q[wd=2.7em,c]
-             |Q[wd=1.8em,c]|},
-    hlines,
-    vlines,
-    long}
-\SetRow{valign=m, bg=TableYellow}
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{1.5em}
+    |m{\dimexpr\textwidth-12.9em-12\tabcolsep-7\arrayrulewidth}
+    |>{\centering\arraybackslash}m{4em}
+    |>{\centering\arraybackslash}m{2.9em}
+    |>{\centering\arraybackslash}m{2.7em}
+    |>{\centering\arraybackslash}m{1.8em}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
 \textbf{Nr. crt.} &
 \textbf{Articol -- referință bibliografică} &
 \textbf{Publicat în ultimii 7 ani} &
 \textbf{SRI revistă} &
 \textbf{Nr. autori} &
 \textbf{Scor} \\
+\hline
+\endfirsthead
+
+% header on other pages
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.} &
+\textbf{Articol -- referință bibliografică} &
+\textbf{Publicat în ultimii 7 ani} &
+\textbf{SRI revistă} &
+\textbf{Nr. autori} &
+\textbf{Scor} \\
+\hline
+\endhead
+
+% footer on other pages
+\hline
+\multicolumn{6}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+\rowcolor{TableGray} &
+\textbf{Total} &
+\multicolumn{4}{m{\dimexpr(11.4em+6\tabcolsep)}|}{
+    \textbf{S = \TplVar{'{:.3f}'.format(candidate.ris)}}
+    \hfill
+    \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(candidate.recent_ris)}}
+} \\
+\hline
+\endlastfoot
+
+% rows
 \TplBlock{for pub in candidate.publications}
 \TplVar{loop.index} &
 \TplVar{pub | format_pub} &
 \TplVar{pub | is_recent} &
 \TplVar{'{:.3f}'.format(pub | get_score('RIS'))} &
 \TplVar{pub.authors | length} &
-\TplVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\
+\TplVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\\hline
 \TplBlock{endfor}
-\SetRow{bg=TableGray} &
-\textbf{Total} &
-\SetCell[c=2]{l} \textbf{S = \TplVar{'{:.3f}'.format(candidate.ris)}} & &
-\SetCell[c=2]{l} \textbf{S\textsubscript{recent} =
-    \TplVar{"{:.3f}".format(candidate.recent_ris)}} \\
-\end{longtblr}
+\end{longtable}
 }
 
 {\footnotesize
@@ -191,20 +218,52 @@ Scor: SRI revistă / Nr. Autori. Pentru poziția de Lector (sau Cercetător
 \bigskip
 
 {\footnotesize
+\renewcommand{\arraystretch}{1.35}
 
-\begin{longtblr}{
-    width=\textwidth,
-    colspec={|Q[wd=1.5em,c]
-             |X
-             |X
-             |Q[wd=3.3em,c]|},
-    hlines,
-    vlines}
-\SetRow{valign=m, bg=TableYellow}
+\newlength{\firstcol}
+\setlength{\firstcol}{1.5em}
+\newlength{\lastcol}
+\setlength{\lastcol}{3.3em}
+
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{\firstcol}
+    |m{\dimexpr(\textwidth-\firstcol-\lastcol-8\tabcolsep-4\arrayrulewidth)/2}
+    |m{\dimexpr(\textwidth-\firstcol-\lastcol-8\tabcolsep-4\arrayrulewidth)/2}
+    |>{\centering\arraybackslash}m{\lastcol}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
 \textbf{Nr. crt.} &
 \textbf{Articolul citat} &
 \textbf{Revista și articolul în care a fost citat} &
 \textbf{SRI revistă} \\
+\hline
+\endfirsthead
+
+% header on the following pages
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.} &
+\textbf{Articolul citat} &
+\textbf{Revista și articolul în care a fost citat} &
+\textbf{SRI revistă} \\
+\hline
+\endhead
+
+% footer on other pages
+\hline
+\multicolumn{4}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+\rowcolor{TableGray}
+& \textbf{Total} &
+\multicolumn{2}{r|}{\textbf{C = \TplVar{candidate.total_citations}}} \\
+\hline
+\endlastfoot
+
+% rows
 \TplBlock{set counter = namespace(value=0)}
 \TplBlock{for pub in candidate.publications}
     \TplBlock{-for cite in pub.cited_by}
@@ -212,13 +271,10 @@ Scor: SRI revistă / Nr. Autori. Pentru poziția de Lector (sau Cercetător
 \TplVar{counter.value} &
 \TplBlock{-if loop.index == 1} \TplVar{pub | format_pub} \TplBlock{endif-} &
 \TplVar{cite | format_pub} &
-\TplVar{'{:.3f}'.format(cite | get_score('RIS'))} \\
+\TplVar{'{:.3f}'.format(cite | get_score('RIS'))} \\\hline
     \TplBlock{-endfor}
 \TplBlock{-endfor}
-\SetRow{bg=TableGray} &
-\textbf{Total} &
-\SetCell[c=2]{r} \textbf{C = \TplVar{candidate.total_citations}}
-\end{longtblr}
+\end{longtable}
 }
 
 \end{document}
