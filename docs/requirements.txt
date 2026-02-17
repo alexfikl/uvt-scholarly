@@ -97,7 +97,7 @@ packaging==26.0
     # via mkdocs
 pathspec==1.0.4
     # via mkdocs
-platformdirs==4.7.1
+platformdirs==4.9.2
     # via
     #   uvt-scholarly (pyproject.toml)
     #   mkdocs-get-deps
@@ -109,7 +109,7 @@ pygments==2.19.2
     #   rich
 pylatexenc==2.10
     # via uvt-scholarly (pyproject.toml)
-pymdown-extensions==10.20.1
+pymdown-extensions==10.21
     # via
     #   uvt-scholarly (pyproject.toml:docs)
     #   mkdocs-terminal
