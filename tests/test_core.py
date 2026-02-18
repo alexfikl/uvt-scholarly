@@ -25,7 +25,7 @@ EXPECTED_CORE_CONFERENCES_PER_COLLECTION = {
 }
 
 
-@pytest.mark.xfail(raises=httpx.ReadTimeout)
+@pytest.mark.xfail(raises=(httpx.ReadTimeout, httpx.ConnectTimeout))
 @pytest.mark.parametrize(
     "collection", ["ICORE2026", "CORE2023", "CORE2021", "CORE2020"]
 )
