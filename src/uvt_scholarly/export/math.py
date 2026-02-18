@@ -32,14 +32,21 @@ RECENT_YEAR_CUTOFF = 7
 """The span over which the publication is considered as *RECENT*."""
 
 
-def filter_latex_format_pub(pub: Publication) -> str:
+def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     from pylatexenc.latexencode import unicode_to_latex
 
     parts: list[str] = []
 
     # authors
-    authors = ", ".join(f"{au.first_name[0]}. {au.last_name}" for au in pub.authors)
-    parts.append(unicode_to_latex(authors))
+    authors = ", ".join(
+        (
+            rf"\textbf{{{au.first_name[0]}. {au.last_name}}}"
+            if au.last_name in candidate
+            else f"{au.first_name[0]}. {au.last_name}"
+        )
+        for au in pub.authors
+    )
+    parts.append(authors)
 
     # title
     parts.append(rf"\enquote{{{unicode_to_latex(pub.title)}}}")
@@ -407,7 +414,7 @@ def export_publications_latex(
         comment_end_string="=))",
     )
 
-    env.filters["format_pub"] = filter_latex_format_pub
+    env.filters["format_pub"] = lambda pub: filter_latex_format_pub(pub, candidate_name)
     env.filters["is_recent"] = filter_latex_is_recent
     env.filters["get_score"] = filter_get_score
 
