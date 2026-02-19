@@ -270,7 +270,7 @@ def get_name_from_code(code: int | str) -> str:
     raise ValueError(f"code is not a known classification: '{code}'")
 
 
-# {{{ parse research classification
+# {{{ parse_research_classification
 
 
 def parse_research_classification(filename: pathlib.Path) -> dict[int, str]:
