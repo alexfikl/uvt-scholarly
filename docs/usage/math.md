@@ -1,9 +1,13 @@
 # Mathematics Department
 
-The (minimal) requirements for a new position in the West University of Timișoara
-can be found [here](https://cariere.uvt.ro/standarde-minimale-si-obligatorii/).
-To generate a file with your information, you can follow steps described in
-the [Web of Science](wos.md) section.
+The (minimal) requirements for a new position in the West University of
+Timișoara can be found
+[here](https://cariere.uvt.ro/standarde-minimale-si-obligatorii/). In
+particular, for the Mathematics department, you can find a (fairly) up to date
+document listing the requirements
+[here](https://cariere.uvt.ro/wp-content/uploads/2024/06/e_fisa_verificare_Redacted.pdf).
+To generate a file with your information, you can follow steps described in the
+[Web of Science](wos.md) section.
 
 You should now have two files with all your publications and all the citing
 articles. We can take over from there! To generate the verification sheet for the
