@@ -261,6 +261,11 @@ def make_candidate(
                 continue
 
             if any(au.last_name in name for au in cite.authors):
+                log.warning(
+                    "Self-citation for publication '%s': '%s'.",
+                    pub.doi,
+                    cite.title,
+                )
                 continue
 
             total_citations += 1
@@ -453,7 +458,7 @@ def export_publications_latex(
         min_citations=min_citations,
     )
 
-    candidate = make_candidate(candidate_name, pubs)
+    candidate = make_candidate(candidate_name, pubs, position=position)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
     with template_file.open(encoding="utf-8") as f:
