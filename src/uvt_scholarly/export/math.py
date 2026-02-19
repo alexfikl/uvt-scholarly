@@ -168,6 +168,14 @@ ID_TO_POSITION = {
     "cs3": Position.JuniorResearcher,
 }
 
+AVERAGED_RIS_POSITIONS = {
+    Position.Professor,
+    Position.AssociateProfessor,
+    Position.Assistant,
+    Position.SeniorResearcher,
+    Position.Researcher,
+}
+
 # }}}
 
 
@@ -214,7 +222,12 @@ class Candidate:
     total_citations: int
 
 
-def make_candidate(name: str, pubs: Sequence[Publication]) -> Candidate:
+def make_candidate(
+    name: str,
+    pubs: Sequence[Publication],
+    *,
+    position: Position = Position.Professor,
+) -> Candidate:
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
@@ -233,6 +246,9 @@ def make_candidate(name: str, pubs: Sequence[Publication]) -> Candidate:
         if ris < MIN_RIS_SCORE:
             log.warning("Journal RIS '%.3f' < 0.5: '%s'.", ris, pub.journal)
             continue
+
+        if position in AVERAGED_RIS_POSITIONS:
+            ris /= len(pub.authors)
 
         total_ris += ris
         if pub.year >= seven_years_ago:
@@ -306,7 +322,7 @@ def export_publications_csv(
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
-    candidate = make_candidate(candidate_name, pubs)
+    candidate = make_candidate(candidate_name, pubs, position=position)
 
     with open(filename, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
@@ -319,10 +335,10 @@ def export_publications_csv(
 
         for i, pub in enumerate(candidate.publications):
             ris = pub.journal.scores[Score.RIS]
-            if position in {Position.AssistantProfessor, Position.JuniorResearcher}:
-                ris_per_author = ris
-            else:
+            if position in AVERAGED_RIS_POSITIONS:
                 ris_per_author = ris / len(pub.authors)
+            else:
+                ris_per_author = ris
 
             writer.writerow(
                 dict(
@@ -418,10 +434,10 @@ def export_publications_latex(
     env.filters["is_recent"] = filter_latex_is_recent
     env.filters["get_score"] = filter_get_score
 
-    if position in {Position.AssistantProfessor, Position.JuniorResearcher}:
-        env.filters["get_average_score"] = filter_get_score
-    else:
+    if position in AVERAGED_RIS_POSITIONS:
         env.filters["get_average_score"] = filter_get_average_score
+    else:
+        env.filters["get_average_score"] = filter_get_score
 
     # }}}
 
