@@ -27,6 +27,8 @@ MDPI_JOURNAL_LIST_URL = "https://consortium.ch/mdpi_titlelist_publish"
 
 # {{{ parser
 
+# NOTE: this is only here to avoid a dependency on beautifulsoup (or other nicer APIs)
+
 
 class BeallParser(HTMLParser):
     def __init__(self) -> None:
