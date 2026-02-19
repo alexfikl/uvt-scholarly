@@ -5,10 +5,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from html.parser import HTMLParser
+from typing import TYPE_CHECKING
 
 import httpx
 
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.publication import ISSN
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = make_logger(__name__)
 
@@ -16,6 +21,9 @@ PREDATORY_PUBLISHER_URL = "https://beallslist.net/"
 """URL for a list of potential predatory publishers."""
 PREDATORY_JOURNAL_URL = "https://beallslist.net/standalone-journals/"
 """URL for a list of potential predatory standalone journals."""
+
+MDPI_JOURNAL_LIST_URL = "https://consortium.ch/mdpi_titlelist_publish"
+"""Official URL for a list of all MDPI journals."""
 
 # {{{ parser
 
@@ -104,6 +112,7 @@ def parse_beall_publishers(client: httpx.Client | None = None) -> tuple[Publishe
 class Journal:
     name: str
     url: str
+    issn: ISSN | None
 
     def __str__(self) -> str:
         return f"{self.name} ({self.url})"
@@ -122,7 +131,38 @@ def parse_beall_journals(client: httpx.Client | None = None) -> tuple[Journal, .
     parser = BeallParser()
     parser.feed(text)
 
-    return tuple(Journal(name, url) for name, url in parser.results)
+    return tuple(Journal(name, url, issn=None) for name, url in parser.results)
+
+
+# }}}
+
+
+# {{{ parse_mdpi_journals
+
+
+def parse_mdpi_journals(filename: pathlib.Path) -> tuple[Journal, ...]:
+    if not filename.exists():
+        raise FileNotFoundError(filename)
+
+    import openpyxl
+
+    wb = openpyxl.load_workbook(filename, read_only=True)
+    if wb is None:
+        raise ValueError(f"could not load workbook from file: '{filename}'")
+
+    result = []
+    for row in wb.active.iter_rows(min_row=13, max_col=3, values_only=True):
+        if row[0] is None:
+            break
+
+        issn = ISSN.from_string(row[1])
+        if not issn.is_valid:
+            log.warning("Journal '%s' does not have a valid ISSN: '%s'", row[0], issn)
+            continue
+
+        result.append(Journal(row[0], row[2], issn))
+
+    return tuple(result)
 
 
 # }}}

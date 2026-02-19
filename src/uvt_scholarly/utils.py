@@ -56,6 +56,7 @@ def download_file(
     *,
     # NOTE: the default timeout in httpx is 5s. We set it higher just in case..
     timeout: float = 15.0,
+    follow_redirects: bool = False,
     force: bool = False,
 ) -> None:
     if not force and filename.exists():
@@ -67,7 +68,12 @@ def download_file(
     try:
         with (
             open(filename, "wb") as f,
-            httpx.stream("GET", url, timeout=timeout) as response,
+            httpx.stream(
+                "GET",
+                url,
+                follow_redirects=follow_redirects,
+                timeout=timeout,
+            ) as response,
         ):
             response.raise_for_status()
 

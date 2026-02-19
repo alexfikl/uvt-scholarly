@@ -43,6 +43,23 @@ def test_parse_beall_journals() -> None:
 
 # }}}
 
+
+# {{{ test_parse_mdpi_journals
+
+
+def test_parse_mdpi_journals() -> None:
+    from uvt_scholarly.predatory import MDPI_JOURNAL_LIST_URL, parse_mdpi_journals
+    from uvt_scholarly.utils import download_file
+
+    filename = TMPDIR / "uvt-scholarly-test-predatory-mdpi.xlsx"
+    download_file(MDPI_JOURNAL_LIST_URL, filename, follow_redirects=True)
+
+    result = parse_mdpi_journals(filename)
+    assert len(result) == 416, len(result)
+
+
+# }}}
+
 if __name__ == "__main__":
     import sys
 
