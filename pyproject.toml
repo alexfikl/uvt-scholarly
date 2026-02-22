@@ -53,11 +53,8 @@ test = [
     "ty",
 ]
 docs = [
-    "mkdocs",
-    "mkdocs-autorefs",
-    "mkdocs-terminal",
     "mkdocstrings-python",
-    "pymdown-extensions",
+    "zensical",
 ]
 bibtex = [ "bibtexparser" ]
 

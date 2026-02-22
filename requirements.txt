@@ -50,7 +50,7 @@ pylatexenc==2.10
     # via uvt-scholarly (pyproject.toml)
 pyperclip==1.11.0
     # via uvt-scholarly (pyproject.toml)
-rich==14.3.2
+rich==14.3.3
     # via uvt-scholarly (pyproject.toml)
 titlecase==2.4.1
     # via uvt-scholarly (pyproject.toml)

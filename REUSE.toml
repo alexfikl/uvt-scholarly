@@ -49,7 +49,7 @@ path = [
     "docs/js/*.js",
     "docs/justfile",
     "docs/requirements.txt",
-    "mkdocs.yml",
+    "zensical.toml",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru Fikl <alexfikl@gmail.com>"

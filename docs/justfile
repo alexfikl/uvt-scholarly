@@ -3,11 +3,10 @@ PYTHON := 'python -X dev'
 _default:
     @just --list
 
-[doc("Build documentation using mkdocs")]
+[doc("Build documentation using zensical")]
 build:
-    {{ PYTHON }} -m mkdocs build --config-file ../mkdocs.yml --clean --strict
+    {{ PYTHON }} -m zensical build --config-file ../zensical.toml --clean --strict
 
-[doc("Serve the documentation using mkdocs")]
+[doc("Serve the documentation using zensical")]
 serve:
-    {{ PYTHON }} -m mkdocs serve --config-file ../mkdocs.yml --clean --strict
-
+    {{ PYTHON }} -m zensical serve --config-file ../zensical.toml --open --strict
