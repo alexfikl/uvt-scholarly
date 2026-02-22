@@ -1,3 +1,5 @@
+# API Reference
+
 ## Publication
 
 ::: uvt_scholarly.publication
