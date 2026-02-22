@@ -1,0 +1,92 @@
+[project]
+site_name = "UVT Scholarly"
+site_description = "Convert WoS and Scopus data to UEFISCDI and CNATDCU criteria verification sheets"
+site_author = "Alex Fikl"
+
+repo_url = "https://github.com/alexfikl/uvt-scholarly"
+site_url = "https://uvt-scholarly.readthedocs.io"
+
+extra_javascript = ["js/mathjax.js", "https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"]
+
+[[project.nav]]
+Home = "index.md"
+
+[[project.nav]]
+Installation = "installation.md"
+
+[[project.nav]]
+Usage = [
+    "usage.md",
+    {"Web of Science" = "usage/wos.md"},
+    {"Scopus" = "usage/scopus.md"},
+    {"Mathematics" = "usage/math.md"},
+    {"Computer Science" = "usage/cs.md"},
+]
+
+[[project.nav]]
+"API Reference" = "api.md"
+
+[project.theme]
+features = [
+  "content.code.annotate",
+  "content.code.copy",
+  "content.code.select",
+  "navigation.footer",
+  "navigation.path",
+  "navigation.prune",
+  "navigation.indexes",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.tracking",
+  "navigation.top",
+  "toc.integrate",
+]
+
+[project.extra]
+repo_url = "https://github.com/alexfikl/uvt-scholarly"
+repo_name = "alexfikl/uvt-scholarly"
+edit_uri = "edit/master/docs/"
+
+[[project.extra.social]]
+icon = "simple/github"
+link = "https://github.com/alexfikl/uvt-scholarly"
+
+[project.markdown_extensions.toc]
+toc_depth = 2
+permalink = true
+[project.markdown_extensions.tables]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+show_source = false
+show_root_heading = false
+show_root_toc_entry = false
+show_root_members_full_path = true
+heading_level = 4
+show_bases = true
+annotations_path = "brief"
+show_signature = true
+show_signature_annotations = true
+show_signature_type_parameters = true
+signature_crossrefs = true
+members_order = "source"
+separate_signature = true
+scoped_crossrefs = true
+docstring_section_style = "list"

@@ -270,12 +270,12 @@ class DOI:
     [namespace][], the second part is the [registrant][] and the last part is
     the [item][] suffix.
 
-    /// note
-    When comparing two DOIs for equality, the suffix partially compares
-    in a case-insensitive way. In particular, all ASCII letters from the
-    suffix are considered to be case-insensitive, but other Unicode letters
-    are compared in a case-sensitive fashion.
-    ///
+    !!! info
+
+        When comparing two DOIs for equality, the suffix partially compares in
+        a case-insensitive way. In particular, all ASCII letters from the
+        suffix are considered to be case-insensitive, but other Unicode letters
+        are compared in a case-sensitive fashion.
     """
 
     namespace: str

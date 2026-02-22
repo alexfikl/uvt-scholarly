@@ -532,9 +532,9 @@ def read_from_bib(
     that all the required fields are available. However, this function only
     uses the fields required to fill out a [uvt_scholarly.publication.Publication][].
 
-    /// note
-    This function requires the `bibtexparser` library to read the BibTeX file.
-    ///
+    !!! info
+
+        This function requires the `bibtexparser` library to read the BibTeX file.
 
     Parameters:
         include_citations: If *True*, we also look for the `Cited-References`
