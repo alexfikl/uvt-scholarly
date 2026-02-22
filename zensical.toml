@@ -52,7 +52,7 @@ icon = "simple/github"
 link = "https://github.com/alexfikl/uvt-scholarly"
 
 [project.markdown_extensions.toc]
-toc_depth = 2
+toc_depth = 3
 permalink = true
 [project.markdown_extensions.tables]
 [project.markdown_extensions.admonition]
@@ -79,8 +79,8 @@ show_source = false
 show_root_heading = false
 show_root_toc_entry = false
 show_root_members_full_path = true
-heading_level = 4
 show_bases = true
+heading_level = 3
 annotations_path = "brief"
 show_signature = true
 show_signature_annotations = true

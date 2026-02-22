@@ -1,42 +1,36 @@
-# Publication
+## Publication
 
 ::: uvt_scholarly.publication
 
 ::: uvt_scholarly.enrich
 
-# UEFISCDI
+## UEFISCDI
 
 ::: uvt_scholarly.uefiscdi
 
-## Article Influence Score (AIS)
-
 ::: uvt_scholarly.uefiscdi.ais
-
-## Relative Influence Score (RIS)
 
 ::: uvt_scholarly.uefiscdi.ris
 
-## Relative Impact Factor (RIF)
-
 ::: uvt_scholarly.uefiscdi.rif
 
-# Web of Science
+## Web of Science
 
 ::: uvt_scholarly.wos
 
-# ANZSRC
+## ANZSRC
 
 Support for the Australian and New Zealand Standard Research Classification
 (ANZSRC).
 
 ::: uvt_scholarly.anzsrc
 
-# CORE
+## CORE
 
 Support for the Computing Research and Education (CORE) Association of Australasia.
 
 ::: uvt_scholarly.core
 
-# Misc
+## Misc
 
 ::: uvt_scholarly.utils
