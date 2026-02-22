@@ -43,7 +43,7 @@ SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
 path = [
-    ".readthedocs.yml",
+    ".readthedocs.yaml",
     "docs/**/*.md",
     "docs/css/*.css",
     "docs/js/*.js",
