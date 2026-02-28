@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-import enum
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
+from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import Publication, Score
 
@@ -120,65 +120,6 @@ def filter_get_average_score(pub: Publication, name: str) -> float:
 
 # }}}
 
-# {{{ position
-
-
-@enum.unique
-class Position(enum.Enum):
-    Professor = enum.auto()
-    AssociateProfessor = enum.auto()
-    AssistantProfessor = enum.auto()
-    Assistant = enum.auto()
-
-    SeniorResearcher = enum.auto()
-    Researcher = enum.auto()
-    JuniorResearcher = enum.auto()
-
-
-POSITION_NAME = {
-    # academic
-    Position.Professor: "Profesor Universitar",  # spell: disable
-    Position.AssociateProfessor: "Conferențiar",
-    Position.AssistantProfessor: "Lector",
-    Position.Assistant: "Asistent Universitar",
-    # research
-    Position.SeniorResearcher: "Cercetător Științific I",
-    Position.Researcher: "Cercetător Științific II",
-    Position.JuniorResearcher: "Cercetător Științific III",
-}
-
-POSITION_SHORT_NAME = {
-    Position.Professor: "Prof. Dr.",
-    Position.AssociateProfessor: "Conf. Dr.",
-    Position.AssistantProfessor: "Lect. Dr.",
-    Position.Assistant: "Ass.",
-    # research
-    Position.SeniorResearcher: "C.S. I",
-    Position.Researcher: "C.S. II",
-    Position.JuniorResearcher: "C.S. III",
-}
-
-ID_TO_POSITION = {
-    "prof": Position.Professor,
-    "conf": Position.AssociateProfessor,
-    "lect": Position.AssistantProfessor,
-    "assi": Position.Assistant,
-    "cs1": Position.SeniorResearcher,
-    "cs2": Position.Researcher,
-    "cs3": Position.JuniorResearcher,
-}
-
-AVERAGED_RIS_POSITIONS = {
-    Position.Professor,
-    Position.AssociateProfessor,
-    Position.Assistant,
-    Position.SeniorResearcher,
-    Position.Researcher,
-}
-
-# }}}
-
-
 # {{{ criteria
 
 
@@ -194,16 +135,16 @@ class Criteria:
         return POSITION_NAME[self.position]
 
 
-MIN_INDICATOR_FOR_POSITION = {
+MIN_CRITERIA_FOR_POSITION = {
     # academic
-    Position.Professor: (5.0, 2.5, 12),
-    Position.AssociateProfessor: (2.5, 1.5, 6),
-    Position.AssistantProfessor: (1.0, 0.0, 0),
-    Position.Assistant: (0.0, 0.0, 0),
+    Position.Professor: Criteria(Position.Professor, 5.0, 2.5, 12),
+    Position.AssociateProfessor: Criteria(Position.AssociateProfessor, 2.5, 1.5, 6),
+    Position.AssistantProfessor: Criteria(Position.AssistantProfessor, 1.0, 0.0, 0),
+    Position.Assistant: Criteria(Position.Assistant, 0.0, 0.0, 0),
     # research
-    Position.SeniorResearcher: (5.0, 2.5, 12),
-    Position.Researcher: (2.5, 1.5, 6),
-    Position.JuniorResearcher: (1.0, 0.0, 0),
+    Position.SeniorResearcher: Criteria(Position.SeniorResearcher, 5.0, 2.5, 12),
+    Position.Researcher: Criteria(Position.Researcher, 2.5, 1.5, 6),
+    Position.JuniorResearcher: Criteria(Position.JuniorResearcher, 1.0, 0.0, 0),
 }
 
 
@@ -211,6 +152,14 @@ MIN_INDICATOR_FOR_POSITION = {
 
 
 # {{{ candidate
+
+AVERAGED_RIS_POSITIONS = {
+    Position.Professor,
+    Position.AssociateProfessor,
+    Position.Assistant,
+    Position.SeniorResearcher,
+    Position.Researcher,
+}
 
 
 @dataclass(frozen=True)
@@ -450,14 +399,7 @@ def export_publications_latex(
 
     from importlib.resources import files
 
-    min_ris, min_recent_ris, min_citations = MIN_INDICATOR_FOR_POSITION[position]
-    criteria = Criteria(
-        position=position,
-        min_ris=min_ris,
-        min_recent_ris=min_recent_ris,
-        min_citations=min_citations,
-    )
-
+    criteria = MIN_CRITERIA_FOR_POSITION[position]
     candidate = make_candidate(candidate_name, pubs, position=position)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")

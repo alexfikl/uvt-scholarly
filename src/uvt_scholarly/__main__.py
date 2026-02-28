@@ -8,7 +8,7 @@ from importlib import metadata
 
 import click
 
-from uvt_scholarly.export.math import ID_TO_POSITION
+from uvt_scholarly.export.common import ID_TO_POSITION
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.utils import PROJECT_NAME
 
@@ -218,7 +218,7 @@ def math_generate(
         ctx.exit(1)
 
     if outfile.suffix == ".tex":
-        from uvt_scholarly.export.math import ID_TO_POSITION, export_publications_latex
+        from uvt_scholarly.export.math import export_publications_latex
 
         export_publications_latex(
             outfile,
@@ -228,7 +228,7 @@ def math_generate(
             overwrite=force,
         )
     elif outfile.suffix == ".csv":
-        from uvt_scholarly.export.math import ID_TO_POSITION, export_publications_csv
+        from uvt_scholarly.export.math import export_publications_csv
 
         export_publications_csv(
             outfile,
