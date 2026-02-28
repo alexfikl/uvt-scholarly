@@ -55,7 +55,7 @@ def test_parse_mdpi_journals() -> None:
     download_file(MDPI_JOURNAL_LIST_URL, filename, follow_redirects=True)
 
     result = parse_mdpi_journals(filename)
-    assert len(result) == 416, len(result)
+    assert len(result) == 506, len(result)
 
 
 # }}}

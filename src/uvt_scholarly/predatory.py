@@ -142,7 +142,11 @@ def parse_beall_journals(client: httpx.Client | None = None) -> tuple[Journal, .
 # {{{ parse_mdpi_journals
 
 
-def parse_mdpi_journals(filename: pathlib.Path) -> tuple[Journal, ...]:
+def parse_mdpi_journals(
+    filename: pathlib.Path,
+    *,
+    version: int = 2026,
+) -> tuple[Journal, ...]:
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -153,16 +157,34 @@ def parse_mdpi_journals(filename: pathlib.Path) -> tuple[Journal, ...]:
         raise ValueError(f"could not load workbook from file: '{filename}'")
 
     result = []
-    for row in wb.active.iter_rows(min_row=13, max_col=3, values_only=True):
-        if row[0] is None:
-            break
+    if version == 2023:
+        for row in wb.active.iter_rows(min_row=13, max_col=3, values_only=True):
+            if row[0] is None:
+                break
 
-        issn = ISSN.from_string(row[1])
-        if not issn.is_valid:
-            log.warning("Journal '%s' does not have a valid ISSN: '%s'", row[0], issn)
-            continue
+            issn = ISSN.from_string(row[1])
+            if not issn.is_valid:
+                log.warning(
+                    "Journal '%s' does not have a valid ISSN: '%s'", row[0], issn
+                )
+                continue
 
-        result.append(Journal(row[0], row[2], issn))
+            result.append(Journal(row[0], row[2], issn))
+    elif version == 2026:
+        for row in wb.active.iter_rows(min_row=12, max_col=4, values_only=True):
+            if row[0] is None:
+                break
+
+            issn = ISSN.from_string(row[2])
+            if not issn.is_valid:
+                log.warning(
+                    "Journal '%s' does not have a valid ISSN: '%s'", row[0], issn
+                )
+                continue
+
+            result.append(Journal(row[1], row[3], issn))
+    else:
+        raise ValueError(f"unknown version: {version}")
 
     return tuple(result)
 
