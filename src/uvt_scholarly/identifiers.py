@@ -458,19 +458,16 @@ def _isbn13_check_digit(isbn: str) -> str:
 
 @dataclass(frozen=True)
 class ISBN10:
+    """An ISBN-10 identifier."""
+
     parts: tuple[str, str, str, str]
+    """The parts of the identifier, according to the standard. These are mostly
+    internal and should not be used.
 
-    @property
-    def group(self) -> str:
-        return self.parts[0]
-
-    @property
-    def publisher(self) -> str:
-        return self.parts[1]
-
-    @property
-    def title(self) -> str:
-        return self.parts[2]
+    They are: the registration group identifier, the registrant identifier (e.g.
+    publisher), the publication identifier (e.g. title) and the check digit. These
+    are currently not parsed correctly and should not be relied upon.
+    """
 
     def __str__(self) -> str:
         return "".join(self.parts)
@@ -480,6 +477,8 @@ class ISBN10:
 
     @staticmethod
     def from_string(isbn10: str) -> ISBN10:
+        """Convert some text into an [ISBN10][] instance."""
+
         isbn10 = isbn10.strip().replace("-", "").upper()
         if len(isbn10) != 10:
             raise ValueError(f"ISBN10 expected to have 10 characters: {isbn10!r}")
@@ -490,6 +489,8 @@ class ISBN10:
 
     @property
     def is_valid(self) -> bool:
+        """True if the ISBN-10 is valid."""
+
         isbn = str(self)
         if len(isbn) != 10:
             return False
@@ -508,6 +509,8 @@ class ISBN10:
         return True
 
     def to_isbn13(self) -> ISBN13:
+        """Convert an ISBN-10 into an ISBN-13."""
+
         isbn13 = f"978{str(self)[:-1]}"
         checksum = _isbn13_check_digit(isbn13)
 
@@ -517,18 +520,9 @@ class ISBN10:
 @dataclass(frozen=True)
 class ISBN13:
     parts: tuple[str, str, str, str, str]
-
-    @property
-    def group(self) -> str:
-        return self.parts[1]
-
-    @property
-    def publisher(self) -> str:
-        return self.parts[2]
-
-    @property
-    def title(self) -> str:
-        return self.parts[3]
+    """The parts of the identifier, according to the standard. These are mostly
+    internal and should not be used.
+    """
 
     def __str__(self) -> str:
         return "".join(self.parts)
@@ -538,6 +532,12 @@ class ISBN13:
 
     @staticmethod
     def from_string(isbn13: str) -> ISBN13:
+        """Convert some text into an [ISBN13][] instance.
+
+        Note that this function also supports ISBN-10 inputs, which are converted
+        to ISBN-13 using [ISBN10.to_isbn13][].
+        """
+
         isbn13 = isbn13.strip().replace("-", "").upper()
         if len(isbn13) == 10:
             return ISBN10.from_string(isbn13).to_isbn13()
@@ -554,6 +554,7 @@ class ISBN13:
 
     @property
     def is_valid(self) -> bool:
+        """True if the ISBN-13 is valid."""
         isbn = str(self)
         if len(isbn) != 13:
             return False
@@ -575,6 +576,12 @@ class ISBN13:
         return True
 
     def to_isbn10(self) -> ISBN10:
+        """Convert an ISBN-13 into an ISBN-10.
+
+        Note that not all ISBN-13 identifiers can be converted to ISBN-10. Only
+        those with the special prefix `978` are allowed.
+        """
+
         isbn = str(self)
         if not isbn.startswith("978"):
             raise ValueError(f"cannot convert ISBN13 to ISBN10: {self}")
