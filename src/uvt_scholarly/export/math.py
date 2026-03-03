@@ -171,6 +171,16 @@ class Candidate:
     total_citations: int
 
 
+def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
+    return tuple(
+        sorted(
+            pubs,
+            key=lambda p: (p.year, p.journal.scores[Score.RIS]),
+            reverse=True,
+        )
+    )
+
+
 def make_candidate(
     name: str,
     pubs: Sequence[Publication],
@@ -179,7 +189,7 @@ def make_candidate(
 ) -> Candidate:
     from datetime import datetime
 
-    seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
+    recent_year_cutoff = datetime.now().year - RECENT_YEAR_CUTOFF
 
     total_ris = 0.0
     recent_total_ris = 0.0
@@ -200,7 +210,7 @@ def make_candidate(
             ris /= len(pub.authors)
 
         total_ris += ris
-        if pub.year >= seven_years_ago:
+        if pub.year >= recent_year_cutoff:
             recent_total_ris += ris
 
         cited_by = []
@@ -223,26 +233,14 @@ def make_candidate(
         publications.append(
             replace(
                 pub,
-                cited_by=tuple(
-                    sorted(
-                        cited_by,
-                        key=lambda p: (p.year, p.journal.scores[Score.RIS]),
-                        reverse=True,
-                    )
-                ),
+                cited_by=sortedpubs(cited_by),
                 cited_by_count=len(cited_by),
             )
         )
 
     return Candidate(
         qualname=name,
-        publications=tuple(
-            sorted(
-                publications,
-                key=lambda p: (p.year, p.journal.scores[Score.RIS]),
-                reverse=True,
-            )
-        ),
+        publications=sortedpubs(publications),
         ris=total_ris,
         recent_ris=recent_total_ris,
         total_citations=total_citations,
