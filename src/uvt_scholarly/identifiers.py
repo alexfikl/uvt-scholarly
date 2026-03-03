@@ -539,6 +539,9 @@ class ISBN13:
     @staticmethod
     def from_string(isbn13: str) -> ISBN13:
         isbn13 = isbn13.strip().replace("-", "").upper()
+        if len(isbn13) == 10:
+            return ISBN10.from_string(isbn13).to_isbn13()
+
         if len(isbn13) != 13:
             raise ValueError(f"ISBN13 expected to have 13 characters: {isbn13!r}")
 
