@@ -33,9 +33,30 @@ ARXIV_SHORT_MONTH = {
 ARXIV_BASE_URL = "https://arxiv.org/abs"
 """Base URL for arXiv documents."""
 
+ARXIV_PDF_URL = "https://arxiv.org/pdf"
+"""Base URL for arXiv PDF files."""
+
 
 @dataclass(frozen=True)
 class arXiv(ABC):  # noqa: N801
+    """An [arXiv](https://arxiv.org) identifier."""
+
+    year: int
+    """Year of the arXiv submission."""
+    month: int
+    """Month of the arXiv submission."""
+    number: str
+    """The identifier of the submission in the month. This is usually a padded
+    digit string, depending on the variant of the arXiv identifier.
+    """
+
+    version: int | None
+    """A version for the submission. If *None*, the latest version is assumed."""
+    archive: str | None
+    """The archive the submission belongs to."""
+    subjectclass: str | None
+    """The subject class the submission belongs to."""
+
     @abstractmethod
     def latest(self) -> str:
         """A string representing the latest version of the arXiv identifier."""
@@ -55,7 +76,7 @@ class arXiv(ABC):  # noqa: N801
         return f"arXiv:{self}"
 
     def __str__(self) -> str:
-        version = f"v{self.version}" if self.version is not None else ""  # ty: ignore[unresolved-attribute]
+        version = f"v{self.version}" if self.version is not None else ""
         return f"{self.latest()}{version}"
 
     def __repr__(self) -> str:
@@ -65,6 +86,11 @@ class arXiv(ABC):  # noqa: N801
     def url(self) -> str:
         """A URL for the abstract page corresponding to this arXiv identifier."""
         return f"{ARXIV_BASE_URL}/{self}"
+
+    @property
+    def pdf(self) -> str:
+        """A URL for the PDF page corresponding to this arXiv identifier."""
+        return f"{ARXIV_PDF_URL}/{self}"
 
     @staticmethod
     def from_string(arxivid: str) -> arXiv:
@@ -147,13 +173,7 @@ class arXiv(ABC):  # noqa: N801
 
 @dataclass(frozen=True)
 class ModernArXiv(arXiv):
-    year: int
-    month: int
-    number: str
-    version: int | None
-
-    archive: str | None
-    subjectclass: str | None
+    """A modern arXiv identifier of the form `YYMM.NNNN[N][vN]`."""
 
     def latest(self) -> str:
         return f"{self.year % 100:02d}{self.month:02d}.{self.number}"
@@ -197,13 +217,7 @@ class ModernArXiv(arXiv):
 
 @dataclass(frozen=True)
 class LegacyArXiv(arXiv):
-    year: int
-    month: int
-    number: str
-    version: int | None
-
-    archive: str
-    subjectclass: str | None
+    """A legacy arXiv identifier of the form `ARCHIVE.[SUBJECTCLASS]/YYMMNNN`."""
 
     def latest(self) -> str:
         archive = self.archive
@@ -217,6 +231,9 @@ class LegacyArXiv(arXiv):
 
     @property
     def is_valid(self) -> bool:
+        if self.archive is None:
+            return False
+
         # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
         if not 1991 <= self.year <= 2007:
             return False
