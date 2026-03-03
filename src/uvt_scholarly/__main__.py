@@ -114,6 +114,7 @@ def download(
 
 # }}}
 
+
 # {{{ math
 
 
@@ -229,6 +230,120 @@ def math_generate(
         )
     elif outfile.suffix == ".csv":
         from uvt_scholarly.export.math import export_publications_csv
+
+        export_publications_csv(
+            outfile,
+            candidate,
+            pubs,
+            position=ID_TO_POSITION[position],
+            overwrite=force,
+        )
+    else:
+        log.error("Unsupported file format '%s'.", outfile)
+        ctx.exit(1)
+
+    log.info("Generated file: '%s'.", outfile)
+
+
+# }}}
+
+
+# {{{ cs
+
+
+@main.group("cs")
+@click.help_option("-h", "--help")
+@click.pass_context
+def cs(ctx: click.Context) -> None:
+    """Generate documents based on citation data for the Computer Science Department."""
+
+
+@cs.command("generate")
+@click.help_option("-h", "--help")
+@click.option(
+    "--source",
+    type=click.Choice(sorted(SUPPORTED_SOURCES)),
+    required=True,
+    help="The source format of the publications and citations",
+)
+@click.option(
+    "--candidate",
+    required=True,
+    help="Full name of the candidate for which to generate the list",
+)
+@click.option(
+    "--position",
+    type=click.Choice(list(ID_TO_POSITION)),
+    required=True,
+    help="The position for which the candidate is applying",
+)
+@click.option(
+    "--outfile",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="The file name for the generated documents",
+)
+@click.option(
+    "--pub-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="A list of publications",
+)
+@click.option(
+    "--cite-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="A list of citations for the given publications",
+)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite generated file if it exists",
+)
+@click.pass_context
+def cs_generate(
+    ctx: click.Context,
+    source: str,
+    candidate: str,
+    position: str,
+    outfile: pathlib.Path | None,
+    pub_file: pathlib.Path,
+    cite_file: pathlib.Path,
+    force: bool,  # noqa: FBT001
+) -> None:
+    """Generate citation data for the Computer Science Department."""
+
+    from uvt_scholarly.uefiscdi import UEFISCDI_DB_FILE
+
+    if not UEFISCDI_DB_FILE.exists():
+        log.error("UEFISCDI database file does not exist: '%s'.", UEFISCDI_DB_FILE)
+        log.info("Run 'uvtscholarly download' to generate the database.")
+        ctx.exit(1)
+
+    if outfile is None:
+        basename = candidate.lower().replace(" ", "-").replace(".", "")
+        outfile = pathlib.Path(f"cs-{basename}.csv")
+
+    if not force and outfile.exists():
+        log.error("File already exists (use --force to overwrite): '%s'.", outfile)
+        ctx.exit(1)
+
+    from uvt_scholarly.enrich import add_cited_by
+
+    if source == "wos":
+        from uvt_scholarly.wos import read_pubs
+
+        pubs = read_pubs(pub_file)
+        cites = read_pubs(cite_file, include_citations=True)
+        pubs = add_cited_by(pubs, cites)
+    else:
+        log.error("Unknown source format: '%s'", source)
+        ctx.exit(1)
+
+    if outfile.suffix == ".csv":
+        from uvt_scholarly.export.cs import export_publications_csv
 
         export_publications_csv(
             outfile,

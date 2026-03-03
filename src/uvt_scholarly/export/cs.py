@@ -301,6 +301,7 @@ def export_publications_csv(
                             pub.journal.name,
                             filter_csv_format_volume(pub),
                             str(pub.year),
+                            "N/A",
                             str(len(pub.authors)),
                             "N/A",
                             str(len(pub.cited_by)),
@@ -312,8 +313,8 @@ def export_publications_csv(
                 )
             )
 
-    filename = filename.with_stem(f"{filename.stem}.confs")
-    with open(filename, "w", encoding=encoding) as f:
+    citesfile = filename.with_stem(f"{filename.stem}.confs")
+    with open(citesfile, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
             f,
             CONFERENCE_FIELD_NAMES,
@@ -347,8 +348,8 @@ def export_publications_csv(
                 )
             )
 
-    filename = filename.with_stem(f"{filename.stem}.cites")
-    with open(filename, "w", encoding=encoding) as f:
+    confsfile = filename.with_stem(f"{filename.stem}.cites")
+    with open(confsfile, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
             f,
             CITATION_FIELD_NAMES,
@@ -358,12 +359,15 @@ def export_publications_csv(
         writer.writeheader()
 
         for i, pub in enumerate(candidate.publications):
+            if not pub.cited_by:
+                continue
+
             writer.writerow(
                 dict(
                     zip(
                         CITATION_FIELD_NAMES,
                         [
-                            str(i),
+                            str(i + 1),
                             pub.title,
                             filter_csv_format_authors(pub),
                             "",
@@ -383,7 +387,7 @@ def export_publications_csv(
                         zip(
                             CITATION_FIELD_NAMES,
                             [
-                                str(j),
+                                f"{i + 1}.{j + 1}",
                                 cited_by.title,
                                 filter_csv_format_authors(cited_by),
                                 cited_by.journal.name,
