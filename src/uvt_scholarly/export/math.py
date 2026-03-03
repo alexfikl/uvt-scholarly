@@ -223,14 +223,26 @@ def make_candidate(
         publications.append(
             replace(
                 pub,
-                cited_by=tuple(cited_by),
+                cited_by=tuple(
+                    sorted(
+                        cited_by,
+                        key=lambda p: (p.year, p.journal.scores[Score.RIS]),
+                        reverse=True,
+                    )
+                ),
                 cited_by_count=len(cited_by),
             )
         )
 
     return Candidate(
         qualname=name,
-        publications=publications,
+        publications=tuple(
+            sorted(
+                publications,
+                key=lambda p: (p.year, p.journal.scores[Score.RIS]),
+                reverse=True,
+            )
+        ),
         ris=total_ris,
         recent_ris=recent_total_ris,
         total_citations=total_citations,
