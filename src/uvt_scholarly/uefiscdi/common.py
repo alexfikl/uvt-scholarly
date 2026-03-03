@@ -9,8 +9,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
+from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import ISSN, Score
+from uvt_scholarly.publication import Score
 from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:

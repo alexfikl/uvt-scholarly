@@ -6,8 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
+from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import ISSN
 from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,

@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 import httpx
 
+from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import ISSN
 
 if TYPE_CHECKING:
     import pathlib

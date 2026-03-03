@@ -6,18 +6,15 @@ from __future__ import annotations
 import enum
 from typing import TYPE_CHECKING
 
+from uvt_scholarly.identifiers import DOI, ISSN, ORCiD, ResearcherID
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
-    DOI,
-    ISSN,
     Author,
     Category,
     CitedPublication,
     DocumentType,
-    ORCiD,
     Pages,
     Publication,
-    ResearcherID,
     Score,
 )
 

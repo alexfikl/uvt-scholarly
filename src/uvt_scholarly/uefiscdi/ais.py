@@ -7,8 +7,8 @@ import pathlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
+from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import ISSN, Category
 from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
@@ -23,6 +23,8 @@ from uvt_scholarly.uefiscdi.common import (
 
 if TYPE_CHECKING:
     from openpyxl.cell import ReadOnlyCell
+
+    from uvt_scholarly.publication import Category
 
 log = make_logger(__name__)
 

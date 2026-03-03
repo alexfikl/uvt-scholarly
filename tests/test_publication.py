@@ -40,7 +40,7 @@ TEST_ISSN_INVALID = (
 
 
 def test_issn() -> None:
-    from uvt_scholarly.publication import ISSN
+    from uvt_scholarly.identifiers import ISSN
 
     for value in TEST_ISSN_VALID:
         issn = ISSN.from_string(value)
@@ -100,7 +100,7 @@ TEST_DOI_INVALID = (
 
 
 def test_doi() -> None:
-    from uvt_scholarly.publication import DOI, _lowercase_ascii  # noqa: PLC2701
+    from uvt_scholarly.identifiers import DOI, _lowercase_ascii  # noqa: PLC2701
 
     for value in TEST_DOI_VALID:
         doi = DOI.from_string(value)
@@ -163,7 +163,7 @@ TEST_RESEARCHERID_INVALID = (
 
 
 def test_researcherid() -> None:
-    from uvt_scholarly.publication import ResearcherID
+    from uvt_scholarly.identifiers import ResearcherID
 
     for value in TEST_RESEARCHERID_VALID:
         rid = ResearcherID.from_string(value)
@@ -223,7 +223,7 @@ TEST_ORCID_INVALID = (
 
 
 def test_orcid() -> None:
-    from uvt_scholarly.publication import ORCiD
+    from uvt_scholarly.identifiers import ORCiD
 
     for value in TEST_ORCID_VALID:
         orcid = ORCiD.from_string(value)
