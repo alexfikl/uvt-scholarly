@@ -88,7 +88,7 @@ class arXiv(ABC):  # noqa: N801
         return f"{ARXIV_BASE_URL}/{self}"
 
     @property
-    def pdf(self) -> str:
+    def pdf_url(self) -> str:
         """A URL for the PDF page corresponding to this arXiv identifier."""
         return f"{ARXIV_PDF_URL}/{self}"
 
@@ -435,14 +435,149 @@ class DOI:
 # {{{ ISBN
 
 
+def _isbn10_check_digit(isbn: str) -> str:
+    assert len(isbn) == 9
+
+    # https://en.wikipedia.org/wiki/ISBN#ISBN-10_check_digits
+    checksum = sum(int(isbn[i]) * (10 - i) for i in range(9))
+    checksum = (11 - (checksum % 11)) % 11
+
+    return "X" if checksum == 10 else str(checksum)
+
+
+def _isbn13_check_digit(isbn: str) -> str:
+    assert len(isbn) == 12
+
+    # https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
+    checksum = sum(int(isbn[i]) * (1 if i % 2 == 0 else 3) for i in range(12))
+    checksum = (10 - (checksum % 10)) % 10
+    assert 0 <= checksum < 10
+
+    return str(checksum)
+
+
 @dataclass(frozen=True)
 class ISBN10:
-    pass
+    parts: tuple[str, str, str, str]
+
+    @property
+    def group(self) -> str:
+        return self.parts[0]
+
+    @property
+    def publisher(self) -> str:
+        return self.parts[1]
+
+    @property
+    def title(self) -> str:
+        return self.parts[2]
+
+    def __str__(self) -> str:
+        return "".join(self.parts)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
+    @staticmethod
+    def from_string(isbn10: str) -> ISBN10:
+        isbn10 = isbn10.strip().replace("-", "").upper()
+        if len(isbn10) != 10:
+            raise ValueError(f"ISBN10 expected to have 10 characters: {isbn10!r}")
+
+        # TODO: it would be cool to be able to separate these, but it seems like
+        # the only way to reliably do it is through the ISBN registry (?).
+        return ISBN10(("", "", "", isbn10))
+
+    @property
+    def is_valid(self) -> bool:
+        isbn = str(self)
+        if len(isbn) != 10:
+            return False
+
+        isbn, check = isbn[:-1], isbn[-1]
+        if not isbn.isdigit():
+            return False
+
+        if not (check.isdigit() or check == "X"):
+            return False
+
+        checksum = _isbn10_check_digit(isbn)
+        if checksum != check:  # noqa: SIM103
+            return False
+
+        return True
+
+    def to_isbn13(self) -> ISBN13:
+        isbn13 = f"978{str(self)[:-1]}"
+        checksum = _isbn13_check_digit(isbn13)
+
+        return ISBN13.from_string(f"{isbn13}{checksum}")
 
 
 @dataclass(frozen=True)
 class ISBN13:
-    pass
+    parts: tuple[str, str, str, str, str]
+
+    @property
+    def group(self) -> str:
+        return self.parts[1]
+
+    @property
+    def publisher(self) -> str:
+        return self.parts[2]
+
+    @property
+    def title(self) -> str:
+        return self.parts[3]
+
+    def __str__(self) -> str:
+        return "".join(self.parts)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
+    @staticmethod
+    def from_string(isbn13: str) -> ISBN13:
+        isbn13 = isbn13.strip().replace("-", "").upper()
+        if len(isbn13) != 13:
+            raise ValueError(f"ISBN13 expected to have 13 characters: {isbn13!r}")
+
+        if not isbn13.isdigit():
+            raise ValueError(f"ISBN13 expected to have only numbers: {isbn13!r}")
+
+        # TODO: it would be cool to be able to separate these, but it seems like
+        # the only way to reliably do it is through the ISBN registry (?).
+        return ISBN13((isbn13[:3], "", "", "", isbn13[3:]))
+
+    @property
+    def is_valid(self) -> bool:
+        isbn = str(self)
+        if len(isbn) != 13:
+            return False
+
+        if isbn[:3] not in {"978", "979"}:
+            return False
+
+        isbn, check = isbn[:-1], isbn[-1]
+        if not isbn.isdigit():
+            return False
+
+        if not check.isdigit():
+            return False
+
+        checksum = _isbn13_check_digit(isbn)
+        if checksum != check:  # noqa: SIM103
+            return False
+
+        return True
+
+    def to_isbn10(self) -> ISBN10:
+        isbn = str(self)
+        if not isbn.startswith("978"):
+            raise ValueError(f"cannot convert ISBN13 to ISBN10: {self}")
+
+        checksum = _isbn10_check_digit(isbn[3:-1])
+        return ISBN10.from_string(f"{isbn[3:-1]}{checksum}")
 
 
 # }}}

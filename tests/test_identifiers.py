@@ -345,6 +345,122 @@ def test_arxiv(valid_ids: tuple[str, ...], invalid_ids: tuple[str, ...]) -> None
 # }}}
 
 
+# {{{ test_isbn10
+
+TEST_ISBN10_VALID = (
+    "0306406152",
+    "0198534531",
+    "9992158107",
+    "123456789X",
+    "0000000000",
+    "0471958697",
+    "0201633612",
+    "0521406498",
+    "0804428352",
+    "059104885X",
+)
+
+TEST_ISBN10_INVALID = (
+    "030406153",
+    # invalid checksums
+    "0306406153",
+    "0198534532",
+    "9992158108",
+    "1234567891",
+    "0000000001",
+    "0471958698",
+    "0201633613",
+    "0521406499",
+    "0804428353",
+    "0591048859",
+)
+
+
+def test_isbn10() -> None:
+    from uvt_scholarly.identifiers import ISBN10
+
+    for value in TEST_ISBN10_VALID:
+        isbn = ISBN10.from_string(value)
+        assert isbn.is_valid, value
+        assert str(isbn) == value
+
+        isbn13 = isbn.to_isbn13()
+        assert isbn13.is_valid
+        assert isbn == isbn13.to_isbn10()
+
+    for value in TEST_ISBN10_INVALID:
+        try:
+            isbn = ISBN10.from_string(value)
+            is_valid = isbn.is_valid
+        except ValueError:
+            is_valid = False
+
+        assert not is_valid, value
+
+
+# }}}
+
+
+# {{{ test_isbn13
+
+TEST_ISBN13_VALID = (
+    # converts to ISBN10
+    "9781000000009",
+    "9789876543217",
+    "9781111111113",
+    "9785555555557",
+    "9782468135791",
+    # does not convert to ISBN10
+    "9791234567896",
+    "9798765432105",
+    "9791111111112",
+    "9792468135790",
+    "9795555555556",
+)
+
+TEST_ISBN13_INVALID = (
+    # incorrect checksums
+    "9781000000008",
+    "9789876543218",
+    "9781111111114",
+    "9785555555558",
+    "9782468135792",
+    "9791234567897",
+    "9798765432106",
+    "9791111111113",
+    "9792468135791",
+    "9795555555557",
+    # others
+    "9775555555557",  # incorrect prefix
+    "979111111113",  # incorrect length
+)
+
+
+def test_isbn13() -> None:
+    from uvt_scholarly.identifiers import ISBN13
+
+    for value in TEST_ISBN13_VALID:
+        isbn = ISBN13.from_string(value)
+        assert isbn.is_valid, value
+        assert str(isbn) == value
+
+        if value.startswith("978"):
+            isbn10 = isbn.to_isbn10()
+            assert isbn10.is_valid
+            assert isbn10.to_isbn13() == isbn
+
+    for value in TEST_ISBN13_INVALID:
+        try:
+            isbn = ISBN13.from_string(value)
+            is_valid = isbn.is_valid
+        except ValueError:
+            is_valid = False
+
+        assert not is_valid, value
+
+
+# }}}
+
 if __name__ == "__main__":
     import sys
 
