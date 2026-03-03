@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import httpx
@@ -10,6 +11,233 @@ import httpx
 from uvt_scholarly.logging import make_logger
 
 log = make_logger(__name__)
+
+
+# {{{ arXiv
+
+ARXIV_SHORT_MONTH = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "May",
+    6: "Jun",
+    7: "Jul",
+    8: "Aug",
+    9: "Sep",
+    10: "Oct",
+    11: "Nov",
+    12: "Dec",
+}
+
+ARXIV_BASE_URL = "https://arxiv.org/abs"
+"""Base URL for arXiv documents."""
+
+
+@dataclass(frozen=True)
+class arXiv(ABC):  # noqa: N801
+    @abstractmethod
+    def latest(self) -> str:
+        """A string representing the latest version of the arXiv identifier."""
+
+    @abstractmethod
+    def stamp(self) -> str:
+        """A string matching the stamp added to the left-hand side of arXiv papers."""
+
+    @property
+    @abstractmethod
+    def is_valid(self) -> bool:
+        """*True* if the arXiv is valid."""
+
+    def display(self) -> str:
+        """A (versioned) display string for an arXiv identifier."""
+        # https://info.arxiv.org/help/arxiv_identifier_for_services.html
+        return f"arXiv:{self}"
+
+    def __str__(self) -> str:
+        version = f"v{self.version}" if self.version is not None else ""  # ty: ignore[unresolved-attribute]
+        return f"{self.latest()}{version}"
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
+    @property
+    def url(self) -> str:
+        """A URL for the abstract page corresponding to this arXiv identifier."""
+        return f"{ARXIV_BASE_URL}/{self}"
+
+    @staticmethod
+    def from_string(arxivid: str) -> arXiv:
+        """Convert some text into an [arXiv][] instance.
+
+        This function supports both old-style and new style arXiv identifiers.
+        For more information see the [official decumentation](https://info.arxiv.org/help/arxiv_identifier.html).
+        """
+        arxivid = arxivid.strip()
+        if arxivid.lower().startswith("arxiv:"):
+            arxivid = arxivid[8:]
+
+        if "/" in arxivid:
+            # NOTE: this is the pre-2007 legacy format:
+            #   archive[.SUBJECTCLASS]/YYMMNN[vN]
+            archive, suffix = arxivid.split("/")
+            if "." in archive:
+                archive, subjectclass = archive.split(".", maxsplit=1)
+                subjectclass = subjectclass.upper()
+            else:
+                subjectclass = None
+
+            if "v" in suffix:
+                suffix, version = suffix.split("v", maxsplit=1)
+            else:
+                version = None
+
+            if not (
+                len(suffix) == 7
+                and suffix.isdigit()
+                and (version is None or version.isdigit())
+            ):
+                raise ValueError(f"arXiv has a form archive.SC/NNNNNNNvN: {arxivid!r}")
+
+            # NOTE: the years span 1991-2007
+            year = int(suffix[:2])
+            year = (2000 + year) if year <= 7 else (1990 + year)
+
+            return LegacyArXiv(
+                year=year,
+                month=int(suffix[2:4]),
+                number=suffix[4:],
+                version=int(version) if version else None,
+                archive=archive,
+                subjectclass=subjectclass,
+            )
+        else:
+            # NOTE: this is the post-2007 modern format:
+            #   YYMM.NNNN[N][vN]
+            if "." not in arxivid:
+                raise ValueError(f"arXiv has a form of 'NNNN.NNNN[N[vN]]': {arxivid!r}")
+
+            prefix, suffix = arxivid.split(".", maxsplit=1)
+            if not (len(prefix) == 4 and prefix.isdigit()):
+                raise ValueError(f"arXiv prefix must be numeric: {arxivid!r}")
+
+            # TODO: also allow `arXiv [archive.class] <DATE>`. Not clear if this
+            # is used anywhere in our imported sources, so we'll see.
+            if "v" in suffix:
+                suffix, version = suffix.split("v", maxsplit=1)
+            else:
+                version = None
+
+            if not (suffix.isdigit() and (version is None or version.isdigit())):
+                raise ValueError(f"arXiv suffix must be numeric: {arxivid!r}")
+
+            # NOTE: because this started in 2007, the years span 2007-2106
+            year = int(prefix[:2])
+            year = (2000 + year) if year >= 7 else (2100 + year)
+
+            return ModernArXiv(
+                year=year,
+                month=int(prefix[2:]),
+                number=suffix,
+                version=int(version) if version else None,
+                archive=None,
+                subjectclass=None,
+            )
+
+
+@dataclass(frozen=True)
+class ModernArXiv(arXiv):
+    year: int
+    month: int
+    number: str
+    version: int | None
+
+    archive: str | None
+    subjectclass: str | None
+
+    def latest(self) -> str:
+        return f"{self.year % 100:02d}{self.month:02d}.{self.number}"
+
+    def stamp(self) -> str:
+        # https://info.arxiv.org/help/arxiv_identifier_for_services.html
+        archive = self.archive if self.archive is not None else ""
+        if archive and self.subjectclass:
+            archive = f"{archive}.{self.subjectclass.upper()}"
+
+        if archive:
+            archive = f" [{archive}] 1 {ARXIV_SHORT_MONTH[self.month]} {self.year}"
+
+        return f"arXiv:{self}{archive}"
+
+    @property
+    def is_valid(self) -> bool:
+        # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
+        if not 2007 <= self.year <= 2106:
+            return False
+
+        # NOTE: first valid identifiers started in April 2007
+        if self.year == 2007 and self.month < 4:
+            return False
+
+        if not 1 <= self.month <= 12:
+            return False
+
+        if self.version is not None and self.version <= 0:
+            return False
+
+        # NOTE: in 2025, the number part was padded to 5 digits
+        if (  # noqa: SIM103
+            (self.year < 2015 and len(self.number) != 4)
+            or (self.year >= 2015 and len(self.number) != 5)
+        ):
+            return False
+
+        return True
+
+
+@dataclass(frozen=True)
+class LegacyArXiv(arXiv):
+    year: int
+    month: int
+    number: str
+    version: int | None
+
+    archive: str
+    subjectclass: str | None
+
+    def latest(self) -> str:
+        archive = self.archive
+        if self.subjectclass:
+            archive = f"{archive}.{self.subjectclass.upper()}"
+
+        return f"{archive}/{self.year % 100:02d}{self.month:02d}{self.number}"
+
+    def stamp(self) -> str:
+        return f"arXiv:{self} 1 {ARXIV_SHORT_MONTH[self.month]} {self.year}"
+
+    @property
+    def is_valid(self) -> bool:
+        # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
+        if not 1991 <= self.year <= 2007:
+            return False
+
+        # NOTE: first valid identifiers ended in March 2007
+        if self.year == 2007 and self.month > 3:
+            return False
+
+        if not 1 <= self.month <= 12:
+            return False
+
+        if self.version is not None and self.version <= 0:
+            return False
+
+        if len(self.number) != 3:  # noqa: SIM103
+            return False
+
+        return True
+
+
+# }}}
 
 
 # {{{ DOI
