@@ -254,6 +254,97 @@ def test_orcid() -> None:
 
 # }}}
 
+
+# {{{ test_arxiv
+
+TEST_MODERN_ARXIV_VALID = (
+    "0704.0001",  # First ever new-style ID (April 2007)
+    "0709.4123",  # 4-digit sequence
+    "1001.4538",  # 4-digit sequence
+    "1507.04356",  # 5-digit sequence
+    "2301.00001",  # Leading zeros in sequence
+    "2312.99999",  # Max month, large sequence
+    "2403.12345",  # Typical recent ID
+    "0704.0001v1",  # Version 1 suffix
+    "2301.12345v2",  # Version 2 suffix
+    "2210.07032v14",  # High version number
+)
+
+TEST_MODERN_ARXIV_INVALID = (
+    "0701.1234",  # Modern IDs start from 0704
+    "2300.1234",  # Month 00 is not valid
+    "2313.1234",  # Month 13 is not valid
+    "1001.45381",  # 5-digit sequence in a 4-digit year
+    "1507.0435",  # 4-digit sequence in a 5-digit year
+    "2301.123",  # Sequence number too short (only 3 digits; minimum is 4)
+    "2301.123456",  # Sequence number too long (6 digits; maximum is 5)
+    "230112345",  # Missing the . separator
+    "2301.1234v0",  # Version 0 is not valid (must be >= 1)
+    "2301.1234v",  # Version suffix has no number
+    "2301.1234v1.5",  # Version is not an integer
+    "abcd.1234",  # Non-numeric YYMM field
+    "2301.abcd",  # Non-numeric sequence field
+)
+
+TEST_LEGACY_ARXIV_VALID = (
+    "hep-th/9210001",  # Early hep-th paper, 3-digit sequence
+    "math/0309136",  # Math archive, no subcategory
+    "cond-mat/9901001",  # Condensed matter
+    "quant-ph/0601001",  # Quantum physics (no subcategory ever used)
+    "hep-ph/0512001",  # Hep phenomenology
+    "cs/0401001",  # CS archive, no subcategory
+    "math.AG/0101001",  # Math with algebraic geometry subcategory
+    "cond-mat.str-el/0601001",  # Cond-mat with strongly-correlated subcategory
+    "astro-ph/9912001",  # Astrophysics
+    "gr-qc/0401001",  # General relativity & quantum cosmology
+)
+
+TEST_LEGACY_ARXIV_INVALID = (
+    "hep-th/9200001",  # Month 00 is not valid
+    "hep-th/9213001",  # Month 13 is not valid
+    # "hep/9210001",  # hep alone is not a valid archive name
+    "hep-th/921001",  # Sequence number too short (2 digits after YYMM)
+    "9210001",  # Missing archive prefix entirely
+    "hep-th/9210",  # Missing sequence number
+    "hep-th/9210001v0",  # Version 0 is not valid (must be >= 1)
+    "math.123/0101001",  # Subcategory must not be numeric
+    "hep_th/9210001",  # Underscore instead of hyphen in archive name
+)
+
+
+@pytest.mark.parametrize(
+    ("valid_ids", "invalid_ids"),
+    [
+        (TEST_MODERN_ARXIV_VALID, TEST_MODERN_ARXIV_INVALID),
+        (TEST_LEGACY_ARXIV_VALID, TEST_LEGACY_ARXIV_INVALID),
+    ],
+)
+def test_arxiv(valid_ids: tuple[str, ...], invalid_ids: tuple[str, ...]) -> None:
+    from uvt_scholarly.identifiers import LegacyArXiv, ModernArXiv, arXiv
+
+    for value in valid_ids:
+        arxivid = arXiv.from_string(value)
+        assert arxivid.is_valid, value
+        assert str(arxivid) == value
+
+        if arxivid.archive is None:
+            assert isinstance(arxivid, ModernArXiv)
+        else:
+            assert isinstance(arxivid, LegacyArXiv)
+
+    for value in invalid_ids:
+        try:
+            arxivid = arXiv.from_string(value)
+            is_valid = arxivid.is_valid
+        except ValueError:
+            is_valid = False
+
+        assert not is_valid, value
+
+
+# }}}
+
+
 if __name__ == "__main__":
     import sys
 

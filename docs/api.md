@@ -1,5 +1,9 @@
 # API Reference
 
+## Identifiers
+
+::: uvt_scholarly.identifiers
+
 ## Publication
 
 ::: uvt_scholarly.publication

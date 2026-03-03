@@ -105,11 +105,11 @@ class arXiv(ABC):  # noqa: N801
 
         if "/" in arxivid:
             # NOTE: this is the pre-2007 legacy format:
-            #   archive[.SUBJECTCLASS]/YYMMNN[vN]
+            #   ARCHIVE[.SUBJECTCLASS]/YYMMNN[vN]
             archive, suffix = arxivid.split("/")
             if "." in archive:
                 archive, subjectclass = archive.split(".", maxsplit=1)
-                subjectclass = subjectclass.upper()
+                archive = archive.lower()
             else:
                 subjectclass = None
 
@@ -127,7 +127,7 @@ class arXiv(ABC):  # noqa: N801
 
             # NOTE: the years span 1991-2007
             year = int(suffix[:2])
-            year = (2000 + year) if year <= 7 else (1990 + year)
+            year = (2000 + year) if year <= 7 else (1900 + year)
 
             return LegacyArXiv(
                 year=year,
@@ -182,7 +182,7 @@ class ModernArXiv(arXiv):
         # https://info.arxiv.org/help/arxiv_identifier_for_services.html
         archive = self.archive if self.archive is not None else ""
         if archive and self.subjectclass:
-            archive = f"{archive}.{self.subjectclass.upper()}"
+            archive = f"{archive}.{self.subjectclass}"
 
         if archive:
             archive = f" [{archive}] 1 {ARXIV_SHORT_MONTH[self.month]} {self.year}"
@@ -192,7 +192,7 @@ class ModernArXiv(arXiv):
     @property
     def is_valid(self) -> bool:
         # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
-        if not 2007 <= self.year <= 2106:
+        if not (2007 <= self.year <= 2106):
             return False
 
         # NOTE: first valid identifiers started in April 2007
@@ -222,7 +222,7 @@ class LegacyArXiv(arXiv):
     def latest(self) -> str:
         archive = self.archive
         if self.subjectclass:
-            archive = f"{archive}.{self.subjectclass.upper()}"
+            archive = f"{archive}.{self.subjectclass}"
 
         return f"{archive}/{self.year % 100:02d}{self.month:02d}{self.number}"
 
@@ -231,10 +231,21 @@ class LegacyArXiv(arXiv):
 
     @property
     def is_valid(self) -> bool:
+        # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
         if self.archive is None:
             return False
 
-        # NOTE: see https://info.arxiv.org/help/arxiv_identifier.html
+        # NOTE: all categories are letters with a dash
+        if not self.archive.replace("-", "").isalpha():
+            return False
+
+        # NOTE: all subject classes are letters
+        if (
+            self.subjectclass is not None
+            and not self.subjectclass.replace("-", "").isalpha()
+        ):
+            return False
+
         if not 1991 <= self.year <= 2007:
             return False
 
@@ -416,6 +427,22 @@ class DOI:
             return response.status_code == 200
         except httpx.HTTPError:
             return False
+
+
+# }}}
+
+
+# {{{ ISBN
+
+
+@dataclass(frozen=True)
+class ISBN10:
+    pass
+
+
+@dataclass(frozen=True)
+class ISBN13:
+    pass
 
 
 # }}}
