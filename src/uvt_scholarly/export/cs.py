@@ -188,15 +188,13 @@ def make_candidate(
         )
 
     for pub in pubs:
-        if pub.year < most_recent_year:
-            continue
-
+        pub = update_citations(pub)  # noqa: PLW2901
         if pub.dtype in {DocumentType.Book, DocumentType.BookChapter}:
-            books.append(update_citations(pub))
+            books.append(pub)
         elif pub.dtype == DocumentType.ProceedingsPaper:
-            conferences.append(update_citations(pub))
+            conferences.append(pub)
         elif pub.dtype in {DocumentType.Article, DocumentType.Review}:
-            publications.append(update_citations(pub))
+            publications.append(pub)
         else:
             log.warning(
                 "Publication has unknown type '%s': '%s'", pub.dtype.name, pub.title
@@ -277,7 +275,9 @@ def export_publications_csv(
         raise FileExistsError(filename)
 
     import csv
+    from datetime import datetime
 
+    most_recent_year = datetime.now().year - RECENT_YEAR_CUTOFF
     candidate = make_candidate(candidate_name, pubs, position=position)
 
     with open(filename, "w", encoding=encoding) as f:
@@ -290,6 +290,9 @@ def export_publications_csv(
         writer.writeheader()
 
         for i, pub in enumerate(candidate.publications):
+            if pub.year < most_recent_year:
+                continue
+
             writer.writerow(
                 dict(
                     zip(
@@ -324,6 +327,9 @@ def export_publications_csv(
         writer.writeheader()
 
         for i, pub in enumerate(candidate.conferences):
+            if pub.year < most_recent_year:
+                continue
+
             writer.writerow(
                 dict(
                     zip(
@@ -372,7 +378,7 @@ def export_publications_csv(
                             filter_csv_format_authors(pub),
                             "",
                             "",
-                            "",
+                            str(pub.year),
                             "",
                             "",
                         ],
