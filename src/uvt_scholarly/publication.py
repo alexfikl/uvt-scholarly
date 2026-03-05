@@ -62,6 +62,10 @@ class ScoreType(enum.Enum):
     RIS = enum.auto()
     """Relative Influence Score."""
 
+    @property
+    def display_name(self) -> str:
+        return SCORE_FULL_NAME[self]
+
 
 SCORE_FULL_NAME: dict[ScoreType, str] = {
     ScoreType.AIS: "Article Influence Score",

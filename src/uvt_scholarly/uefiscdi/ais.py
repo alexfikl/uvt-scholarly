@@ -120,10 +120,6 @@ class ArticleInfluenceScore(Score):
         if "," in cindex:
             cindex, _ = cindex.split(",", maxsplit=1)
 
-        if not quartile:
-            quartile = "N/A"
-        quartile = quartile.strip().upper().replace("/", "")
-
         return ArticleInfluenceScore(
             journal=journal.strip(),
             issn=normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn)),
@@ -131,7 +127,7 @@ class ArticleInfluenceScore(Score):
             score=to_float(score),
             cindex=CitationIndex[cindex.strip().upper()],
             category=parse_wos_categories(category)[0],
-            quartile=Quartile[quartile],
+            quartile=Quartile(quartile),
             position=to_int(position.strip()),
         )
 

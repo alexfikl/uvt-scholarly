@@ -32,7 +32,7 @@ UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
 # {{{ misc
 
 
-EMPTY_VALUE = {"", "N/A"}
+EMPTY_VALUE = {"", "N/A", "NA"}
 
 
 def to_float(value: str, default: float = 0.0) -> float:
@@ -160,6 +160,27 @@ class Quartile(enum.IntEnum):
     Q4 = 4
     """Q4."""
 
+    @classmethod
+    def _missing_(cls, value: object) -> Quartile | None:
+        if isinstance(value, int):
+            value = "NA" if value == 0 else f"Q{value}"
+
+        if not isinstance(value, str):
+            return None
+
+        value = value.strip().upper()
+        if value in EMPTY_VALUE:
+            return Quartile.NA
+
+        if not value.startswith("Q"):
+            value = f"Q{value}"
+
+        for member in cls:
+            if member.name == value:
+                return member
+
+        return None
+
 
 # }}}
 
@@ -183,6 +204,11 @@ class CitationIndex(enum.Enum):
     """Science Citation Index Expanded."""
     SSCI = enum.auto()
     """Social Sciences Citation Index."""
+
+    @property
+    def display_name(self) -> str:
+        """Show a full display name for the index."""
+        return CITATION_INDEX_DISPLAY_NAME[self]
 
 
 CITATION_INDEX_DISPLAY_NAME = {
