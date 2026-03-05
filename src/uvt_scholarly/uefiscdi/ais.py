@@ -15,10 +15,12 @@ from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_DEFAULT_PASSWORD,
     CitationIndex,
     Database,
+    Quartile,
     Score,
     XLSXParser,
     normalize_issn,
     to_float,
+    to_int,
 )
 
 if TYPE_CHECKING:
@@ -71,6 +73,11 @@ class ArticleInfluenceScore(Score):
     category: Category
     """The category the publication is part of (scores are relative to the category)."""
 
+    quartile: int
+    """The quartile the publication belongs to, in its category."""
+    position: int
+    """The position of the publication in its quartile."""
+
     def __hash__(self) -> int:
         return hash((self.issn, self.eissn, self.category, self.cindex))
 
@@ -96,6 +103,8 @@ class ArticleInfluenceScore(Score):
         category: str,
         cindex: str,
         score: str,
+        quartile: str,
+        position: str,
     ) -> ArticleInfluenceScore:
         """Convert the given data into an [ArticleInfluenceScore][].
 
@@ -111,6 +120,10 @@ class ArticleInfluenceScore(Score):
         if "," in cindex:
             cindex, _ = cindex.split(",", maxsplit=1)
 
+        if not quartile:
+            quartile = "N/A"
+        quartile = quartile.strip().upper().replace("/", "")
+
         return ArticleInfluenceScore(
             journal=journal.strip(),
             issn=normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn)),
@@ -118,6 +131,8 @@ class ArticleInfluenceScore(Score):
             score=to_float(score),
             cindex=CitationIndex[cindex.strip().upper()],
             category=parse_wos_categories(category)[0],
+            quartile=Quartile[quartile],
+            position=to_int(position.strip()),
         )
 
 
@@ -144,7 +159,7 @@ class ArticleInfluenceScoreParser(XLSXParser[ArticleInfluenceScore]):
         score = str(row[5].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, cindex, score
+            journal, issn, eissn, category, cindex, score, "N/A", "N/A"
         )
 
 
@@ -167,7 +182,7 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
         score = str(row[4].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, cindex, score
+            journal, issn, eissn, category, cindex, score, "N/A", "N/A"
         )
 
 
@@ -195,7 +210,7 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
         category, _ = str(row[5].value).strip().rsplit("-", maxsplit=1)
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, cindex, score
+            journal, issn, eissn, category, cindex, score, "N/A", "N/A"
         )
 
 
@@ -228,6 +243,8 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
             category,
             AIS_EXTRA_CITATION_INDEX_NAMES.get(cindex, cindex),
             score,
+            "N/A",
+            "N/A",
         )
 
 
@@ -249,7 +266,14 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
         category = str(row[4].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, "N/A", category, cindex, score
+            journal,
+            issn,
+            "N/A",
+            category,
+            cindex,
+            score,
+            "N/A",
+            "N/A",
         )
 
 
@@ -325,6 +349,8 @@ class ArticleInfluenceScoreDatabase(Database):
             cindex TEXT NOT NULL,
             category TEXT NOT NULL,
             score REAL NOT NULL,
+            quartile INTEGER NOT NULL,
+            position INTEGER NOT NULL,
             UNIQUE(year, issn, eissn, cindex, category)
         );
     """
@@ -337,7 +363,7 @@ class ArticleInfluenceScoreDatabase(Database):
         assert self.conn is not None
         result = self.conn.execute(
             f"""
-            SELECT journal, issn, eissn, category, cindex, score
+            SELECT journal, issn, eissn, category, cindex, score, quartile, position
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year = ?
             """,  # noqa: S608
@@ -346,7 +372,16 @@ class ArticleInfluenceScoreDatabase(Database):
 
         from uvt_scholarly.wos import parse_wos_categories
 
-        for journal, issn, eissn, category, cindex, score in result.fetchall():
+        for (
+            journal,
+            issn,
+            eissn,
+            category,
+            cindex,
+            score,
+            quartile,
+            position,
+        ) in result.fetchall():
             return ArticleInfluenceScore(
                 journal=journal,
                 issn=ISSN.from_string(issn) if issn else None,
@@ -354,6 +389,8 @@ class ArticleInfluenceScoreDatabase(Database):
                 cindex=CitationIndex[cindex],
                 category=parse_wos_categories(category)[0],
                 score=score,
+                quartile=quartile,
+                position=position,
             )
 
         return None
@@ -387,12 +424,12 @@ def store_article_influence_score(
     if not dirname.exists():
         dirname.mkdir(parents=True)
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.utils import download_file
 
     with ArticleInfluenceScoreDatabase(filename) as db:
         for i, year in enumerate(years):
-            url = UEFISCDI_DATABASE_URL[year][Score.AIS]
+            url = UEFISCDI_DATABASE_URL[year][ScoreType.AIS]
 
             xlsxfile = dirname / f"uvt-scholarly-AIS-{year}.xlsx"
             download_file(url, xlsxfile, force=force)
