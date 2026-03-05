@@ -210,6 +210,18 @@ class CitationIndex(enum.Enum):
         """Show a full display name for the index."""
         return CITATION_INDEX_DISPLAY_NAME[self]
 
+    @classmethod
+    def _missing(cls, value: object) -> CitationIndex | None:
+        if not isinstance(value, str):
+            return None
+
+        value = value.strip().upper()
+        for member in cls:
+            if member.name == value:
+                return member
+
+        return None
+
 
 CITATION_INDEX_DISPLAY_NAME = {
     CitationIndex.AHCI: "Arts Humanities Citation Index",
