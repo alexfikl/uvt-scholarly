@@ -73,7 +73,7 @@ class ArticleInfluenceScore(Score):
     category: Category
     """The category the publication is part of (scores are relative to the category)."""
 
-    quartile: int
+    quartile: Quartile
     """The quartile the publication belongs to, in its category."""
     position: int
     """The position of the publication in its quartile."""
