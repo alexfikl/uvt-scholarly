@@ -50,7 +50,7 @@ class Author:
 
 
 @enum.unique
-class Score(enum.Enum):
+class ScoreType(enum.Enum):
     """Supported types of Journal scores."""
 
     AIS = enum.auto()
@@ -63,11 +63,11 @@ class Score(enum.Enum):
     """Relative Influence Score."""
 
 
-SCORE_FULL_NAME: dict[Score, str] = {
-    Score.AIS: "Article Influence Score",
-    Score.JIF: "Journal Impact Factor",
-    Score.RIF: "Relative Impact Factor",
-    Score.RIS: "Relative Influence Score",
+SCORE_FULL_NAME: dict[ScoreType, str] = {
+    ScoreType.AIS: "Article Influence Score",
+    ScoreType.JIF: "Journal Impact Factor",
+    ScoreType.RIF: "Relative Impact Factor",
+    ScoreType.RIS: "Relative Influence Score",
 }
 """A mapping from journal scores to their full names."""
 
@@ -79,9 +79,9 @@ class Journal:
     name: str
     """The name of the journal."""
 
-    scores: Mapping[Score, float] = field(default_factory=dict)
+    scores: Mapping[ScoreType, float] = field(default_factory=dict)
     """A mapping of known scores for this journal."""
-    quartile: Mapping[Score, str] = field(default_factory=dict)
+    quartile: Mapping[ScoreType, str] = field(default_factory=dict)
     """A mapping of known quartiles for each score, as available."""
 
     def __str__(self) -> str:

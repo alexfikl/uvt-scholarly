@@ -15,7 +15,7 @@ from uvt_scholarly.publication import (
     DocumentType,
     Pages,
     Publication,
-    Score,
+    ScoreType,
 )
 
 if TYPE_CHECKING:
@@ -742,7 +742,7 @@ def filter_csv_publications(
     outfile: pathlib.Path,
     *,
     dbfile: pathlib.Path | None = None,
-    score: Score = Score.RIS,
+    score: ScoreType = ScoreType.RIS,
     overwrite: bool = False,
 ) -> None:
     """Filter out publications from *filename*.
@@ -776,15 +776,15 @@ def filter_csv_publications(
 
     db = None
     if dbfile is not None and dbfile.exists():
-        if score == Score.RIS:
+        if score == ScoreType.RIS:
             from uvt_scholarly.uefiscdi.ris import (
                 RelativeInfluenceScoreDatabase as Database,
             )
-        elif score == Score.RIF:
+        elif score == ScoreType.RIF:
             from uvt_scholarly.uefiscdi.rif import (
                 RelativeImpactFactorDatabase as Database,
             )
-        elif score == Score.AIS:
+        elif score == ScoreType.AIS:
             from uvt_scholarly.uefiscdi.ais import (
                 ArticleInfluenceScoreDatabase as Database,
             )

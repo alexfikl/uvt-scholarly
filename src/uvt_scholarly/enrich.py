@@ -7,7 +7,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Publication, Score
+from uvt_scholarly.publication import Publication, ScoreType
 
 if TYPE_CHECKING:
     import pathlib
@@ -58,7 +58,7 @@ def add_scores(
     dbfile: pathlib.Path,
     *,
     past: int = 5,
-    scores: set[Score] | None = None,
+    scores: set[ScoreType] | None = None,
 ) -> tuple[Publication, ...]:
     """Fill in the scores for each publication.
 
@@ -77,19 +77,19 @@ def add_scores(
     if scores is None:
         return pubs
 
-    if isinstance(scores, Score):
+    if isinstance(scores, ScoreType):
         scores = {scores}
 
     for score in scores:
-        if score == Score.RIS:
+        if score == ScoreType.RIS:
             from uvt_scholarly.uefiscdi.ris import (
                 RelativeInfluenceScoreDatabase as Database,
             )
-        elif score == Score.RIF:
+        elif score == ScoreType.RIF:
             from uvt_scholarly.uefiscdi.rif import (
                 RelativeImpactFactorDatabase as Database,
             )
-        elif score == Score.AIS:
+        elif score == ScoreType.AIS:
             from uvt_scholarly.uefiscdi.ais import (
                 ArticleInfluenceScoreDatabase as Database,
             )

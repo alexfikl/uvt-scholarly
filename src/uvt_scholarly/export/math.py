@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Publication, Score
+from uvt_scholarly.publication import Publication, ScoreType
 
 if TYPE_CHECKING:
     import pathlib
@@ -107,7 +107,7 @@ def filter_latex_is_recent(pub: Publication) -> str:
 
 def filter_get_score(pub: Publication, name: str) -> float:
     try:
-        score = Score[name]
+        score = ScoreType[name]
     except KeyError:
         return -1.0
 
@@ -175,7 +175,7 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
     return tuple(
         sorted(
             pubs,
-            key=lambda p: (p.year, p.journal.scores[Score.RIS]),
+            key=lambda p: (p.year, p.journal.scores[ScoreType.RIS]),
             reverse=True,
         )
     )
@@ -197,7 +197,7 @@ def make_candidate(
 
     publications = []
     for pub in pubs:
-        ris = pub.journal.scores.get(Score.RIS)
+        ris = pub.journal.scores.get(ScoreType.RIS)
         if ris is None:
             log.warning("Journal does not have a RIS score: '%s'.", pub.journal)
             continue
@@ -215,7 +215,7 @@ def make_candidate(
 
         cited_by = []
         for cite in pub.cited_by:
-            ris = cite.journal.scores.get(Score.RIS)
+            ris = cite.journal.scores.get(ScoreType.RIS)
             if ris is None or ris < MIN_RIS_SCORE:
                 continue
 
@@ -298,7 +298,7 @@ def export_publications_csv(
         writer.writeheader()
 
         for i, pub in enumerate(candidate.publications):
-            ris = pub.journal.scores[Score.RIS]
+            ris = pub.journal.scores[ScoreType.RIS]
             if position in AVERAGED_RIS_POSITIONS:
                 ris_per_author = ris / len(pub.authors)
             else:
@@ -340,7 +340,7 @@ def export_publications_csv(
         i = 0
         for pub in candidate.publications:
             for j, cited_by in enumerate(pub.cited_by):
-                ris = cited_by.journal.scores[Score.RIS]
+                ris = cited_by.journal.scores[ScoreType.RIS]
 
                 i += 1
                 writer.writerow(

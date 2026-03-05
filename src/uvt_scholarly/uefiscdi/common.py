@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Score
+from uvt_scholarly.publication import ScoreType
 from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:
@@ -32,15 +32,23 @@ UEFISCDI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "uefiscdi.sqlite"
 # {{{ misc
 
 
-EMPTY_SCORE = {"", "N/A"}
+EMPTY_VALUE = {"", "N/A"}
 
 
 def to_float(value: str, default: float = 0.0) -> float:
     value = value.strip().upper()
-    if value in EMPTY_SCORE:
+    if value in EMPTY_VALUE:
         return default
 
     return float(value)
+
+
+def to_int(value: str, default: int = 0) -> int:
+    value = value.strip().upper()
+    if value in EMPTY_VALUE:
+        return default
+
+    return int(value)
 
 
 # NOTE:
@@ -80,35 +88,43 @@ def is_valid_issn(text: str | ISSN) -> bool:
 # CNATDCU, or university competitions and accreditations.
 UEFISCDI_DATABASE_URL = {
     2025: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-865528-AIS.JCR2024.iunie2025.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-865521-RIS.2024.iunie-2025.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-865599-RIF.iunie2025.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-865528-AIS.JCR2024.iunie2025.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-865521-RIS.2024.iunie-2025.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-865599-RIF.iunie2025.xlsx",
     },
     2024: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-861731-AIS.JCR2023.iunie2024.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-861773-RIS.2023iunie2024.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-861735-FIR.2023iunie2024.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-861731-AIS.JCR2023.iunie2024.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-861773-RIS.2023iunie2024.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-861735-FIR.2023iunie2024.xlsx",
     },
     2023: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-863884-ais_2022.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-863882-ris_2022.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-863887-rif_2022.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-863884-ais_2022.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-863882-ris_2022.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-863887-rif_2022.xlsx",
     },
     2022: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-862108-ais.2021.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-862102-ris.2021.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-862155-rif.2021.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-862108-ais.2021.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-862102-ris.2021.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-862155-rif.2021.xlsx",
     },
     2021: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-820980-ais.2020.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-820984-sri.2020.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-820987-rif.2020.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-820980-ais.2020.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-820984-sri.2020.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-820987-rif.2020.xlsx",
     },
     2020: {
-        Score.AIS: "https://uefiscdi.gov.ro/resource-821312-ais2019-iunie2020-.valori.cuartile.xlsx",
-        Score.RIS: "https://uefiscdi.gov.ro/resource-829001-sri.2019.xlsx",
-        Score.RIF: "https://uefiscdi.gov.ro/resource-829003-rif.2019.xlsx",
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-821312-ais2019-iunie2020-.valori.cuartile.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-829001-sri.2019.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-829003-rif.2019.xlsx",
     },
+}
+"""A mapping of database identifiers to URLs containing the databases themselves."""
+
+UEFISCDI_DATABASE_QUARTILES_URL = {
+    2023: {
+        ScoreType.AIS: "https://www.dropbox.com/scl/fi/8lgjtgyijxi7l8gaqa0ed/zone_iunie_2023_AIS.xlsx?rlkey=ddi3c0heao9b6r81xssxiku5r&st=e5sw28od&dl=0",
+        ScoreType.JIF: "https://www.dropbox.com/scl/fi/b8haf4rzb74k0n1wrj035/zone_iunie_2023_JIF.xlsx?rlkey=0uvigabra7rbhte6j084vbi9n&st=sza2c58u&dl=0",
+    }
 }
 """A mapping of database identifiers to URLs containing the databases themselves."""
 
@@ -120,6 +136,29 @@ UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # noqa: S105
 
 UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 """The latest year supported by the library."""
+
+
+# }}}
+
+
+# {{{ Quartile
+
+
+@enum.unique
+class Quartile(enum.IntEnum):
+    """The quartile a publication belongs to."""
+
+    NA = 0
+    """The quartile for this publication is not set or not applicable."""
+
+    Q1 = 1
+    """Q1."""
+    Q2 = 2
+    """Q2."""
+    Q3 = 3
+    """Q3."""
+    Q4 = 4
+    """Q4."""
 
 
 # }}}
@@ -324,7 +363,7 @@ class XLSXParser(Generic[ScoreT], ABC):
 
 def astuple(score: Score) -> tuple[str | None, ...]:
     result = []
-    for f in fields(score):  # ty: ignore[invalid-argument-type]
+    for f in fields(score):
         field = getattr(score, f.name)
 
         result.append(str(field) if field is not None else None)

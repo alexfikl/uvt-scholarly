@@ -257,12 +257,12 @@ def store_relative_impact_factor(
     if not dirname.exists():
         dirname.mkdir(parents=True)
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.utils import download_file
 
     with RelativeImpactFactorDatabase(filename) as db:
         for i, year in enumerate(years):
-            url = UEFISCDI_DATABASE_URL[year][Score.RIF]
+            url = UEFISCDI_DATABASE_URL[year][ScoreType.RIF]
 
             xlsxfile = dirname / f"uvt-scholarly-rif-{year}.xlsx"
             download_file(url, xlsxfile, force=force)

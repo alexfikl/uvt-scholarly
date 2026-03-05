@@ -67,16 +67,18 @@ def test_add_scores() -> None:
     publications = read_from_csv(DATADIR / "savedrecs.txt")
 
     from uvt_scholarly.enrich import add_scores
-    from uvt_scholarly.publication import DocumentType, Score
+    from uvt_scholarly.publication import DocumentType, ScoreType
 
-    publications = add_scores(publications, filename, scores={Score.RIS})
+    publications = add_scores(publications, filename, scores={ScoreType.RIS})
 
     for pub in publications:
         if pub.dtype != DocumentType.Article:
             continue
 
-        assert Score.RIS in pub.journal.scores
-        log.info("%-40s Score %.3f", pub.journal.name, pub.journal.scores[Score.RIS])
+        assert ScoreType.RIS in pub.journal.scores
+        log.info(
+            "%-40s Score %.3f", pub.journal.name, pub.journal.scores[ScoreType.RIS]
+        )
 
 
 # }}}

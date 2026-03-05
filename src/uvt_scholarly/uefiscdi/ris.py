@@ -289,12 +289,12 @@ def store_relative_influence_score(
     if not dirname.exists():
         dirname.mkdir(parents=True)
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.utils import download_file
 
     with RelativeInfluenceScoreDatabase(filename) as db:
         for i, year in enumerate(years):
-            url = UEFISCDI_DATABASE_URL[year][Score.RIS]
+            url = UEFISCDI_DATABASE_URL[year][ScoreType.RIS]
 
             xlsxfile = dirname / f"uvt-scholarly-ris-{year}.xlsx"
             download_file(url, xlsxfile, force=force)

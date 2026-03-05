@@ -182,7 +182,7 @@ def math_generate(
 ) -> None:
     """Generate citation data for the Mathematics Department."""
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.uefiscdi import UEFISCDI_DB_FILE
 
     if not UEFISCDI_DB_FILE.exists():
@@ -207,12 +207,12 @@ def math_generate(
         pubs = read_pubs(pub_file)
         cites = read_pubs(cite_file, include_citations=True)
         cites = add_scores(
-            cites, UEFISCDI_DB_FILE, scores={Score.RIS}, past=PAST_YEAR_CUTOFF
+            cites, UEFISCDI_DB_FILE, scores={ScoreType.RIS}, past=PAST_YEAR_CUTOFF
         )
 
         pubs = add_cited_by(pubs, cites)
         pubs = add_scores(
-            pubs, UEFISCDI_DB_FILE, scores={Score.RIS}, past=PAST_YEAR_CUTOFF
+            pubs, UEFISCDI_DB_FILE, scores={ScoreType.RIS}, past=PAST_YEAR_CUTOFF
         )
     else:
         log.error("Unknown source format: '%s'", source)

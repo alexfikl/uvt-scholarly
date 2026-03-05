@@ -36,10 +36,10 @@ EXPECTED_RIS_ENTRIES_PER_YEAR = {
 def test_parse_relative_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.uefiscdi.ris import parse_relative_influence_score
 
-    url = UEFISCDI_DATABASE_URL[year][Score.RIS]
+    url = UEFISCDI_DATABASE_URL[year][ScoreType.RIS]
     filename = TMPDIR / f"uvt-scholarly-test-ris-{year}.xlsx"
 
     with block_timer(f"download-ris-{year}"):
@@ -56,10 +56,10 @@ def test_parse_relative_influence_score(year: int) -> None:
 def test_ris_database() -> None:
     pytest.importorskip("openpyxl")
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
 
     year = 2025
-    url = UEFISCDI_DATABASE_URL[year][Score.RIS]
+    url = UEFISCDI_DATABASE_URL[year][ScoreType.RIS]
 
     filename = TMPDIR / f"uvt-scholarly-test-ris-{year}.xlsx"
     download_file(url, filename)
@@ -135,10 +135,10 @@ EXPECTED_RIF_ENTRIES_PER_YEAR = {
 def test_parse_relative_impact_factor(year: int) -> None:
     pytest.importorskip("openpyxl")
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.uefiscdi.rif import parse_relative_impact_factor
 
-    url = UEFISCDI_DATABASE_URL[year][Score.RIF]
+    url = UEFISCDI_DATABASE_URL[year][ScoreType.RIF]
     filename = TMPDIR / f"uvt-scholarly-test-rif-{year}.xlsx"
 
     with block_timer(f"download-rif-{year}"):
@@ -171,10 +171,10 @@ EXPECTED_AIS_ENTRIES_PER_YEAR = {
 def test_parse_article_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
 
-    from uvt_scholarly.publication import Score
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.uefiscdi.ais import parse_article_influence_score
 
-    url = UEFISCDI_DATABASE_URL[year][Score.AIS]
+    url = UEFISCDI_DATABASE_URL[year][ScoreType.AIS]
     filename = TMPDIR / f"uvt-scholarly-test-ais-{year}.xlsx"
 
     with block_timer(f"download-ais-{year}"):
