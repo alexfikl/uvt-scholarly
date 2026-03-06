@@ -124,13 +124,14 @@ class ArticleInfluenceScore(Score):
         # NOTE: some entries have "AHCI, SSCI" or something. Not quite sure why..
         if "," in citation_index:
             citation_index, _ = citation_index.split(",", maxsplit=1)
+        citation_index = citation_index.strip().upper()
 
         return ArticleInfluenceScore(
             journal=journal.strip(),
             issn=normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn)),
             eissn=normalize_issn(AIS_INCORRECT_ISSN.get(eissn, eissn)),
             score=to_float(score),
-            citation_index=CitationIndex(citation_index),
+            citation_index=CitationIndex[citation_index],
             journal_category=parse_wos_categories(journal_category)[0],
             quartile=to_quartile(quartile),
             position=to_int(position.strip()),

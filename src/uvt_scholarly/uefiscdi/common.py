@@ -59,7 +59,7 @@ def to_quartile(value: object) -> Quartile:
         raise KeyError(f"unknown quartile: {value!r}")
 
     value = value.strip().upper()
-    if value in EMPTY_VALUE:
+    if value in {*EMPTY_VALUE, "0"}:
         return Quartile.NA
 
     if not value.startswith("Q"):
