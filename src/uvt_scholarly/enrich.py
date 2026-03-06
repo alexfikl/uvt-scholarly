@@ -58,7 +58,7 @@ def add_scores(
     dbfile: pathlib.Path,
     *,
     past: int = 5,
-    scores: set[ScoreType] | None = None,
+    scores: ScoreType | set[ScoreType] | None = None,
 ) -> tuple[Publication, ...]:
     """Fill in the scores for each publication.
 
@@ -129,6 +129,70 @@ def add_scores(
                     new_pub = replace(pub)
 
                 result.append(new_pub)
+
+    return tuple(result)
+
+
+# }}}
+
+
+# {{{ add_categories
+
+
+def add_categories(
+    pubs: tuple[Publication, ...],
+    dbfile: pathlib.Path,
+    *,
+    year: int = 2023,
+    scores: ScoreType | set[ScoreType] | None = None,
+) -> tuple[Publication, ...]:
+    if not dbfile.exists():
+        raise FileNotFoundError(dbfile)
+
+    if scores is None:
+        return pubs
+
+    if isinstance(scores, ScoreType):
+        scores = {scores}
+
+    for score in scores:
+        if score == ScoreType.AIS:
+            from uvt_scholarly.uefiscdi.ais import (
+                ArticleInfluenceScoreDatabase as Database,
+            )
+        else:
+            raise ValueError(f"unsupported score type: {score}")
+
+        from uvt_scholarly.export.cs import Category
+
+        with Database(dbfile) as db:
+            result = []
+            for pub in pubs:
+                if score in pub.journal.quartile:
+                    result.append(pub)
+                    continue
+
+                issn = pub.journal.issn or pub.journal.eissn
+                if issn is None:
+                    log.error(
+                        "Publication has no ISSN: '%s'.",
+                        pub.doi if pub.doi else pub.title,
+                    )
+                    category = Category.D
+                else:
+                    category = db.find_category(issn, year=year)
+                    if category is None:
+                        category = Category.D
+
+                result.append(
+                    replace(
+                        pub,
+                        journal=replace(
+                            pub.journal,
+                            quartile={**pub.journal.quartile, score: category},
+                        ),
+                    )
+                )
 
     return tuple(result)
 

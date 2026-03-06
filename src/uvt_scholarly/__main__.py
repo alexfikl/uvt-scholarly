@@ -214,7 +214,7 @@ def math_generate(
 
         pubs = add_cited_by(pubs, cites)
         pubs = add_scores(
-            pubs, UEFISCDI_DB_FILE, scores={ScoreType.RIS}, past=PAST_YEAR_CUTOFF
+            pubs, UEFISCDI_DB_FILE, scores=ScoreType.RIS, past=PAST_YEAR_CUTOFF
         )
     else:
         log.error("Unknown source format: '%s'", source)
@@ -317,6 +317,7 @@ def cs_generate(
 ) -> None:
     """Generate citation data for the Computer Science Department."""
 
+    from uvt_scholarly.publication import ScoreType
     from uvt_scholarly.uefiscdi import UEFISCDI_DB_FILE
 
     if not UEFISCDI_DB_FILE.exists():
@@ -332,14 +333,17 @@ def cs_generate(
         log.error("File already exists (use --force to overwrite): '%s'.", outfile)
         ctx.exit(1)
 
-    from uvt_scholarly.enrich import add_cited_by
+    from uvt_scholarly.enrich import add_categories, add_cited_by
 
     if source == "wos":
         from uvt_scholarly.wos import read_pubs
 
-        pubs = read_pubs(pub_file)
         cites = read_pubs(cite_file, include_citations=True)
+        cites = add_categories(cites, UEFISCDI_DB_FILE, year=2023, scores=ScoreType.AIS)
+
+        pubs = read_pubs(pub_file)
         pubs = add_cited_by(pubs, cites)
+        pubs = add_categories(pubs, UEFISCDI_DB_FILE, year=2023, scores=ScoreType.AIS)
     else:
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)

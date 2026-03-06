@@ -14,6 +14,7 @@ from uvt_scholarly.publication import (
     JournalCategory,
     Publication,
     Quartile,
+    ScoreType,
 )
 
 if TYPE_CHECKING:
@@ -374,6 +375,9 @@ def export_publications_csv(
             if pub.year < most_recent_year:
                 continue
 
+            nauthors = len(pub.authors)
+            category = Category[pub.journal.quartile[ScoreType.AIS].name]
+            pub_score = CATEGORY_POINTS[category] / max(1, nauthors - 2)
             writer.writerow(
                 dict(
                     zip(
@@ -385,9 +389,9 @@ def export_publications_csv(
                             pub.journal.name,
                             filter_csv_format_volume(pub),
                             str(pub.year),
-                            "N/A",
-                            str(len(pub.authors)),
-                            "N/A",
+                            category.name,
+                            str(nauthors),
+                            f"{pub_score:.3f}",
                             str(len(pub.cited_by)),
                             "N/A",
                             "N/A",
@@ -469,6 +473,10 @@ def export_publications_csv(
             )
 
             for j, cited_by in enumerate(pub.cited_by):
+                nauthors = len(cited_by.authors)
+                category = Category[cited_by.journal.quartile[ScoreType.AIS].name]
+                pub_score = CATEGORY_POINTS[category] / max(1, nauthors - 2)
+
                 writer.writerow(
                     dict(
                         zip(
@@ -480,8 +488,8 @@ def export_publications_csv(
                                 cited_by.journal.name,
                                 filter_csv_format_volume(cited_by),
                                 str(cited_by.year),
-                                "N/A",
-                                "N/A",
+                                category.name,
+                                f"{pub_score:.3f}",
                             ],
                             strict=True,
                         )

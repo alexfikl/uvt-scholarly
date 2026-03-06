@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
     from openpyxl.cell import ReadOnlyCell
 
+    from uvt_scholarly.export.cs import Category
+
 log = make_logger(__name__)
 
 UEFISCDI_CACHE_DIRNAME = "uefiscdi-cache"
@@ -464,6 +466,30 @@ class Database(Generic[ScoreT]):
             """,  # noqa: S608
             ((year, *astuple(r)) for r in rif),
         )
+
+    def find_category(self, text: str | ISSN, year: int) -> Category | None:
+        if self.conn is None:
+            raise ValueError(f"not connected to database '{self.filename}'")
+
+        if not is_valid_issn(text):
+            raise ValueError(f"not a valid ISSN: '{text}'")
+
+        if year not in UEFISCDI_DATABASE_URL:
+            raise ValueError(f"unsupported year: '{year}'")
+
+        from uvt_scholarly.export.cs import Category
+
+        result = self.conn.execute(
+            f"""
+            SELECT max(category)
+            FROM {self.name}
+            WHERE (issn = ? OR eissn = ?) AND year == ?
+            """,  # noqa: S608
+            (str(text), str(text), year),
+        )
+
+        row = result.fetchone()
+        return Category(int(row[0])) if row[0] else None
 
     def find_by_issn_impl(self, text: ISSN, year: int) -> ScoreT | None:
         raise NotImplementedError(f"{type(self)} does not implement 'find_by_issn'")
