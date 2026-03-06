@@ -9,11 +9,18 @@ from typing import TYPE_CHECKING
 
 from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import DocumentType, Publication
+from uvt_scholarly.publication import (
+    DocumentType,
+    JournalCategory,
+    Publication,
+    Quartile,
+)
 
 if TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
+
+    from uvt_scholarly.uefiscdi.ais import ArticleInfluenceScore
 
 log = make_logger(__name__)
 
@@ -49,7 +56,15 @@ def filter_csv_format_volume(pub: Publication) -> str:
 
 @enum.unique
 class Category(enum.IntEnum):
+    """Category to which a journal belongs to in the CS scoring system.
+
+    This system is roughly based on the quartiles offered by UEFISCDI (through
+    Web of Science), with some additional rules to make it more difficult to
+    automate.
+    """
+
     AA = 4
+    """Referred to as $A^*$ in the documentation."""
     A = 3
     B = 2
     C = 1
@@ -63,6 +78,63 @@ CATEGORY_POINTS = {
     Category.C: 2,
     Category.D: 1,
 }
+
+
+def recategorize_article_influence_score(
+    scores: Sequence[ArticleInfluenceScore],
+    *,
+    a_star_percentage: int = 20,
+) -> tuple[ArticleInfluenceScore, ...]:
+    if not 0 < a_star_percentage < 100:
+        raise ValueError(
+            f"'a_star_percentage' should be in (0, 100): {a_star_percentage}"
+        )
+    a_star_percentage = int(a_star_percentage)
+
+    # gather all the scores in a helpful dict
+    journal_category_quartile: dict[
+        JournalCategory, dict[Quartile, list[ArticleInfluenceScore]]
+    ] = {}
+    for ais in scores:
+        zones = journal_category_quartile.setdefault(ais.journal_category, {})
+        if not zones:
+            for quartile in Quartile:
+                zones[quartile] = []
+
+        zones[ais.quartile].append(ais)
+
+    # determine all the categories and update the scores
+    result: list[ArticleInfluenceScore] = []
+    for journal_category, zones_ in journal_category_quartile.items():
+        if not zones_[Quartile.Q1]:
+            raise ValueError(f"no Q1 quartile in '{journal_category}' category")
+
+        # FIXME: not clear if this needs sorting
+        zones = {quartile: sorted(scores, lambda s: s.position)}  # ty: ignore[no-matching-overload]
+
+        # FIXME: this will naturally round down, which may not be desired?
+        n = a_star_percentage * len(zones[Quartile.Q1]) // 100
+
+        # AA
+        result.extend(replace(s, category=Category.AA) for s in zones[Quartile.Q1][:n])
+
+        # A
+        result.extend(replace(s, category=Category.A) for s in zones[Quartile.Q1][n:])
+        result.extend(replace(s, category=Category.A) for s in zones[Quartile.Q2][:n])
+
+        # B
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q1][n:])
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q2][:n])
+
+        # C
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q2][n:])
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q3])
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q4])
+
+        # D
+        result.extend(replace(s, category=Category.D) for s in zones[Quartile.NA])
+
+    return tuple(result)
 
 
 # }}}

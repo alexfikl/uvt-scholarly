@@ -80,13 +80,13 @@ SCORE_FULL_NAME: dict[ScoreType, str] = {
 class Quartile(enum.IntEnum):
     """The quartile a journal belongs to."""
 
-    NA = 0
-    """The quartile for this publication is not set or not applicable."""
-
     Q1 = 1
     Q2 = 2
     Q3 = 3
     Q4 = 4
+
+    NA = 99
+    """The quartile for this publication is not set or not applicable."""
 
 
 @dataclass(frozen=True, slots=True)

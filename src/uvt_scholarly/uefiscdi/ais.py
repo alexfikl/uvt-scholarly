@@ -108,8 +108,8 @@ class ArticleInfluenceScore(Score):
         journal_category: str,
         citation_index: str,
         score: str,
-        quartile: str,
-        position: str,
+        quartile: int | str | Quartile,
+        position: int | str,
     ) -> ArticleInfluenceScore:
         """Convert the given data into an [ArticleInfluenceScore][].
 
@@ -134,7 +134,7 @@ class ArticleInfluenceScore(Score):
             citation_index=CitationIndex[citation_index],
             journal_category=parse_wos_categories(journal_category)[0],
             quartile=to_quartile(quartile),
-            position=to_int(position.strip()),
+            position=to_int(position),
             category=None,
         )
 
@@ -204,8 +204,8 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
             journal_category,
             citation_index,
             score,
-            str(quartile),
-            str(self.position),
+            quartile,
+            self.position,
         )
 
 
@@ -244,8 +244,8 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
             journal_category,
             citation_index,
             score,
-            str(quartile),
-            str(self.position),
+            quartile,
+            self.position,
         )
 
 
@@ -283,8 +283,8 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
             journal_category,
             AIS_EXTRA_CITATION_INDEX_NAMES.get(citation_index, citation_index),
             score,
-            str(quartile),
-            str(self.position),
+            quartile,
+            self.position,
         )
 
 
@@ -317,8 +317,8 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
             journal_category,
             citation_index,
             score,
-            str(quartile),
-            str(self.position),
+            quartile,
+            self.position,
         )
 
 

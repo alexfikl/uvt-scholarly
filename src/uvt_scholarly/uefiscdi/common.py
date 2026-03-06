@@ -36,6 +36,9 @@ EMPTY_VALUE = {"", "N/A", "NA"}
 
 
 def to_float(value: str, default: float = 0.0) -> float:
+    if isinstance(value, (int, float)):
+        return value
+
     value = value.strip().upper()
     if value in EMPTY_VALUE:
         return default
@@ -43,7 +46,10 @@ def to_float(value: str, default: float = 0.0) -> float:
     return float(value)
 
 
-def to_int(value: str, default: int = 0) -> int:
+def to_int(value: int | str, default: int = 0) -> int:
+    if isinstance(value, int):
+        return value
+
     value = value.strip().upper()
     if value in EMPTY_VALUE:
         return default
@@ -52,14 +58,17 @@ def to_int(value: str, default: int = 0) -> int:
 
 
 def to_quartile(value: object) -> Quartile:
+    if isinstance(value, Quartile):
+        return value
+
     if isinstance(value, int):
-        value = "NA" if value == 0 else f"Q{value}"
+        value = "NA" if value in {0, 99} else f"Q{value}"
 
     if not isinstance(value, str):
         raise KeyError(f"unknown quartile: {value!r}")
 
     value = value.strip().upper()
-    if value in {*EMPTY_VALUE, "0"}:
+    if value in EMPTY_VALUE:
         return Quartile.NA
 
     if not value.startswith("Q"):
