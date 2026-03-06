@@ -471,6 +471,8 @@ def read_from_csv(
                     title=titlecase(row["TI"].strip()),
                     journal=Journal(
                         name=row["SO"].strip(),
+                        issn=parse_issn(row.get("SN", "")),
+                        eissn=parse_issn(row.get("EI", "")),
                         categories=parse_wos_categories(row["WC"]),
                     ),
                     year=int(row["PY"].strip()),
@@ -479,8 +481,6 @@ def read_from_csv(
                     pages=parse_pages(row["BP"], row["EP"], row["PG"]),
                     dtype=DOCUMENT_TYPE.get(dtypes[0], DocumentType.Other),
                     doi=parse_doi(row.get("DI", "")),
-                    issn=parse_issn(row.get("SN", "")),
-                    eissn=parse_issn(row.get("EI", "")),
                     identifier=row["UT"],
                     cited_by_count=int(row["TC"]),
                     cited_by=(),
@@ -583,6 +583,8 @@ def read_from_bib(
                 title=titlecase(clean(entry["title"])),
                 journal=Journal(
                     name=clean(journal),
+                    issn=parse_issn(entry.get("issn", "")),
+                    eissn=parse_issn(entry.get("eissn", "")),
                     categories=parse_wos_categories(
                         clean(entry.get("web-of-science-categories", ""))
                     ),
@@ -593,8 +595,6 @@ def read_from_bib(
                 pages=parse_bib_pages(entry.get("pages", "")),
                 dtype=DOCUMENT_TYPE.get(entry["type"].strip(), DocumentType.Other),
                 doi=parse_doi(entry.get("doi", "")),
-                issn=parse_issn(entry.get("issn", "")),
-                eissn=parse_issn(entry.get("eissn", "")),
                 identifier=entry["ID"],
                 cited_by_count=int(entry["times-cited"]),
                 cited_by=(),

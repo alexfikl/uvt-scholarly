@@ -99,6 +99,13 @@ class Journal:
     name: str
     """The name of the journal."""
 
+    issn: ISSN | None
+    """An International Standard Serial Number (ISSN) for the Journal or publishing
+    house that published this publication, if available.
+    """
+    eissn: ISSN | None
+    """An electronic ISSN, if available."""
+
     scores: Mapping[ScoreType, float] = field(default_factory=dict)
     """A mapping of known scores for this journal, as available."""
     quartile: Mapping[ScoreType, str] = field(default_factory=dict)
@@ -200,13 +207,6 @@ class Publication:
     """Page range in the issue."""
     doi: DOI | None
     """A Digital Object Identifier (DOI) for the publication."""
-
-    issn: ISSN | None
-    """An International Standard Serial Number (ISSN) for the Journal or publishing
-    house that published this publication, if available.
-    """
-    eissn: ISSN | None
-    """An electronic ISSN, if available."""
 
     dtype: DocumentType
     """A generic document type for the publication."""

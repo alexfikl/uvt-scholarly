@@ -103,7 +103,7 @@ def add_scores(
                     result.append(pub)
                     continue
 
-                issn = pub.issn or pub.eissn
+                issn = pub.journal.issn or pub.journal.eissn
                 if issn is None:
                     log.error(
                         "Publication has no ISSN: '%s'.",
