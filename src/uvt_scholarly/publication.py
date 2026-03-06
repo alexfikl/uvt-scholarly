@@ -84,13 +84,9 @@ class Quartile(enum.IntEnum):
     """The quartile for this publication is not set or not applicable."""
 
     Q1 = 1
-    """Q1."""
     Q2 = 2
-    """Q2."""
     Q3 = 3
-    """Q3."""
     Q4 = 4
-    """Q4."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,8 +113,8 @@ class Journal:
     """The name of the journal."""
 
     issn: ISSN | None
-    """An International Standard Serial Number (ISSN) for the Journal or publishing
-    house that published this publication, if available.
+    """An International Standard Serial Number (ISSN) for the journal or publishing
+    house, if available.
     """
     eissn: ISSN | None
     """An electronic ISSN, if available."""
@@ -190,7 +186,7 @@ class DocumentType(enum.Enum):
 
 @dataclass(frozen=True, slots=True)
 class CitedPublication:
-    """A stripped down publication metadata for cited references."""
+    """Stripped down publication metadata for cited references."""
 
     first_author: str
     """The last name of the first author."""
