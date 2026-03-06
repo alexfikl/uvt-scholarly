@@ -103,6 +103,10 @@ def recategorize_article_influence_score(
 
         zones[ais.quartile].append(ais)
 
+    assert len(scores) == sum(
+        len(scs) for qs in journal_category_quartile.values() for scs in qs.values()
+    )
+
     # determine all the categories and update the scores
     result: list[ArticleInfluenceScore] = []
     for journal_category, zones_ in journal_category_quartile.items():
@@ -110,10 +114,14 @@ def recategorize_article_influence_score(
             raise ValueError(f"no Q1 quartile in '{journal_category}' category")
 
         # FIXME: not clear if this needs sorting
-        zones = {quartile: sorted(scores, lambda s: s.position)}  # ty: ignore[no-matching-overload]
+        zones = {
+            quartile: sorted(aiss, key=lambda s: s.position)
+            for quartile, aiss in zones_.items()
+        }
 
         # FIXME: this will naturally round down, which may not be desired?
-        n = a_star_percentage * len(zones[Quartile.Q1]) // 100
+        nmax = len(zones[Quartile.Q1])
+        n = a_star_percentage * nmax // 100
 
         # AA
         result.extend(replace(s, category=Category.AA) for s in zones[Quartile.Q1][:n])
@@ -123,15 +131,16 @@ def recategorize_article_influence_score(
         result.extend(replace(s, category=Category.A) for s in zones[Quartile.Q2][:n])
 
         # B
-        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q1][n:])
-        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q2][:n])
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q2][n:])
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q3][:n])
 
         # C
-        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q2][n:])
-        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q3])
+        # FIXME: not clear from docs what the "white" zone is
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q3][n:])
         result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q4])
 
         # D
+        # FIXME: not clear from docs what to do with N/A entries
         result.extend(replace(s, category=Category.D) for s in zones[Quartile.NA])
 
     return tuple(result)

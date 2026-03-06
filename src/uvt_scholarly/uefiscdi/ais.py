@@ -34,6 +34,8 @@ log = make_logger(__name__)
 
 # {{{ parse_article_influence_score
 
+KNOWN_YEARS_WITH_QUARTILES = frozenset({2020, 2021, 2022, 2023})
+
 # NOTE: these seem to be the same across all the UEFISCDI databases?
 AIS_INCORRECT_ISSN = {
     # eISSN: World Journal for Pediatric and Congenital Heart Surgery
@@ -449,6 +451,7 @@ def store_article_influence_score(
     filename: pathlib.Path,
     *,
     years: set[int] | None = None,
+    a_star_percentage: int = 20,
     force: bool = False,
 ) -> None:
     """Download AIS scores for the given *years* and store them in *filename*.
@@ -457,6 +460,8 @@ def store_article_influence_score(
         years: A list of years for which to download the AIS scores. By default,
             all the years in
             [uvt_scholarly.uefiscdi.UEFISCDI_DATABASE_URL][] are downloaded.
+        a_star_percentage: Percentage used in determining categories for the
+            Computer Science department.
         force: If *True*, all documents are re-downloaded (even if cached).
 
     Raises:
@@ -485,6 +490,13 @@ def store_article_influence_score(
 
             log.info("Processing AIS scores for %d: '%s'.", year, xlsxfile)
             scores = parse_article_influence_score(xlsxfile, year)
+
+            if year in KNOWN_YEARS_WITH_QUARTILES:
+                from uvt_scholarly.export.cs import recategorize_article_influence_score
+
+                scores = recategorize_article_influence_score(
+                    scores, a_star_percentage=a_star_percentage
+                )
 
             log.info("Inserting %d AIS scores for %d into database.", len(scores), year)
             db.insert(year, scores)

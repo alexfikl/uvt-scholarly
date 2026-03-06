@@ -172,7 +172,10 @@ def test_parse_article_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
 
     from uvt_scholarly.publication import ScoreType
-    from uvt_scholarly.uefiscdi.ais import parse_article_influence_score
+    from uvt_scholarly.uefiscdi.ais import (
+        KNOWN_YEARS_WITH_QUARTILES,
+        parse_article_influence_score,
+    )
 
     url = UEFISCDI_DATABASE_URL[year][ScoreType.AIS]
     filename = TMPDIR / f"uvt-scholarly-test-ais-{year}.xlsx"
@@ -182,6 +185,12 @@ def test_parse_article_influence_score(year: int) -> None:
 
     with block_timer(f"parse-ais-{year}"):
         scores = parse_article_influence_score(filename, year)
+
+    if year in KNOWN_YEARS_WITH_QUARTILES:
+        from uvt_scholarly.export.cs import recategorize_article_influence_score
+
+        with block_timer(f"parse-ais-categories-{year}"):
+            scores = recategorize_article_influence_score(scores)
 
     nscores = len(scores)
     assert nscores == EXPECTED_AIS_ENTRIES_PER_YEAR[year], nscores
