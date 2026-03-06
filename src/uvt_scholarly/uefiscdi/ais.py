@@ -4,32 +4,28 @@
 from __future__ import annotations
 
 import pathlib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.publication import JournalCategory, Quartile
 from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
-    UEFISCDI_DATABASE_QUARTILES_URL,
     UEFISCDI_DATABASE_URL,
     UEFISCDI_DEFAULT_PASSWORD,
     CitationIndex,
     Database,
-    Quartile,
     Score,
     XLSXParser,
     normalize_issn,
     to_float,
     to_int,
+    to_quartile,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from openpyxl.cell import ReadOnlyCell
-
-    from uvt_scholarly.publication import JournalCategory
 
 log = make_logger(__name__)
 
@@ -130,7 +126,7 @@ class ArticleInfluenceScore(Score):
             score=to_float(score),
             cindex=CitationIndex(cindex),
             category=parse_wos_categories(category)[0],
-            quartile=Quartile(quartile),
+            quartile=to_quartile(quartile),
             position=to_int(position.strip()),
         )
 
@@ -185,7 +181,7 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
         # NOTE: column is `CATEGORY - INDEX` in this version of the file
         category, cindex = str(row[3].value).strip().rsplit("-", maxsplit=1)
         score = str(row[4].value).strip()
-        quartile = Quartile(str(row[5].value))
+        quartile = to_quartile(str(row[5].value))
 
         if self.quartile != quartile:
             self.position = 0
@@ -225,7 +221,7 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
         cindex = str(row[4].value).strip()
         # NOTE: column is `CATEGORY - INDEX` in this version of the file
         category, _ = str(row[5].value).strip().rsplit("-", maxsplit=1)
-        quartile = Quartile(str(row[6].value))
+        quartile = to_quartile(str(row[6].value))
 
         if self.quartile != quartile:
             self.position = 0
@@ -264,7 +260,7 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
         score = str(row[3].value).strip()
         cindex = str(row[4].value).strip()
         category = str(row[5].value).strip()
-        quartile = Quartile(str(row[6].value))
+        quartile = to_quartile(str(row[6].value))
 
         if self.quartile != quartile:
             self.position = 0
@@ -298,7 +294,7 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
         score = str(row[2].value).strip()
         cindex = str(row[3].value).strip()
         category = str(row[4].value).strip()
-        quartile = Quartile(str(row[5].value))
+        quartile = to_quartile(str(row[5].value))
 
         if self.quartile != quartile:
             self.position = 0
@@ -360,75 +356,6 @@ def parse_article_influence_score(
         parser = ArticleInfluenceScore2020Parser()
     else:
         parser = ArticleInfluenceScoreParser()
-
-    from uvt_scholarly.utils import ParsingError
-
-    decrypted_filename = _decrypt_file(filename, UEFISCDI_DEFAULT_PASSWORD)
-    try:
-        return parser.parse(decrypted_filename)
-    except Exception as exc:
-        raise ParsingError() from exc
-
-
-# }}}
-
-
-# {{{ parse_article_influence_score_quartile
-
-
-class ArticleInfluenceScoreQuartileParser(XLSXParser[ArticleInfluenceScore]):
-    def __init__(self, issn_to_ais: dict[ISSN, ArticleInfluenceScore]) -> None:
-        self.issn_to_ais = issn_to_ais
-
-    @property
-    def ncolumns(self) -> int:
-        return 6
-
-    def parse_row(
-        self,
-        row: tuple[ReadOnlyCell, ...],
-    ) -> ArticleInfluenceScore | None:
-        from openpyxl.cell.read_only import EmptyCell
-
-        assert len(row) == self.ncolumns
-        if isinstance(row[-1], EmptyCell):
-            return None
-
-        issn = str(row[1].value).strip()
-        issn = normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn))
-        eissn = str(row[2].value).strip()
-        eissn = normalize_issn(AIS_INCORRECT_ISSN.get(eissn, eissn))
-
-        from uvt_scholarly.utils import ParsingError
-
-        key = issn or eissn
-        if key is None:
-            ParsingError(f"score on row {row[0].row} has no ISSN (or eISSN)")
-
-        assert key is not None
-        if (ais := self.issn_to_ais.get(key)) is not None:
-            quartile = str(row[4].value)
-            position = str(row[5].value)
-
-            return replace(ais, quartile=Quartile(quartile), position=to_int(position))
-        else:
-            ParsingError(f"score on row {row[0].row} has no matching ISSN")
-
-
-def parse_article_influence_score_quartile(
-    filename: pathlib.Path,
-    scores: Sequence[ArticleInfluenceScore],
-    version: int,
-) -> tuple[ArticleInfluenceScore, ...]:
-    if not filename.exists():
-        raise FileNotFoundError(filename)
-
-    if version not in UEFISCDI_DATABASE_QUARTILES_URL:
-        raise ValueError(f"unsupported database version: {version}")
-
-    parser = ArticleInfluenceScoreQuartileParser({  # ty: ignore[invalid-argument-type]
-        ais.issn or ais.eissn: ais for ais in scores
-    })
 
     from uvt_scholarly.utils import ParsingError
 
@@ -544,15 +471,6 @@ def store_article_influence_score(
 
             log.info("Processing AIS scores for %d: '%s'.", year, xlsxfile)
             scores = parse_article_influence_score(xlsxfile, year)
-
-            if year in UEFISCDI_DATABASE_QUARTILES_URL:
-                url = UEFISCDI_DATABASE_QUARTILES_URL[year][ScoreType.AIS]
-
-                xlsxfile = dirname / f"uvt-scholarly-AIS-{year}-quartiles.xlsx"
-                download_file(url, xlsxfile, force=force)
-
-                log.info("Processing AIS quartiles for %d: '%s'.", year, xlsxfile)
-                scores = parse_article_influence_score_quartile(xlsxfile, scores, year)
 
             log.info("Inserting %d AIS scores for %d into database.", len(scores), year)
             db.insert(year, scores)

@@ -76,6 +76,23 @@ SCORE_FULL_NAME: dict[ScoreType, str] = {
 """A mapping from journal scores to their full names."""
 
 
+@enum.unique
+class Quartile(enum.IntEnum):
+    """The quartile a journal belongs to."""
+
+    NA = 0
+    """The quartile for this publication is not set or not applicable."""
+
+    Q1 = 1
+    """Q1."""
+    Q2 = 2
+    """Q2."""
+    Q3 = 3
+    """Q3."""
+    Q4 = 4
+    """Q4."""
+
+
 @dataclass(frozen=True, slots=True)
 class JournalCategory:
     """A category for a journal."""
@@ -108,7 +125,7 @@ class Journal:
 
     scores: Mapping[ScoreType, float] = field(default_factory=dict)
     """A mapping of known scores for this journal, as available."""
-    quartile: Mapping[ScoreType, str] = field(default_factory=dict)
+    quartile: Mapping[ScoreType, Quartile] = field(default_factory=dict)
     """A mapping of known quartiles for each score, as available."""
     categories: tuple[JournalCategory, ...] = ()
     """A list of categories the journal can be classified in. This generally
@@ -136,7 +153,8 @@ class Pages:
     """The ending page identifier. This can be missing for some journals."""
     count: int | None
     """A total page count. If all values are numeric, this should correspond to
-    just `end - start + 1`.
+    just `end - start + 1`. This is a separate attribute because some journals
+    do not provide numeric page ranges.
     """
 
     def __str__(self) -> str:

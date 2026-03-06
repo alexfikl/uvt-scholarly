@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import ScoreType
+from uvt_scholarly.publication import Quartile, ScoreType
 from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:
@@ -49,6 +49,27 @@ def to_int(value: str, default: int = 0) -> int:
         return default
 
     return int(value)
+
+
+def to_quartile(value: object) -> Quartile:
+    if isinstance(value, int):
+        value = "NA" if value == 0 else f"Q{value}"
+
+    if not isinstance(value, str):
+        raise KeyError(f"unknown quartile: {value!r}")
+
+    value = value.strip().upper()
+    if value in EMPTY_VALUE:
+        return Quartile.NA
+
+    if not value.startswith("Q"):
+        value = f"Q{value}"
+
+    for member in Quartile:
+        if member.name == value:
+            return member
+
+    raise KeyError(f"unknown quartile: {value!r}")
 
 
 # NOTE:
@@ -122,7 +143,6 @@ UEFISCDI_DATABASE_URL = {
 
 UEFISCDI_DATABASE_QUARTILES_URL = {
     2023: {
-        ScoreType.AIS: "https://www.dropbox.com/scl/fi/8lgjtgyijxi7l8gaqa0ed/zone_iunie_2023_AIS.xlsx?rlkey=ddi3c0heao9b6r81xssxiku5r&st=e5sw28od&dl=0",
         ScoreType.JIF: "https://www.dropbox.com/scl/fi/b8haf4rzb74k0n1wrj035/zone_iunie_2023_JIF.xlsx?rlkey=0uvigabra7rbhte6j084vbi9n&st=sza2c58u&dl=0",
     }
 }
@@ -136,50 +156,6 @@ UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # noqa: S105
 
 UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 """The latest year supported by the library."""
-
-
-# }}}
-
-
-# {{{ Quartile
-
-
-@enum.unique
-class Quartile(enum.IntEnum):
-    """The quartile a journal belongs to."""
-
-    NA = 0
-    """The quartile for this journal is not set or not applicable."""
-
-    Q1 = 1
-    """Q1."""
-    Q2 = 2
-    """Q2."""
-    Q3 = 3
-    """Q3."""
-    Q4 = 4
-    """Q4."""
-
-    @classmethod
-    def _missing_(cls, value: object) -> Quartile | None:
-        if isinstance(value, int):
-            value = "NA" if value == 0 else f"Q{value}"
-
-        if not isinstance(value, str):
-            return None
-
-        value = value.strip().upper()
-        if value in EMPTY_VALUE:
-            return Quartile.NA
-
-        if not value.startswith("Q"):
-            value = f"Q{value}"
-
-        for member in cls:
-            if member.name == value:
-                return member
-
-        return None
 
 
 # }}}
