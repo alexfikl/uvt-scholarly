@@ -27,6 +27,8 @@ from uvt_scholarly.uefiscdi.common import (
 if TYPE_CHECKING:
     from openpyxl.cell import ReadOnlyCell
 
+    from uvt_scholarly.export.cs import Category
+
 log = make_logger(__name__)
 
 
@@ -67,9 +69,9 @@ AIS_EXTRA_CITATION_INDEX_NAMES = {
 class ArticleInfluenceScore(Score):
     """The AIS for a given journal."""
 
-    cindex: CitationIndex
+    citation_index: CitationIndex
     """The citation index this score is a part of."""
-    category: JournalCategory
+    journal_category: JournalCategory
     """The category the journal is part of (scores are relative to the category)."""
 
     quartile: Quartile
@@ -77,8 +79,11 @@ class ArticleInfluenceScore(Score):
     position: int
     """The position of the journal in its quartile."""
 
+    category: Category | None
+    """A category based on the quartile used by the CS exporter."""
+
     def __hash__(self) -> int:
-        return hash((self.issn, self.eissn, self.category, self.cindex))
+        return hash((self.issn, self.eissn, self.journal_category, self.citation_index))
 
     def __eq__(self, other: object) -> bool:
         if type(other) is not type(self):
@@ -87,20 +92,21 @@ class ArticleInfluenceScore(Score):
         return (
             self.issn == other.issn
             and self.eissn == other.eissn
-            and self.cindex == other.cindex
+            and self.citation_index == other.citation_index
+            and self.journal_category == other.journal_category
         )
 
     @property
     def name(self) -> str:
-        return f"AIS[{self.cindex.name}]"
+        return f"AIS[{self.citation_index.name}]"
 
     @staticmethod
     def from_strings(
         journal: str,
         issn: str,
         eissn: str,
-        category: str,
-        cindex: str,
+        journal_category: str,
+        citation_index: str,
         score: str,
         quartile: str,
         position: str,
@@ -116,18 +122,19 @@ class ArticleInfluenceScore(Score):
         eissn = eissn.strip().upper()
 
         # NOTE: some entries have "AHCI, SSCI" or something. Not quite sure why..
-        if "," in cindex:
-            cindex, _ = cindex.split(",", maxsplit=1)
+        if "," in citation_index:
+            citation_index, _ = citation_index.split(",", maxsplit=1)
 
         return ArticleInfluenceScore(
             journal=journal.strip(),
             issn=normalize_issn(AIS_INCORRECT_ISSN.get(issn, issn)),
             eissn=normalize_issn(AIS_INCORRECT_ISSN.get(eissn, eissn)),
             score=to_float(score),
-            cindex=CitationIndex(cindex),
-            category=parse_wos_categories(category)[0],
+            citation_index=CitationIndex(citation_index),
+            journal_category=parse_wos_categories(journal_category)[0],
             quartile=to_quartile(quartile),
             position=to_int(position.strip()),
+            category=None,
         )
 
 
@@ -155,12 +162,12 @@ class ArticleInfluenceScoreParser(XLSXParser[ArticleInfluenceScore]):
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
-        category = str(row[3].value).strip()
-        cindex = str(row[4].value).strip()
+        journal_category = str(row[3].value).strip()
+        citation_index = str(row[4].value).strip()
         score = str(row[5].value).strip()
 
         return ArticleInfluenceScore.from_strings(
-            journal, issn, eissn, category, cindex, score, "N/A", "N/A"
+            journal, issn, eissn, journal_category, citation_index, score, "N/A", "N/A"
         )
 
 
@@ -179,7 +186,9 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         # NOTE: column is `CATEGORY - INDEX` in this version of the file
-        category, cindex = str(row[3].value).strip().rsplit("-", maxsplit=1)
+        journal_category, citation_index = (
+            str(row[3].value).strip().rsplit("-", maxsplit=1)
+        )
         score = str(row[4].value).strip()
         quartile = to_quartile(str(row[5].value))
 
@@ -191,8 +200,8 @@ class ArticleInfluenceScore2023Parser(ArticleInfluenceScoreParser):
             journal,
             issn,
             eissn,
-            category,
-            cindex,
+            journal_category,
+            citation_index,
             score,
             str(quartile),
             str(self.position),
@@ -218,9 +227,9 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[3].value).strip()
-        cindex = str(row[4].value).strip()
+        citation_index = str(row[4].value).strip()
         # NOTE: column is `CATEGORY - INDEX` in this version of the file
-        category, _ = str(row[5].value).strip().rsplit("-", maxsplit=1)
+        journal_category, _ = str(row[5].value).strip().rsplit("-", maxsplit=1)
         quartile = to_quartile(str(row[6].value))
 
         if self.quartile != quartile:
@@ -231,8 +240,8 @@ class ArticleInfluenceScore2022Parser(ArticleInfluenceScoreParser):
             journal,
             issn,
             eissn,
-            category,
-            cindex,
+            journal_category,
+            citation_index,
             score,
             str(quartile),
             str(self.position),
@@ -258,8 +267,8 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
         issn = str(row[1].value).strip()
         eissn = str(row[2].value).strip()
         score = str(row[3].value).strip()
-        cindex = str(row[4].value).strip()
-        category = str(row[5].value).strip()
+        citation_index = str(row[4].value).strip()
+        journal_category = str(row[5].value).strip()
         quartile = to_quartile(str(row[6].value))
 
         if self.quartile != quartile:
@@ -270,8 +279,8 @@ class ArticleInfluenceScore2021Parser(ArticleInfluenceScoreParser):
             journal,
             issn,
             eissn,
-            category,
-            AIS_EXTRA_CITATION_INDEX_NAMES.get(cindex, cindex),
+            journal_category,
+            AIS_EXTRA_CITATION_INDEX_NAMES.get(citation_index, citation_index),
             score,
             str(quartile),
             str(self.position),
@@ -292,8 +301,8 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
         journal = str(row[0].value).strip()
         issn = str(row[1].value).strip()
         score = str(row[2].value).strip()
-        cindex = str(row[3].value).strip()
-        category = str(row[4].value).strip()
+        citation_index = str(row[3].value).strip()
+        journal_category = str(row[4].value).strip()
         quartile = to_quartile(str(row[5].value))
 
         if self.quartile != quartile:
@@ -304,8 +313,8 @@ class ArticleInfluenceScore2020Parser(ArticleInfluenceScoreParser):
             journal,
             issn,
             "N/A",
-            category,
-            cindex,
+            journal_category,
+            citation_index,
             score,
             str(quartile),
             str(self.position),
@@ -381,51 +390,55 @@ class ArticleInfluenceScoreDatabase(Database):
             journal TEXT NOT NULL,
             issn TEXT NULL,
             eissn TEXT NULL,
-            cindex TEXT NOT NULL,
-            category TEXT NOT NULL,
+            citation_index TEXT NOT NULL,
+            journal_category TEXT NOT NULL,
             score REAL NOT NULL,
             quartile INTEGER NOT NULL,
             position INTEGER NOT NULL,
-            UNIQUE(year, issn, eissn, cindex, category)
+            category INTEGER NULL,
+            UNIQUE(year, issn, eissn, citation_index, journal_category)
         );
     """
     index: ClassVar[str] = f"""
         CREATE INDEX IF NOT EXISTS {name}_index
-            ON {name} (year, issn, eissn, cindex, category);
+            ON {name} (year, issn, eissn, citation_index, journal_category);
     """
 
     def find_by_issn_impl(self, text: ISSN, year: int) -> ArticleInfluenceScore | None:
         assert self.conn is not None
         result = self.conn.execute(
             f"""
-            SELECT journal, issn, eissn, category, cindex, score, quartile, position
+            SELECT journal, issn, eissn, journal_category, citation_index, score, quartile, position
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year = ?
-            """,  # noqa: S608
+            """,  # noqa: E501,S608
             (str(text), str(text), year),
         )
 
+        from uvt_scholarly.export.cs import Category
         from uvt_scholarly.wos import parse_wos_categories
 
         for (
             journal,
             issn,
             eissn,
-            category,
-            cindex,
+            journal_category,
+            citation_index,
             score,
             quartile,
             position,
+            category,
         ) in result.fetchall():
             return ArticleInfluenceScore(
                 journal=journal,
                 issn=ISSN.from_string(issn) if issn else None,
                 eissn=ISSN.from_string(eissn) if eissn else None,
-                cindex=CitationIndex[cindex],
-                category=parse_wos_categories(category)[0],
+                citation_index=CitationIndex[citation_index],
+                journal_category=parse_wos_categories(journal_category)[0],
                 score=score,
-                quartile=quartile,
+                quartile=Quartile[quartile],
                 position=position,
+                category=Category[category],
             )
 
         return None
