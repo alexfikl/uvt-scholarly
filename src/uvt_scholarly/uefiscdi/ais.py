@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from openpyxl.cell import ReadOnlyCell
 
-    from uvt_scholarly.publication import Category
+    from uvt_scholarly.publication import JournalCategory
 
 log = make_logger(__name__)
 
@@ -69,17 +69,17 @@ AIS_EXTRA_CITATION_INDEX_NAMES = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class ArticleInfluenceScore(Score):
-    """The AIS for a given publication."""
+    """The AIS for a given journal."""
 
     cindex: CitationIndex
     """The citation index this score is a part of."""
-    category: Category
-    """The category the publication is part of (scores are relative to the category)."""
+    category: JournalCategory
+    """The category the journal is part of (scores are relative to the category)."""
 
     quartile: Quartile
-    """The quartile the publication belongs to, in its category."""
+    """The quartile the journal belongs to, in its category."""
     position: int
-    """The position of the publication in its quartile."""
+    """The position of the journal in its quartile."""
 
     def __hash__(self) -> int:
         return hash((self.issn, self.eissn, self.category, self.cindex))

@@ -77,30 +77,8 @@ SCORE_FULL_NAME: dict[ScoreType, str] = {
 
 
 @dataclass(frozen=True, slots=True)
-class Journal:
-    """A basic description of a journal."""
-
-    name: str
-    """The name of the journal."""
-
-    scores: Mapping[ScoreType, float] = field(default_factory=dict)
-    """A mapping of known scores for this journal."""
-    quartile: Mapping[ScoreType, str] = field(default_factory=dict)
-    """A mapping of known quartiles for each score, as available."""
-
-    def __str__(self) -> str:
-        return self.name
-
-
-# }}}
-
-
-# {{{ Category
-
-
-@dataclass(frozen=True, slots=True)
-class Category:
-    """A category for a publication."""
+class JournalCategory:
+    """A category for a journal."""
 
     name: str
     """The main name of the category, e.g. `Mathematics`."""
@@ -114,7 +92,28 @@ class Category:
         return f"{type(self).__name__}('{self}')"
 
 
+@dataclass(frozen=True, slots=True)
+class Journal:
+    """A basic description of a journal."""
+
+    name: str
+    """The name of the journal."""
+
+    scores: Mapping[ScoreType, float] = field(default_factory=dict)
+    """A mapping of known scores for this journal, as available."""
+    quartile: Mapping[ScoreType, str] = field(default_factory=dict)
+    """A mapping of known quartiles for each score, as available."""
+    categories: tuple[JournalCategory, ...] = ()
+    """A list of categories the journal can be classified in. This generally
+    depends heavily on the source of the metadata (e.g. Web of Science categories).
+    """
+
+    def __str__(self) -> str:
+        return self.name
+
+
 # }}}
+
 
 # {{{ Pages
 
@@ -166,7 +165,7 @@ class DocumentType(enum.Enum):
 
 @dataclass(frozen=True, slots=True)
 class CitedPublication:
-    """A short publication metadata for cited references."""
+    """A stripped down publication metadata for cited references."""
 
     first_author: str
     """The last name of the first author."""
@@ -211,10 +210,6 @@ class Publication:
 
     dtype: DocumentType
     """A generic document type for the publication."""
-    categories: tuple[Category, ...]
-    """A list of categories this publication can be classified in. This generally
-    depends heavily on the source of the metadata (e.g. Web of Science categories).
-    """
     identifier: str
     """A unique identifier for the publication the repository from which it
     was obtained (e.g. a Web of Science Accession Number).

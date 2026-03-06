@@ -68,7 +68,7 @@ RIS_MISSING_EISSN = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class RelativeInfluenceScore(Score):
-    """The RIF for a given publication."""
+    """The RIF for a given journal."""
 
     @property
     def name(self) -> str:

@@ -55,7 +55,7 @@ RIF_INCORRECT_ISSN = {
 
 @dataclass(frozen=True, eq=False, slots=True)
 class RelativeImpactFactor(Score):
-    """The RIF for a given publication."""
+    """The RIF for a given journal."""
 
     @property
     def name(self) -> str:

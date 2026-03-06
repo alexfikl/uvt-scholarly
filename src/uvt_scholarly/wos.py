@@ -10,9 +10,9 @@ from uvt_scholarly.identifiers import DOI, ISSN, ORCiD, ResearcherID
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
     Author,
-    Category,
     CitedPublication,
     DocumentType,
+    JournalCategory,
     Pages,
     Publication,
     ScoreType,
@@ -325,8 +325,8 @@ def parse_pages(start: str, end: str, count: str) -> Pages:
     return Pages(start=start, end=end if end else None, count=icount)
 
 
-def parse_wos_categories(text: str) -> tuple[Category, ...]:
-    def from_string(cat: str) -> Category:
+def parse_wos_categories(text: str) -> tuple[JournalCategory, ...]:
+    def from_string(cat: str) -> JournalCategory:
         if "," in cat:
             name, field = cat.split(",", maxsplit=1)
             field = field.strip().capitalize()
@@ -334,7 +334,7 @@ def parse_wos_categories(text: str) -> tuple[Category, ...]:
             name = cat
             field = None
 
-        return Category(name.strip().capitalize(), field)
+        return JournalCategory(name.strip().capitalize(), field)
 
     return tuple(from_string(cat.strip()) for cat in text.split(";"))
 
@@ -469,7 +469,10 @@ def read_from_csv(
                         orcid=row.get("OI"),
                     ),
                     title=titlecase(row["TI"].strip()),
-                    journal=Journal(row["SO"].strip()),
+                    journal=Journal(
+                        name=row["SO"].strip(),
+                        categories=parse_wos_categories(row["WC"]),
+                    ),
                     year=int(row["PY"].strip()),
                     volume=row["VL"].strip(),
                     issue=row["IS"].strip().upper(),
@@ -478,7 +481,6 @@ def read_from_csv(
                     doi=parse_doi(row.get("DI", "")),
                     issn=parse_issn(row.get("SN", "")),
                     eissn=parse_issn(row.get("EI", "")),
-                    categories=parse_wos_categories(row["WC"]),
                     identifier=row["UT"],
                     cited_by_count=int(row["TC"]),
                     cited_by=(),
@@ -579,7 +581,12 @@ def read_from_bib(
             pub = Publication(
                 authors=authors,
                 title=titlecase(clean(entry["title"])),
-                journal=Journal(clean(journal)),
+                journal=Journal(
+                    name=clean(journal),
+                    categories=parse_wos_categories(
+                        clean(entry.get("web-of-science-categories", ""))
+                    ),
+                ),
                 year=int(entry["year"].strip()),
                 volume=entry.get("volume", "").strip(),
                 issue=issue,
@@ -588,9 +595,6 @@ def read_from_bib(
                 doi=parse_doi(entry.get("doi", "")),
                 issn=parse_issn(entry.get("issn", "")),
                 eissn=parse_issn(entry.get("eissn", "")),
-                categories=parse_wos_categories(
-                    clean(entry.get("web-of-science-categories", ""))
-                ),
                 identifier=entry["ID"],
                 cited_by_count=int(entry["times-cited"]),
                 cited_by=(),

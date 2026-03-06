@@ -146,10 +146,10 @@ UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
 
 @enum.unique
 class Quartile(enum.IntEnum):
-    """The quartile a publication belongs to."""
+    """The quartile a journal belongs to."""
 
     NA = 0
-    """The quartile for this publication is not set or not applicable."""
+    """The quartile for this journal is not set or not applicable."""
 
     Q1 = 1
     """Q1."""
