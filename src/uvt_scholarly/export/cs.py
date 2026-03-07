@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import enum
+import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
@@ -120,9 +121,8 @@ def recategorize_article_influence_score(
             for quartile, aiss in zones_.items()
         }
 
-        # FIXME: this will naturally round down, which may not be desired?
         nmax = len(zones[Quartile.Q1])
-        n = a_star_percentage * nmax // 100
+        n = math.ceil(a_star_percentage * nmax / 100)
 
         # AA
         result.extend(replace(s, category=Category.AA) for s in zones[Quartile.Q1][:n])
@@ -136,7 +136,6 @@ def recategorize_article_influence_score(
         result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q3][:n])
 
         # C
-        # FIXME: not clear from docs what the "white" zone is
         result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q3][n:])
         result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q4])
 
@@ -230,10 +229,9 @@ class Candidate:
     publications: Sequence[Publication]
     conferences: Sequence[Publication]
     books: Sequence[Publication]
-    score_b: float
-    score_c: float
-    score_d: float
-    score_total: float
+    score_b: dict[Category, float]
+    score_c: dict[Category, float]
+    score_d: dict[Category, float]
     hirsch: dict[str, int]
 
 
@@ -287,10 +285,9 @@ def make_candidate(
         publications=sortedpubs(publications),
         conferences=sortedpubs(conferences),
         books=sortedpubs(books),
-        score_b=0.0,
-        score_c=0.0,
-        score_d=0.0,
-        score_total=0.0,
+        score_b={},
+        score_c={},
+        score_d={},
         hirsch={},
     )
 

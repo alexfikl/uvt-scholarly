@@ -118,6 +118,8 @@ class Journal:
     """
     eissn: ISSN | None
     """An electronic ISSN, if available."""
+    publisher: str | None
+    """The publisher for this journal."""
 
     scores: Mapping[ScoreType, float] = field(default_factory=dict)
     """A mapping of known scores for this journal, as available."""

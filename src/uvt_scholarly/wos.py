@@ -473,6 +473,7 @@ def read_from_csv(
                         name=row["SO"].strip(),
                         issn=parse_issn(row.get("SN", "")),
                         eissn=parse_issn(row.get("EI", "")),
+                        publisher=None,
                         categories=parse_wos_categories(row["WC"]),
                     ),
                     year=int(row["PY"].strip()),
@@ -585,6 +586,7 @@ def read_from_bib(
                     name=clean(journal),
                     issn=parse_issn(entry.get("issn", "")),
                     eissn=parse_issn(entry.get("eissn", "")),
+                    publisher=None,
                     categories=parse_wos_categories(
                         clean(entry.get("web-of-science-categories", ""))
                     ),
