@@ -4,18 +4,18 @@ editables==0.6
     # via -r .ci/requirements-build.in
 hatchling==1.29.0
     # via -r .ci/requirements-build.in
-packaging==26.1
+packaging==26.2
     # via
     #   hatchling
     #   setuptools-scm
     #   vcs-versioning
-pathspec==1.1.0
+pathspec==1.1.1
     # via hatchling
-pip==26.0.1
+pip==26.1.1
     # via -r .ci/requirements-build.in
 pluggy==1.6.0
     # via hatchling
-poetry-core==2.3.2
+poetry-core==2.4.0
     # via -r .ci/requirements-build.in
 setuptools==82.0.1
     # via
@@ -23,7 +23,7 @@ setuptools==82.0.1
     #   setuptools-scm
 setuptools-scm==10.0.5
     # via -r .ci/requirements-build.in
-trove-classifiers==2026.1.14.14
+trove-classifiers==2026.5.7.17
     # via hatchling
 vcs-versioning==1.1.1
     # via setuptools-scm
