@@ -240,25 +240,39 @@ def parse_issn(text: str) -> ISSN | None:
     return issn
 
 
-def parse_rids(text: str, *, sep: str = ";") -> dict[tuple[str, str], ResearcherID]:
+def parse_rids(
+    text: str, *, sep: str = ";"
+) -> dict[tuple[str, str | None], ResearcherID]:
     result = {}
     for value in text.split(sep):
         if "/" not in value:
             continue
 
         name, rid = value.split("/")
-        last_name, first_name = [part.strip() for part in name.split(",")]
+
+        # NOTE: this seems to be possible if the author wasn't correctly matched.
+        # For example, hit this on an input like
+        #   'Suthar, DL/E-4792-2018; /AAG-9254-2019'
+        # for authors
+        #   'Yadav, SK; Suthar, DL; Srivastava, A'
+        # (for this example, that ResearcherID seems to correspond to Yadav)
+        if "," in name:
+            last_name, first_name = [part.strip() for part in name.split(",")]
+        else:
+            last_name = name.strip()
+            first_name = None
 
         # NOTE: we use a (last_name, initial) tuple to disambiguate authors here.
         # There seem to be plenty of typos and mismatches between the AF field
         # and the RI / OI fields for author names, so it's not clear if we can do
         # any better without getting false negatives..
-        result[last_name, first_name[0]] = ResearcherID.from_string(rid)
+        initial = first_name[0] if first_name else None
+        result[last_name, initial] = ResearcherID.from_string(rid)
 
     return result
 
 
-def parse_orcids(text: str, *, sep: str = ";") -> dict[tuple[str, str], ORCiD]:
+def parse_orcids(text: str, *, sep: str = ";") -> dict[tuple[str, str | None], ORCiD]:
     result = {}
     for value in text.split(sep):
         if "/" not in value:
@@ -287,21 +301,26 @@ def parse_wos_authors(
 
     result = []
     for author in text.replace("\n", " ").split(author_separator):
-        last_name, first_name = author.split(",")
-        first_name = first_name.strip()
-        last_name = last_name.strip()
+        if "," in author:
+            last_name, first_name = author.split(",")
+            first_name = first_name.strip()
+            last_name = last_name.strip()
+        else:
+            last_name = author.strip()
+            first_name = None
 
         # NOTE: small formatting improvement: if all the letters in the first
         # name are uppercase, we assume it's just a bunch of initials
-        if first_name.upper() == first_name:
+        if first_name and first_name.upper() == first_name:
             first_name = " ".join(f"{ch}." for ch in first_name)
 
+        initial = first_name[0] if first_name else None
         result.append(
             Author(
                 first_name=first_name,
                 last_name=last_name,
                 affiliations=(),
-                researcherid=researcherids.get((last_name, first_name[0])),
+                researcherid=researcherids.get((last_name, initial)),
                 orcid=orcids.get((last_name, first_name)),
             )
         )
