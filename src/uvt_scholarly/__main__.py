@@ -75,10 +75,10 @@ def download(
 
     if UEFISCDI_DB_FILE.exists():
         if force:
-            log.info("Clearing RIS database: '%s'.", UEFISCDI_DB_FILE)
+            log.info("Clearing database: '%s'.", UEFISCDI_DB_FILE)
             UEFISCDI_DB_FILE.unlink()
         else:
-            log.warning("RIS database already exists: '%s'", UEFISCDI_DB_FILE)
+            log.warning("Database already exists: '%s'", UEFISCDI_DB_FILE)
             ctx.exit(1)
 
     from uvt_scholarly.uefiscdi.ris import store_relative_influence_score
