@@ -113,6 +113,16 @@ def download(
         UEFISCDI_DB_FILE.unlink()
         ctx.exit(1)
 
+    from uvt_scholarly.predatory import MDPI_DB_FILE, store_mdpi_journals
+
+    try:
+        store_mdpi_journals(MDPI_DB_FILE, force=force)
+    except ScholarlyError as exc:
+        log.error("Failed to download AIS scores.", exc_info=exc)
+
+        MDPI_DB_FILE.unlink()
+        ctx.exit(1)
+
 
 # }}}
 

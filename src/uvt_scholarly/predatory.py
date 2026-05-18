@@ -3,17 +3,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.utils import UVT_SCHOLARLY_CACHE_DIR
 
 if TYPE_CHECKING:
     import pathlib
+
+    from uvt_scholarly.publication import Publication
 
 log = make_logger(__name__)
 
@@ -24,6 +27,10 @@ PREDATORY_JOURNAL_URL = "https://beallslist.net/standalone-journals/"
 
 MDPI_JOURNAL_LIST_URL = "https://consortium.ch/mdpi_titlelist_publish"
 """Official URL for a list of all MDPI journals."""
+
+MDPI_DB_FILE = UVT_SCHOLARLY_CACHE_DIR / "mdpi.json"
+MDPI_CACHE_DIRNAME = "mdpi-cache"
+MDPI_LATEST_VERSION = 2026
 
 # {{{ parser
 
@@ -185,6 +192,66 @@ def parse_mdpi_journals(
             result.append(Journal(row[1], row[3], issn))
     else:
         raise ValueError(f"unknown version: {version}")
+
+    return tuple(result)
+
+
+def store_mdpi_journals(filename: pathlib.Path, *, force: bool = False) -> None:
+    dirname = filename.parent / MDPI_CACHE_DIRNAME
+    if not dirname.exists():
+        dirname.mkdir(parents=True)
+
+    from uvt_scholarly.utils import download_file
+
+    xlsxfile = dirname / "mpdi.xlsx"
+    download_file(MDPI_JOURNAL_LIST_URL, xlsxfile, follow_redirects=True, force=force)
+
+    log.info("Processing MDPI journals: %s.", xlsxfile)
+    journals = parse_mdpi_journals(xlsxfile, version=MDPI_LATEST_VERSION)
+
+    import json
+
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(journals, f, sort_keys=True, indent=2, default=asdict)
+
+
+def _load_journal(obj: dict[str, Any]) -> Journal | dict[str, Any]:
+    if "name" in obj:
+        issn = obj["issn"]
+        return Journal(
+            name=obj["name"],
+            url=obj["url"],
+            issn=ISSN(parts=issn["parts"]) if issn else None,
+        )
+    else:
+        return obj
+
+
+def remove_mdpi_publications(
+    pubs: tuple[Publication, ...],
+    dbfile: pathlib.Path,
+) -> tuple[Publication, ...]:
+    if not dbfile.exists():
+        raise FileNotFoundError(dbfile)
+
+    import json
+
+    with open(dbfile, encoding="utf-8") as f:
+        data = json.load(f, object_hook=_load_journal)
+    journals = {journal.name.upper() for journal in data}
+
+    result = []
+    for pub in pubs:
+        if pub.journal.name.upper() in journals:
+            continue
+
+        result.append(pub)
+
+    log.info(
+        "Removed %d/%d publications from MDPI journals.",
+        len(pubs) - len(result),
+        len(pubs),
+    )
 
     return tuple(result)
 
