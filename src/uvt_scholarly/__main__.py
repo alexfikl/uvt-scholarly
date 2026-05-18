@@ -175,6 +175,12 @@ def math(ctx: click.Context) -> None:
     help="A list of citations for the given publications",
 )
 @click.option(
+    "--exclude-mdpi",
+    is_flag=True,
+    default=False,
+    help="Exclude MDPI journals from the publications and citations",
+)
+@click.option(
     "-f",
     "--force",
     is_flag=True,
@@ -190,6 +196,7 @@ def math_generate(
     outfile: pathlib.Path | None,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
+    exclude_mdpi: bool,  # noqa: FBT001
     force: bool,  # noqa: FBT001
 ) -> None:
     """Generate citation data for the Mathematics Department."""
@@ -210,6 +217,15 @@ def math_generate(
         log.error("File already exists (use --force to overwrite): '%s'.", outfile)
         ctx.exit(1)
 
+    from uvt_scholarly.predatory import (
+        MDPI_DB_FILE,
+        remove_mdpi_publications,
+        store_mdpi_journals,
+    )
+
+    if exclude_mdpi and not MDPI_DB_FILE.exists():
+        store_mdpi_journals(MDPI_DB_FILE)
+
     from uvt_scholarly.enrich import add_cited_by, add_scores
     from uvt_scholarly.export.math import PAST_YEAR_CUTOFF
 
@@ -218,6 +234,11 @@ def math_generate(
 
         pubs = read_pubs(pub_file)
         cites = read_pubs(cite_file, include_citations=True)
+
+        if exclude_mdpi:
+            pubs = remove_mdpi_publications(pubs, MDPI_DB_FILE)
+            cites = remove_mdpi_publications(cites, MDPI_DB_FILE)
+
         cites = add_scores(
             cites, UEFISCDI_DB_FILE, scores={ScoreType.RIS}, past=PAST_YEAR_CUTOFF
         )
