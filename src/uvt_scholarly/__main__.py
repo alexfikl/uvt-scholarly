@@ -220,6 +220,9 @@ def math_generate(
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
 
+    log.info("Candidate '%s': Imported %d publications.", candidate, len(pubs))
+    log.info("Candidate '%s': Imported %d citations.", candidate, len(cites))
+
     if outfile.suffix == ".tex":
         from uvt_scholarly.export.math import export_publications_latex
 

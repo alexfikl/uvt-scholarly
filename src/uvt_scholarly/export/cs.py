@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
+    Author,
     DocumentType,
     JournalCategory,
     Publication,
@@ -32,8 +33,15 @@ RECENT_YEAR_CUTOFF = 5
 """The span over which the publication is considered."""
 
 
+def _format_author(au: Author) -> str:
+    if au.first_name is not None:
+        return f"{au.first_name[0]}. {au.last_name}"
+    else:
+        return f"{au.last_name}"
+
+
 def filter_csv_format_authors(pub: Publication) -> str:
-    return ", ".join(f"{au.first_name[0]}. {au.last_name}" for au in pub.authors)
+    return ", ".join(_format_author(au) for au in pub.authors)
 
 
 def filter_csv_format_volume(pub: Publication) -> str:

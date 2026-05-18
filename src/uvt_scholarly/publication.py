@@ -25,9 +25,10 @@ log = make_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class Author:
-    first_name: str
+    first_name: str | None
     """First name of the author. This can contain multiple first names and initials,
-    as necessary.
+    as necessary. It can also be *None*, if the author does not have a first name,
+    for whatever reason.
     """
     last_name: str
     """Last name of the author. This can contain additional parts as well, e.g.

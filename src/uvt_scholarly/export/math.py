@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Publication, ScoreType
+from uvt_scholarly.publication import Author, Publication, ScoreType
 
 if TYPE_CHECKING:
     import pathlib
@@ -32,6 +32,13 @@ RECENT_YEAR_CUTOFF = 7
 """The span over which the publication is considered as *RECENT*."""
 
 
+def _format_author(au: Author) -> str:
+    if au.first_name is not None:
+        return f"{au.first_name[0]}. {au.last_name}"
+    else:
+        return f"{au.last_name}"
+
+
 def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     from pylatexenc.latexencode import unicode_to_latex
 
@@ -40,9 +47,9 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     # authors
     authors = ", ".join(
         (
-            rf"\textbf{{{au.first_name[0]}. {au.last_name}}}"
+            rf"\textbf{{{_format_author(au)}}}"
             if au.last_name in candidate
-            else f"{au.first_name[0]}. {au.last_name}"
+            else _format_author(au)
         )
         for au in pub.authors
     )
@@ -73,7 +80,7 @@ def filter_csv_format_pub(pub: Publication) -> str:
     parts: list[str] = []
 
     # authors
-    authors = ", ".join(f"{au.first_name[0]}. {au.last_name}" for au in pub.authors)
+    authors = ", ".join(_format_author(au) for au in pub.authors)
     parts.append(authors)
 
     # title
