@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import enum
+import re
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.identifiers import DOI, ISSN, ORCiD, ResearcherID
@@ -214,6 +215,13 @@ CSV_REQUIRED_COLUMNS = {
     "UT",  # Accession Number
     "WC",  # Web of Science Categories
 }
+
+WOS_TITLE_CLEAN_RE = re.compile(r"\\documentclass.*?\\end\{document\}", flags=re.DOTALL)
+
+
+def clean_wos_title(title: str) -> str:
+    title = WOS_TITLE_CLEAN_RE.sub("", title)
+    return title.strip()
 
 
 def parse_doi(text: str) -> DOI | None:
@@ -487,7 +495,7 @@ def read_from_csv(
                         researcherid=row.get("RI"),
                         orcid=row.get("OI"),
                     ),
-                    title=titlecase(row["TI"].strip()),
+                    title=titlecase(clean_wos_title(row["TI"])),
                     journal=Journal(
                         name=row["SO"].strip(),
                         issn=parse_issn(row.get("SN", "")),

@@ -40,7 +40,13 @@ def _format_author(au: Author) -> str:
 
 
 def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
-    from pylatexenc.latexencode import unicode_to_latex
+    from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+    u2l = UnicodeToLatexEncoder(
+        unknown_char_policy="ignore",
+        unknown_char_warning=False,
+    )
+    encode = u2l.unicode_to_latex
 
     parts: list[str] = []
 
@@ -56,10 +62,10 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     parts.append(authors)
 
     # title
-    parts.append(rf"\enquote{{{unicode_to_latex(pub.title)}}}")
+    parts.append(rf"\enquote{{{encode(pub.title)}}}")
 
     # journal
-    parts.append(rf"\textit{{{unicode_to_latex(pub.journal)}}}")
+    parts.append(rf"\textit{{{encode(pub.journal)}}}")
 
     # volume + year
     parts.append(rf"vol.\ {pub.volume} ({pub.year})")
@@ -68,7 +74,7 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
 
     # doi
     if pub.doi:
-        doi = unicode_to_latex(str(pub.doi))
+        doi = encode(str(pub.doi))
         parts.append(
             rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {doi}}}"
         )
