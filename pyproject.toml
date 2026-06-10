@@ -59,13 +59,13 @@ docs = [
 bibtex = [ "bibtexparser" ]
 
 [tool.hatch]
-build.targets.sdist.exclude = [
-    ".github",
-    ".ci",
-    "site",
-]
 build.targets.wheel.packages = [
     "src/uvt_scholarly",
+]
+build.targets.sdist.exclude = [
+    ".ci",
+    ".github",
+    "site",
 ]
 
 [tool.ruff]
@@ -130,11 +130,11 @@ files.extend-exclude = [
 
 [tool.pytest]
 ini_options.testpaths = "tests"
-ini_options.log_cli = true
-ini_options.log_cli_level = "INFO"
 ini_options.addopts = [
     "-rswx",
     "--durations=25",
     "--capture=no",
     "--verbose",
 ]
+ini_options.log_cli = true
+ini_options.log_cli_level = "INFO"
