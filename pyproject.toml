@@ -106,6 +106,7 @@ lint.ignore = [
     "PLR0915", # too-many-statements
     "PLR0917", # too-many-arguments
     "PLR2004", # magic-value-comparison
+    "PLW0717", # too-many-statements-try-except
     "S101",    # assert
     "S102",    # exec-builtin
 ]
