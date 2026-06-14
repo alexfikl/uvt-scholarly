@@ -6,6 +6,7 @@ from __future__ import annotations
 import pathlib
 import tempfile
 
+import httpx
 import pytest
 
 from uvt_scholarly.logging import make_logger
@@ -47,6 +48,7 @@ def test_parse_beall_journals() -> None:
 # {{{ test_parse_mdpi_journals
 
 
+@pytest.mark.xfail(raises=httpx.ConnectTimeout)
 def test_parse_mdpi_journals() -> None:
     from uvt_scholarly.predatory import MDPI_JOURNAL_LIST_URL, parse_mdpi_journals
     from uvt_scholarly.utils import download_file
