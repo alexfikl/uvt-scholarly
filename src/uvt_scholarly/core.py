@@ -128,10 +128,10 @@ def get_primary_field_name(code: int | str) -> str:
     if isinstance(code, str) and code.isdigit():
         code = int(code)
 
-    if (result := ANZSRC_CLASSIFICATIONS.get(code)) is not None:  # ty: ignore[invalid-argument-type]
+    if (result := ANZSRC_CLASSIFICATIONS.get(code)) is not None:
         return result
 
-    if (result := EXTRA_CORE_CLASSIFICATIONS.get(code)) is not None:  # ty: ignore[invalid-argument-type]
+    if (result := EXTRA_CORE_CLASSIFICATIONS.get(code)) is not None:
         return result
 
     raise ValueError(f"unknown field of research for classification: {code!r}")
