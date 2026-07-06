@@ -17,13 +17,13 @@ pluggy==1.6.0
     # via hatchling
 poetry-core==2.4.1
     # via -r .ci/requirements-build.in
-setuptools==82.0.1
+setuptools==83.0.0
     # via
     #   -r .ci/requirements-build.in
     #   setuptools-scm
-setuptools-scm==10.0.5
+setuptools-scm==10.2.0
     # via -r .ci/requirements-build.in
 trove-classifiers==2026.6.1.19
     # via hatchling
-vcs-versioning==1.1.1
+vcs-versioning==2.2.2
     # via setuptools-scm
