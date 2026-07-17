@@ -100,7 +100,8 @@ TEST_DOI_INVALID = (
 
 
 def test_doi() -> None:
-    from uvt_scholarly.identifiers import DOI, _lowercase_ascii  # noqa: PLC2701
+    # ruff:ignore[import-private-name]
+    from uvt_scholarly.identifiers import DOI, _lowercase_ascii
 
     for value in TEST_DOI_VALID:
         doi = DOI.from_string(value)

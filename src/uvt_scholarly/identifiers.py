@@ -38,7 +38,7 @@ ARXIV_PDF_URL = "https://arxiv.org/pdf"
 
 
 @dataclass(frozen=True)
-class arXiv(ABC):  # noqa: N801
+class arXiv(ABC):  # ruff:ignore[invalid-class-name]
     """An [arXiv](https://arxiv.org) identifier."""
 
     year: int
@@ -206,7 +206,7 @@ class ModernArXiv(arXiv):
             return False
 
         # NOTE: in 2025, the number part was padded to 5 digits
-        if (  # noqa: SIM103
+        if (  # ruff:ignore[needless-bool]
             (self.year < 2015 and len(self.number) != 4)
             or (self.year >= 2015 and len(self.number) != 5)
         ):
@@ -259,7 +259,7 @@ class LegacyArXiv(arXiv):
         if self.version is not None and self.version <= 0:
             return False
 
-        if len(self.number) != 3:  # noqa: SIM103
+        if len(self.number) != 3:  # ruff:ignore[needless-bool]
             return False
 
         return True
@@ -503,7 +503,7 @@ class ISBN10:
             return False
 
         checksum = _isbn10_check_digit(isbn)
-        if checksum != check:  # noqa: SIM103
+        if checksum != check:  # ruff:ignore[needless-bool]
             return False
 
         return True
@@ -570,7 +570,7 @@ class ISBN13:
             return False
 
         checksum = _isbn13_check_digit(isbn)
-        if checksum != check:  # noqa: SIM103
+        if checksum != check:  # ruff:ignore[needless-bool]
             return False
 
         return True

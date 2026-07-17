@@ -398,7 +398,7 @@ def export_publications_latex(
 
     import jinja2
 
-    env = jinja2.Environment(  # noqa: S701
+    env = jinja2.Environment(  # ruff:ignore[jinja2-autoescape-false]
         block_start_string=r"\TplBlock{",
         block_end_string="}",
         variable_start_string=r"\TplVar{",

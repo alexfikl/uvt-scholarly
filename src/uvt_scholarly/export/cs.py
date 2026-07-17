@@ -276,7 +276,7 @@ def make_candidate(
         )
 
     for pub in pubs:
-        pub = update_citations(pub)  # noqa: PLW2901
+        pub = update_citations(pub)  # ruff:ignore[redefined-loop-name]
         if pub.dtype in {DocumentType.Book, DocumentType.BookChapter}:
             books.append(pub)
         elif pub.dtype == DocumentType.ProceedingsPaper:

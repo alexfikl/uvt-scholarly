@@ -173,15 +173,15 @@ ANZSRC_CLASSIFICATIONS: dict[int, str] = {
     45: "Indigenous Studies",
     4501: "Aboriginal and Torres Strait Islander culture, language and history",
     4502: "Aboriginal and Torres Strait Islander education",
-    4503: "Aboriginal and Torres Strait Islander environmental knowledges and management",  # noqa: E501
+    4503: "Aboriginal and Torres Strait Islander environmental knowledges and management",  # ruff:ignore[line-too-long]
     4504: "Aboriginal and Torres Strait Islander health and wellbeing",
     4505: "Aboriginal and Torres Strait Islander peoples, society and community",
     4506: "Aboriginal and Torres Strait Islander sciences",
-    4507: "Te ahurea, reo me te hītori o te Māori (Māori culture, language and history)",  # noqa: E501
+    4507: "Te ahurea, reo me te hītori o te Māori (Māori culture, language and history)",  # ruff:ignore[line-too-long]
     4508: "Mātauranga Māori (Māori education)",
     4509: "Ngā mātauranga taiao o te Māori (Māori environmental knowledges)",
     4510: "Te hauora me te oranga o te Māori (Māori health and wellbeing)",
-    4511: "Ngā tāngata, te porihanga me ngā hapori o te Māori (Māori peoples, society and community)",  # noqa: E501
+    4511: "Ngā tāngata, te porihanga me ngā hapori o te Māori (Māori peoples, society and community)",  # ruff:ignore[line-too-long]
     4512: "Ngā pūtaiao Māori (Māori sciences)",
     4513: "Pacific Peoples culture, language and history",
     4514: "Pacific Peoples education",

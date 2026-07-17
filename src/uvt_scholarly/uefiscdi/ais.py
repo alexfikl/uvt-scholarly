@@ -414,7 +414,7 @@ class ArticleInfluenceScoreDatabase(Database):
             SELECT journal, issn, eissn, journal_category, citation_index, score, quartile, position
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year = ?
-            """,  # noqa: E501,S608
+            """,  # ruff:ignore[line-too-long, hardcoded-sql-expression]
             (str(text), str(text), year),
         )
 

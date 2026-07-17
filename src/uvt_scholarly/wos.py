@@ -538,7 +538,7 @@ def parse_bib_pages(pages: str) -> Pages:
         return Pages(pages.strip().upper(), None, None)
 
     start, end = [p.strip() for p in pages.split("-") if p]
-    if start.isdigit() and end.isdigit():  # noqa: SIM108
+    if start.isdigit() and end.isdigit():  # ruff:ignore[if-else-block-instead-of-if-exp]
         count = int(end) - int(start) + 1
     else:
         count = None

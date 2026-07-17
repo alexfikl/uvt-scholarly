@@ -162,7 +162,7 @@ UEFISCDI_DATABASE_QUARTILES_URL = {
 UEFISCDI_DEFAULT_VERSION = max(UEFISCDI_DATABASE_URL)
 """Default version used for databases."""
 
-UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # noqa: S105
+UEFISCDI_DEFAULT_PASSWORD = "uefiscdi"  # ruff:ignore[hardcoded-password-string]
 """Default password used in several UEFISCDI documents."""
 
 UEFISCDI_LATEST_YEAR = max(UEFISCDI_DATABASE_URL)
@@ -280,7 +280,7 @@ class Score(ABC):
         if not self.journal:
             return False
 
-        if self.score < 0.0:  # noqa: SIM103
+        if self.score < 0.0:  # ruff:ignore[needless-bool]
             return False
 
         return True
@@ -463,7 +463,7 @@ class Database(Generic[ScoreT]):
             f"""
             INSERT INTO {self.name} (year, {columns})
             VALUES (?, {values})
-            """,  # noqa: S608
+            """,  # ruff:ignore[hardcoded-sql-expression]
             ((year, *astuple(r)) for r in rif),
         )
 
@@ -484,7 +484,7 @@ class Database(Generic[ScoreT]):
             SELECT max(category)
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year == ?
-            """,  # noqa: S608
+            """,  # ruff:ignore[hardcoded-sql-expression]
             (str(text), str(text), year),
         )
 
@@ -520,7 +520,7 @@ class Database(Generic[ScoreT]):
             SELECT MAX(score)
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year >= ?
-            """,  # noqa: S608
+            """,  # ruff:ignore[hardcoded-sql-expression]
             (str(text), str(text), UEFISCDI_LATEST_YEAR - past),
         )
 

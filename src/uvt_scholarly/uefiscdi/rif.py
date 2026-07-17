@@ -214,7 +214,7 @@ class RelativeImpactFactorDatabase(Database[RelativeImpactFactor]):
             SELECT journal, issn, eissn, score
             FROM {self.name}
             WHERE (issn = ? OR eissn = ?) AND year = ?
-            """,  # noqa: S608
+            """,  # ruff:ignore[hardcoded-sql-expression]
             (str(text), str(text), year),
         )
 

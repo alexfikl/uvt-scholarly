@@ -35,7 +35,7 @@ SUPPORTED_SOURCES = {"wos"}
 @click.pass_context
 def main(
     ctx: click.Context,
-    quiet: bool,  # noqa: FBT001
+    quiet: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     if quiet:
         import logging
@@ -63,7 +63,7 @@ def main(
 @click.pass_context
 def download(
     ctx: click.Context,
-    force: bool,  # noqa: FBT001
+    force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Download required scores and rankings to generate documents."""
     from uvt_scholarly.uefiscdi import UEFISCDI_CACHE_DIR, UEFISCDI_DB_FILE
@@ -196,8 +196,8 @@ def math_generate(
     outfile: pathlib.Path | None,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
-    exclude_mdpi: bool,  # noqa: FBT001
-    force: bool,  # noqa: FBT001
+    exclude_mdpi: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
+    force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Generate citation data for the Mathematics Department."""
 
@@ -347,7 +347,7 @@ def cs_generate(
     outfile: pathlib.Path | None,
     pub_file: pathlib.Path,
     cite_file: pathlib.Path,
-    force: bool,  # noqa: FBT001
+    force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Generate citation data for the Computer Science Department."""
 
@@ -437,7 +437,7 @@ def wos_merge(
     ctx: click.Context,
     paths: tuple[pathlib.Path, ...],
     outfile: pathlib.Path | None,
-    force: bool,  # noqa: FBT001
+    force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Merge multiple Web of Science exports."""
 
@@ -506,7 +506,7 @@ def wos_filter(
     ctx: click.Context,
     filename: pathlib.Path,
     outfile: pathlib.Path | None,
-    force: bool,  # noqa: FBT001
+    force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     """Remove publications that have invalid metadata."""
 
