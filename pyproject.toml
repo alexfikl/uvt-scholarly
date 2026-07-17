@@ -93,22 +93,22 @@ lint.select = [
     "W",   # flake8
 ]
 lint.ignore = [
-    "A005",    # shadowing-builtin-module
-    "E402",    # module-import-not-at-top-of-file
-    "ISC001",  # single-line-implicit-string-concatenation
-    "N803",    # non-lowercase-argument
-    "N806",    # non-lowercase-variable-in-function
-    "PLC0415", # import-outside-top-level
-    "PLR0911", # too-many-return-statements
-    "PLR0912", # too-many-branches
-    "PLR0913", # too-many-arguments
-    "PLR0914", # too-many-variables
-    "PLR0915", # too-many-statements
-    "PLR0917", # too-many-arguments
-    "PLR2004", # magic-value-comparison
-    "PLW0717", # too-many-statements-try-except
-    "S101",    # assert
-    "S102",    # exec-builtin
+    "assert",                                    # assert
+    "exec-builtin",                              # exec-builtin
+    "import-outside-top-level",                  # import-outside-top-level
+    "invalid-argument-name",                     # non-lowercase-argument
+    "magic-value-comparison",                    # magic-value-comparison
+    "module-import-not-at-top-of-file",          # module-import-not-at-top-of-file
+    "non-lowercase-variable-in-function",        # non-lowercase-variable-in-function
+    "single-line-implicit-string-concatenation", # single-line-implicit-string-concatenation
+    "stdlib-module-shadowing",                   # shadowing-builtin-module
+    "too-many-arguments",                        # too-many-arguments
+    "too-many-branches",                         # too-many-branches
+    "too-many-locals",                           # too-many-variables
+    "too-many-positional-arguments",             # too-many-arguments
+    "too-many-return-statements",                # too-many-return-statements
+    "too-many-statements",                       # too-many-statements
+    "too-many-statements-in-try-clause",         # too-many-statements-try-except
 ]
 lint.flake8-quotes.docstring-quotes = "double"
 lint.flake8-quotes.inline-quotes = "double"
