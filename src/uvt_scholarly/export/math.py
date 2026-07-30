@@ -77,7 +77,7 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     if pub.doi:
         doi = encode(str(pub.doi))
         parts.append(
-            rf"DOI: \href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily {doi}}}"
+            rf"\href{{https://doi.org/{pub.doi}}}{{\bfseries\ttfamily doi:{doi}}}"
         )
 
     return ", ".join(parts)
