@@ -396,7 +396,11 @@ def parse_wos_citations(text: str, sep: str = ";") -> dict[DOI, CitedPublication
             continue
 
         author, year, journal = parts[0], parts[1], parts[2]
-        if not year.isdigit():
+        if parts[1].isdigit():
+            author, year, journal = parts[0], parts[1], parts[2]
+        elif parts[2].isdigit():
+            author, year, journal = parts[0], parts[2], parts[3]
+        else:
             log.debug("Cannot parse citation (year is not an int): '%s'.", citation)
             continue
 
