@@ -258,14 +258,19 @@ def parse_rids(
 
         name, rid = value.split("/")
 
-        # NOTE: this seems to be possible if the author wasn't correctly matched.
+        # NOTE: The author can be missing if they weren't correctly matched.
         # For example, hit this on an input like
         #   'Suthar, DL/E-4792-2018; /AAG-9254-2019'
         # for authors
         #   'Yadav, SK; Suthar, DL; Srivastava, A'
         # (for this example, that ResearcherID seems to correspond to Yadav)
+        # NOTE: The author can also have some titles in there.
+        # For example, hit this on an input like
+        #   'Infante,, FACN, Marco/B-8735-2019'
+        # where the FACN (Fellow of the American College of Nutrition) seems to be
+        # a title of some sort. Hopefully that's a convention? No idea..
         if "," in name:
-            last_name, first_name = [part.strip() for part in name.split(",")]
+            last_name, *_, first_name = [part.strip() for part in name.split(",")]
         else:
             last_name = name.strip()
             first_name = None
@@ -287,7 +292,7 @@ def parse_orcids(text: str, *, sep: str = ";") -> dict[tuple[str, str | None], O
             continue
 
         name, oid = value.split("/")
-        last_name, first_name = [part.strip() for part in name.split(",")]
+        last_name, *_, first_name = [part.strip() for part in name.split(",")]
 
         result[last_name, first_name[0]] = ORCiD.from_string(oid)
 
