@@ -54,7 +54,8 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     authors = ", ".join(
         (
             rf"\textbf{{{_format_author(au)}}}"
-            if au.last_name in candidate
+            # FIXME: this isn't a great check. It already failed once
+            if au.last_name in candidate.split()
             else _format_author(au)
         )
         for au in pub.authors
