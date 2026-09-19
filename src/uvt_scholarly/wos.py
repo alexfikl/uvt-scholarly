@@ -585,10 +585,16 @@ def read_from_bib(
     if not filename.exists():
         raise FileNotFoundError(filename)
 
+    import bibtexparser.middlewares as m
     from bibtexparser import parse_file
     from titlecase import titlecase
 
-    library = parse_file(str(filename), encoding=encoding)
+    # TODO: using this new middlewares system, we can actually do all the
+    # transformations we need at parsing time instead of cleaning up later
+    ms = [
+        m.NormalizeFieldKeys(),
+    ]
+    library = parse_file(str(filename), append_middleware=ms, encoding=encoding)
 
     from uvt_scholarly.publication import Journal
 
