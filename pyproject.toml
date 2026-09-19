@@ -56,7 +56,7 @@ docs = [
     "mkdocstrings-python",
     "zensical",
 ]
-bibtex = [ "bibtexparser" ]
+bibtex = [ "bibtexparser>=2" ]
 
 [tool.hatch]
 build.targets.wheel.packages = [

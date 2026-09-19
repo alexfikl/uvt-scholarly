@@ -23,6 +23,8 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
 
+    from bibtexparser.model import Field
+
 log = make_logger(__name__)
 
 # {{{ Field Tags
@@ -583,61 +585,62 @@ def read_from_bib(
     if not filename.exists():
         raise FileNotFoundError(filename)
 
-    from bibtexparser.bparser import BibTexParser
-
-    parser = BibTexParser(
-        common_strings=True,
-        ignore_nonstandard_types=False,
-        homogenize_fields=False,
-        interpolate_strings=True,
-    )
-
-    with open(filename, encoding=encoding) as fd:
-        entries = parser.parse(fd.read(), partial=True).entries
-
+    from bibtexparser import parse_file
     from titlecase import titlecase
+
+    library = parse_file(str(filename), encoding=encoding)
 
     from uvt_scholarly.publication import Journal
 
     def clean(text: str) -> str:
         return text.replace("\\", "").replace("\n", " ").strip()
 
+    def get(fields: dict[str, Field], key: str, default: str = "") -> str:
+        field = fields.get(key)
+        value = field.value if field is not None else default
+        if isinstance(value, str):
+            value = value.strip()
+
+        return value
+
     result = []
-    for entry in entries:
+    for entry in library.entries:
+        fields = entry.fields_dict
+
         authors = parse_wos_authors(
-            clean(entry["author"]),
-            researcherid=entry.get("researcherid-numbers", ""),
-            orcid=entry.get("orcid-numbers", ""),
+            clean(get(fields, "author")),
+            researcherid=get(fields, "researcherid-numbers"),
+            orcid=get(fields, "orcid-numbers"),
             author_separator=" and ",
             id_separator="\n",
         )
-        issue = entry.get("number", entry.get("issue", "")).strip()
-        journal = clean(entry.get("journal", entry.get("booktitle", "")))
+        issue = get(fields, "number", get(fields, "issue"))
+        journal = clean(get(fields, "journal", get(fields, "booktitle")))
 
         try:
             pub = Publication(
                 authors=authors,
-                title=titlecase(clean(entry["title"])),
+                title=titlecase(clean(get(fields, "title"))),
                 journal=Journal(
                     name=clean(journal),
-                    issn=parse_issn(entry.get("issn", "")),
-                    eissn=parse_issn(entry.get("eissn", "")),
+                    issn=parse_issn(get(fields, "issn")),
+                    eissn=parse_issn(get(fields, "eissn")),
                     publisher=None,
                     categories=parse_wos_categories(
-                        clean(entry.get("web-of-science-categories", ""))
+                        clean(get(fields, "web-of-science-categories"))
                     ),
                 ),
-                year=int(entry["year"].strip()),
-                volume=entry.get("volume", "").strip(),
+                year=int(get(fields, "year", "0")),
+                volume=get(fields, "volume"),
                 issue=issue,
-                pages=parse_bib_pages(entry.get("pages", "")),
-                dtype=DOCUMENT_TYPE.get(entry["type"].strip(), DocumentType.Other),
-                doi=parse_doi(entry.get("doi", "")),
-                identifier=entry["ID"],
-                cited_by_count=int(entry["times-cited"]),
+                pages=parse_bib_pages(get(fields, "pages")),
+                dtype=DOCUMENT_TYPE.get(entry.entry_type, DocumentType.Other),
+                doi=parse_doi(get(fields, "doi")),
+                identifier=entry.key,
+                cited_by_count=int(get(fields, "times-cited", "0")),
                 cited_by=(),
                 citations=(
-                    parse_wos_citations(entry.get("cited-references", ""), sep="\n")
+                    parse_wos_citations(get(fields, "cited-references"), sep="\n")
                     if include_citations
                     else {}
                 ),
