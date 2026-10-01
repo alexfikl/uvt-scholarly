@@ -69,6 +69,10 @@ alternate_style = true
 [project.markdown_extensions.pymdownx.arithmatex]
 generic = true
 
+[project.plugins.llmstxt.sections]
+"API Reference" = ["api.md"]
+"Usage documentation" = ["usage.md", "usage/*.md"]
+
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
 paths = ["src"]
