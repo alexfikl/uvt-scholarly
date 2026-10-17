@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
@@ -95,11 +95,13 @@ class Publisher:
         return f"{self.name} ({self.url})"
 
 
-def parse_beall_publishers(client: httpx.Client | None = None) -> tuple[Publisher, ...]:
+def parse_beall_publishers(
+    client: httpx2.Client | None = None,
+) -> tuple[Publisher, ...]:
     if client:
         response = client.get(PREDATORY_PUBLISHER_URL)
     else:
-        with httpx.Client(timeout=5) as c:
+        with httpx2.Client(timeout=5) as c:
             response = c.get(PREDATORY_PUBLISHER_URL)
 
     response.raise_for_status()
@@ -127,11 +129,11 @@ class Journal:
         return f"{self.name} ({self.url})"
 
 
-def parse_beall_journals(client: httpx.Client | None = None) -> tuple[Journal, ...]:
+def parse_beall_journals(client: httpx2.Client | None = None) -> tuple[Journal, ...]:
     if client:
         response = client.get(PREDATORY_JOURNAL_URL)
     else:
-        with httpx.Client(timeout=5) as c:
+        with httpx2.Client(timeout=5) as c:
             response = c.get(PREDATORY_JOURNAL_URL)
 
     response.raise_for_status()

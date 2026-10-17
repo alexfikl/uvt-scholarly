@@ -32,7 +32,7 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.1",
-    "httpx>=0.28",
+    "httpx2>=2.10",
     "jinja2>=3",
     "msoffcrypto-tool>=5",
     "openpyxl>=3.1",

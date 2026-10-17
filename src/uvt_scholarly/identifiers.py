@@ -6,7 +6,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import httpx
+import httpx2
 
 from uvt_scholarly.logging import make_logger
 
@@ -396,7 +396,7 @@ class DOI:
         # is valid, we have to resolve it through doi.org or something.
         return True
 
-    def resolve(self, client: httpx.Client | None = None) -> bool:
+    def resolve(self, client: httpx2.Client | None = None) -> bool:
         """
         Parameters:
             client: A client used for the HTTP request. This function
@@ -421,11 +421,11 @@ class DOI:
 
                 response = client.head(self.url)
             else:
-                with httpx.Client(follow_redirects=True, timeout=5.0) as c:
+                with httpx2.Client(follow_redirects=True, timeout=5.0) as c:
                     response = c.head(self.url)
 
             return response.status_code == 200
-        except httpx.HTTPError:
+        except httpx2.HTTPError:
             return False
 
 

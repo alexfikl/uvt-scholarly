@@ -62,13 +62,13 @@ def download_file(
     if not force and filename.exists():
         return
 
-    import httpx
+    import httpx2
 
-    # TODO: allow passing a httpx.Client
+    # TODO: allow passing a httpx2.Client
     try:
         with (
             open(filename, "wb") as f,
-            httpx.stream(
+            httpx2.stream(
                 "GET",
                 url,
                 follow_redirects=follow_redirects,
@@ -79,7 +79,7 @@ def download_file(
 
             for chunk in response.iter_bytes():
                 f.write(chunk)
-    except httpx.ConnectError:
+    except httpx2.ConnectError:
         if filename.exists():
             filename.unlink()
 
