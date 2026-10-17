@@ -14,7 +14,7 @@ import platformdirs
 from uvt_scholarly.logging import make_logger
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from types import TracebackType
 
 log = make_logger(__name__)
@@ -151,7 +151,7 @@ class BlockTimer:
 
 
 @contextmanager
-def block_timer(name: str) -> Iterator[None]:
+def block_timer(name: str) -> Generator[None]:
     with BlockTimer(name) as bt:
         yield
 
