@@ -2,6 +2,8 @@
 #    uv pip compile --universal --python-version 3.11 --group docs -o docs/requirements.txt pyproject.toml
 anyio==4.16.0 ; sys_platform != 'emscripten'
     # via httpx2
+catppuccin-zensical==0.3.0
+    # via uvt-scholarly (pyproject.toml:docs)
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 click==8.5.0
@@ -132,6 +134,8 @@ tzdata==2026.6
 watchdog==7.1.0
     # via mkdocs
 zensical==0.1.0
-    # via uvt-scholarly (pyproject.toml:docs)
+    # via
+    #   uvt-scholarly (pyproject.toml:docs)
+    #   catppuccin-zensical
 zensical-ui==0.0.41
     # via zensical
