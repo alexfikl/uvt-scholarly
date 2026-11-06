@@ -52,10 +52,7 @@ test = [
     "ruff",
     "ty",
 ]
-docs = [
-    "mkdocstrings-python",
-    "zensical",
-]
+docs = [ "catppuccin-zensical", "mkdocstrings-python", "zensical" ]
 bibtex = [ "bibtexparser>=2" ]
 
 [tool.hatch]

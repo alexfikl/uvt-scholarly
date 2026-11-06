@@ -27,6 +27,7 @@ Usage = [
 "API Reference" = "api.md"
 
 [project.theme]
+name = "catppuccin"
 features = [
   "content.code.annotate",
   "content.code.copy",
@@ -41,6 +42,16 @@ features = [
   "navigation.top",
   "toc.integrate",
 ]
+
+[[project.theme.palette]]
+scheme = "catppuccin-latte"
+toggle.icon = "lucide/moon"
+toggle.name = "Dark"
+
+[[project.theme.palette]]
+scheme = "catppuccin-frappe"
+toggle.icon = "lucide/sun"
+toggle.name = "Light"
 
 [project.extra]
 repo_url = "https://github.com/alexfikl/uvt-scholarly"
