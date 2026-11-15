@@ -20,7 +20,7 @@ log = make_logger(__name__)
 
 # {{{ utils
 
-MIN_AIS_SCORE = 0.5
+MIN_AIS_SCORE = 0
 """The minimum score allowed for publications by the Mathematics Department."""
 
 PAST_YEAR_CUTOFF = 5
