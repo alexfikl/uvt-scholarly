@@ -191,7 +191,10 @@ def filter_get_score(pub: Publication, name: str) -> float:
     except KeyError:
         return -1.0
 
-    return pub.journal.scores[score]
+    try:
+        return pub.journal.scores[score]
+    except KeyError:
+        return 0
 
 
 def filter_get_average_score(pub: Publication, name: str) -> float:
@@ -293,7 +296,7 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
     return tuple(
         sorted(
             pubs,
-            key=lambda p: (p.year, p.journal.scores[ScoreType.AIS]),
+            key=lambda p: (p.year, p.journal.scores.get(ScoreType.AIS, 0)),
             reverse=True,
         )
     )
@@ -326,13 +329,13 @@ def make_candidate(
             ais = pub.journal.scores.get(ScoreType.AIS)
             if ais is None:
                 log.warning("Journal does not have a AIS score: '%s'.", pub.journal)
-                continue
+                ais = 0
 
             if ais < MIN_AIS_SCORE:
                 log.warning(
                     "Journal AIS '%.3f' < %.3f: '%s'.", ais, MIN_AIS_SCORE, pub.journal
                 )
-                continue
+                ais = 0
 
             if position in AVERAGED_AIS_POSITIONS:
                 ais /= len(pub.authors)
@@ -342,21 +345,22 @@ def make_candidate(
                 recent_total_ais += ais
 
             cited_by = []
-            for cite in pub.cited_by:
-                ais = cite.journal.scores.get(ScoreType.AIS)
-                if ais is None or ais < MIN_AIS_SCORE:
-                    continue
+            if ais != 0:
+                for cite in pub.cited_by:
+                    ais = cite.journal.scores.get(ScoreType.AIS)
+                    if ais is None or ais < MIN_AIS_SCORE:
+                        continue
 
-                if any(au.last_name in name for au in cite.authors):
-                    log.warning(
-                        "Self-citation for publication '%s': '%s'.",
-                        pub.doi,
-                        cite.title,
-                    )
-                    continue
+                    if any(au.last_name in name for au in cite.authors):
+                        log.warning(
+                            "Self-citation for publication '%s': '%s'.",
+                            pub.doi,
+                            cite.title,
+                        )
+                        continue
 
-                total_citations += 1
-                cited_by.append(cite)
+                    total_citations += 1
+                    cited_by.append(cite)
 
             publications.append(
                 replace(

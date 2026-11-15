@@ -54,6 +54,7 @@
 % define some standard colors used in the official templates
 \definecolor{TableGray}{RGB}{242, 242, 242}
 \definecolor{TableYellow}{RGB}{255, 255, 153}
+\definecolor{TableOrange}{RGB}{255, 95, 5}
 
 % }}} END
 
@@ -224,10 +225,14 @@ C5\_UVT &
 
 % rows
 \TplBlock{for pub in candidate.publications}
+\TplBlock{-set ais = pub | get_score('AIS')}
+\TplBlock{-if ais == 0}
+\rowcolor{TableOrange!30}
+\TplBlock{endif-}
 \TplVar{loop.index} &
 \TplVar{pub | format_pub} &
 \TplVar{pub | is_recent} &
-\TplVar{'{:.3f}'.format(pub | get_score('AIS'))} &
+\TplVar{'{:.3f}'.format(ais)} &
 \TplVar{pub.authors | length} &
 \TplVar{'{:.3f}'.format(pub | get_average_score('AIS'))} \\\hline
 \TplBlock{endfor}
