@@ -129,14 +129,19 @@ def filter_latex_format_grant(grant: Grant) -> str:
 
     # name + identifier + funder + period
     parts.extend([
-        grant.name,
+        rf"\textbf{{{grant.name}}}",
         f"Contract: {grant.identifier}",
-        grant.funder,
-        f"{grant.period[0]}--{grant.period[1]}",
+        rf"\textit{{{grant.funder}}}",
+        (
+            f"{grant.period[0]}--{grant.period[1]}"
+            if grant.period[0] != grant.period[1]
+            else f"{grant.period[0]}"
+        ),
+        rf"Poziție: \textbf{{{grant.position}}}",
     ])
 
     if grant.budget:
-        parts.append(f"Suma: {grant.budget}")
+        parts.append(f"Budget: approx. {grant.budget}")
 
     if grant.url:
         parts.append(rf"(\href{{{grant.url}}}{{LINK}})")
@@ -317,7 +322,7 @@ def make_candidate(
             books.append(pub)
         elif pub.dtype == DocumentType.Report:
             courses.append(pub)
-        elif pub.dtype in {DocumentType.Article, DocumentType.Review}:
+        else:
             ais = pub.journal.scores.get(ScoreType.AIS)
             if ais is None:
                 log.warning("Journal does not have a AIS score: '%s'.", pub.journal)
@@ -360,18 +365,16 @@ def make_candidate(
                     cited_by_count=len(cited_by),
                 )
             )
-        else:
-            log.warning("Publication has unsupported type: %s", pub.dtype)
 
     return Candidate(
         qualname=name,
         ais=total_ais,
         recent_ais=recent_total_ais,
         total_citations=total_citations,
-        books=(),
-        courses=(),
+        books=tuple(books),
+        courses=tuple(courses),
         publications=sortedpubs(publications),
-        grants=(),
+        grants=tuple(sorted(grants, key=lambda g: g.period[1], reverse=True)),
     )
 
 
