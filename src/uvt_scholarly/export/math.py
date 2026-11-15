@@ -89,6 +89,61 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     return ", ".join(parts)
 
 
+def filter_latex_format_book(pub: Publication, candidate: str) -> str:
+    from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+    u2l = UnicodeToLatexEncoder(
+        unknown_char_policy="ignore",
+        unknown_char_warning=False,
+    )
+    encode = u2l.unicode_to_latex
+
+    parts: list[str] = []
+
+    # authors
+    authors = ", ".join(
+        (
+            rf"\textbf{{{_format_author(au)}}}"
+            # FIXME: this isn't a great check. It already failed once
+            if au.last_name in candidate.split()
+            else _format_author(au)
+        )
+        for au in pub.authors
+    )
+    parts.append(authors)
+
+    # title + year
+    parts.append(rf"\enquote{{{encode(pub.title)}}} ({pub.year})")
+
+    # publisher
+    parts.append(rf"\textit{{{encode(pub.journal)}}}")
+
+    if pub.isbn:
+        parts.append(f"ISBN:{pub.isbn}")
+
+    return ", ".join(parts)
+
+
+def filter_latex_format_grant(grant: Grant) -> str:
+    parts = []
+
+    # name + identifier + funder + period
+    parts.extend([
+        grant.name,
+        f"Contract: {grant.identifier}",
+        grant.funder,
+        f"{grant.period[0]}--{grant.period[1]}",
+    ])
+
+    if grant.budget:
+        parts.append(f"Suma: {grant.budget}")
+
+    if grant.url:
+        parts.append(rf"(\href{{{grant.url}}}{{LINK}})")
+
+    return ", ".join(parts)
+
+
 def filter_csv_format_pub(pub: Publication) -> str:
     parts: list[str] = []
 
@@ -470,6 +525,10 @@ def export_publications_latex(
     )
 
     env.filters["format_pub"] = lambda pub: filter_latex_format_pub(pub, candidate_name)
+    env.filters["format_book"] = lambda pub: filter_latex_format_book(
+        pub, candidate_name
+    )
+    env.filters["format_grant"] = filter_latex_format_grant
     env.filters["is_recent"] = filter_latex_is_recent
     env.filters["get_score"] = filter_get_score
 

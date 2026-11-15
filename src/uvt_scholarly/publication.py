@@ -12,7 +12,7 @@ from uvt_scholarly.logging import make_logger
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from uvt_scholarly.identifiers import DOI, ISSN, ORCiD, ResearcherID
+    from uvt_scholarly.identifiers import DOI, ISBN10, ISBN13, ISSN, ORCiD, ResearcherID
 
 log = make_logger(__name__)
 
@@ -226,7 +226,8 @@ class Publication:
     """Page range in the issue."""
     doi: DOI | None
     """A Digital Object Identifier (DOI) for the publication."""
-
+    isbn: ISBN10 | ISBN13 | None
+    """An International Standard Book Number (ISBN) for the publication."""
     dtype: DocumentType
     """A generic document type for the publication."""
     identifier: str
@@ -263,6 +264,8 @@ class Grant:
     """
     funder: str
     """The full name of the funder for this grant."""
+    budget: str | None
+    """The approximate available budget for the grant."""
     period: tuple[int, int]
     """The period that the author was part of this grant."""
     position: str

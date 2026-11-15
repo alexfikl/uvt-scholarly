@@ -7,7 +7,7 @@ import enum
 import re
 from typing import TYPE_CHECKING
 
-from uvt_scholarly.identifiers import DOI, ISSN, ORCiD, ResearcherID
+from uvt_scholarly.identifiers import DOI, ISBN10, ISBN13, ISSN, ORCiD, ResearcherID
 from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
     Author,
@@ -248,6 +248,27 @@ def parse_issn(text: str) -> ISSN | None:
         raise ValueError(f"ISSN is not valid: '{issn}'")
 
     return issn
+
+
+def parse_isbn(text: str) -> ISBN10 | ISBN13 | None:
+    text = text.strip()
+    if not text:
+        return None
+
+    try:
+        isbn = ISBN13.from_string(text)
+        if isbn.is_valid:
+            return isbn
+    except ValueError:
+        try:
+            isbn = ISBN10.from_string(text)
+        except ValueError:
+            raise ValueError(f"ISBN is not valid: '{isbn}'") from None
+
+    if not isbn.is_valid:
+        raise ValueError(f"ISBN is not valid: '{isbn}'")
+
+    return isbn
 
 
 def parse_rids(
@@ -520,6 +541,7 @@ def read_from_csv(
                     pages=parse_pages(row["BP"], row["EP"], row["PG"]),
                     dtype=DOCUMENT_TYPE.get(dtypes[0], DocumentType.Other),
                     doi=parse_doi(row.get("DI", "")),
+                    isbn=parse_isbn(row.get("BN", "")),
                     identifier=row["UT"],
                     cited_by_count=int(row["TC"]),
                     cited_by=(),
@@ -642,6 +664,7 @@ def read_from_bib(
                 pages=parse_bib_pages(get(fields, "pages")),
                 dtype=DOCUMENT_TYPE.get(entry.entry_type, DocumentType.Other),
                 doi=parse_doi(get(fields, "doi")),
+                isbn=parse_isbn(get(fields, "isbn", get(fields, "isbn-13"))),
                 identifier=entry.key,
                 cited_by_count=int(get(fields, "times-cited", "0")),
                 cited_by=(),

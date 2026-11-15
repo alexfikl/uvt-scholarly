@@ -231,7 +231,7 @@ C5\_UVT & $\ge \TplVar{criteria.min_c5_uvt_recommendations}$ &
 \clearpage
 
 \begin{center}
-{\Large \textbf{Citări (în reviste S\textsubscript{i} $\ge$ 0.5)}}
+{\Large \textbf{Citări}}
 \end{center}
 \bigskip
 
@@ -295,6 +295,134 @@ C5\_UVT & $\ge \TplVar{criteria.min_c5_uvt_recommendations}$ &
 \end{longtable}
 }
 
+\TplBlock{-if candidate.books}
+\clearpage
+
+\begin{center}
+{\Large \textbf{C1\_UVT: Cărți de specialitate}}
+\end{center}
+\bigskip
+
+{\footnotesize
+\renewcommand{\arraystretch}{1.35}
+
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{1.5em}
+    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.}
+& \textbf{Carte (autori, titlu, editura, anul, ISBN, nr. pagini)} \\
+\hline
+\endfirsthead
+
+% footer on other pages
+\hline
+\multicolumn{2}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+\rowcolor{TableGray}
+& \textbf{Total punctaj C1\_UVT = \TplVar{candidate.c1_uvt_books}} \\
+\hline
+\endlastfoot
+
+% rows
+\TplBlock{for pub in candidate.books}
+\TplVar{loop.index} &
+\TplVar{pub | format_book} \\\hline
+\TplBlock{endfor}
+\end{longtable}
+}
+\TplBlock{endif-}
+
+\TplBlock{-if candidate.courses}
+\clearpage
+
+\begin{center}
+{\Large \textbf{C2\_UVT: Cursuri publicate}}
+\end{center}
+\bigskip
+
+{\footnotesize
+\renewcommand{\arraystretch}{1.35}
+
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{1.5em}
+    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.}
+& \textbf{Curs (autori, titlu, editura, anul, ISBN, nr. pagini)} \\
+\hline
+\endfirsthead
+
+% footer on other pages
+\hline
+\multicolumn{2}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+\rowcolor{TableGray}
+& \textbf{Total punctaj C2\_UVT = \TplVar{candidate.c2_uvt_books}} \\
+\hline
+\endlastfoot
+
+% rows
+\TplBlock{for pub in candidate.courses}
+\TplVar{loop.index} &
+\TplVar{pub | format_book} \\\hline
+\TplBlock{endfor}
+\end{longtable}
+}
+\TplBlock{endif-}
+
+\TplBlock{-if candidate.grants}
+\clearpage
+
+\begin{center}
+{\Large \textbf{C3\_UVT: Granturi de cercetare}}
+\end{center}
+\bigskip
+
+{\footnotesize
+\renewcommand{\arraystretch}{1.35}
+
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{1.5em}
+    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.}
+& \textbf{Grant (titlu, nr. contract, finanțatorul, perioada de derulare, suma, poziție)} \\
+\hline
+\endfirsthead
+
+% footer on other pages
+\hline
+\multicolumn{2}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+\rowcolor{TableGray}
+& \textbf{Total punctaj C3\_UVT = \TplVar{candidate.c3_uvt_grants}} \\
+\hline
+\endlastfoot
+
+% rows
+\TplBlock{for pub in candidate.grants}
+\TplVar{loop.index} &
+\TplVar{pub | format_grant} \\\hline
+\TplBlock{endfor}
+\end{longtable}
+}
+\TplBlock{endif-}
 \end{document}
 
 % vim:foldmarker=<<<,>>>:foldmethod=marker:spell spelllang=ro

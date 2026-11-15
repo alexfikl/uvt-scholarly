@@ -234,9 +234,10 @@ def read_grants(filename: pathlib.Path) -> Sequence[Grant]:
                     name=name,
                     identifier=d["identifier"].strip(),
                     funder=d["funder"].strip(),
+                    budget=budget.strip() if (budget := d.get("budget")) else None,
                     position=d["position"].strip(),
                     period=parse_period(d["period"]),
-                    url=d.get("url", None),
+                    url=url.strip() if (url := d.get("url")) else None,
                 )
             )
         except KeyError as exc:
