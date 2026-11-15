@@ -240,12 +240,12 @@ def math_generate(
             cites = remove_mdpi_publications(cites, MDPI_DB_FILE)
 
         cites = add_scores(
-            cites, UEFISCDI_DB_FILE, scores={ScoreType.RIS}, past=PAST_YEAR_CUTOFF
+            cites, UEFISCDI_DB_FILE, scores={ScoreType.AIS}, past=PAST_YEAR_CUTOFF
         )
 
         pubs = add_cited_by(pubs, cites)
         pubs = add_scores(
-            pubs, UEFISCDI_DB_FILE, scores=ScoreType.RIS, past=PAST_YEAR_CUTOFF
+            pubs, UEFISCDI_DB_FILE, scores=ScoreType.AIS, past=PAST_YEAR_CUTOFF
         )
     else:
         log.error("Unknown source format: '%s'", source)

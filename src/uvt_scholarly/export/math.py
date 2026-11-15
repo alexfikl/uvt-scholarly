@@ -20,11 +20,11 @@ log = make_logger(__name__)
 
 # {{{ utils
 
-MIN_RIS_SCORE = 0.5
+MIN_AIS_SCORE = 0.5
 """The minimum score allowed for publications by the Mathematics Department."""
 
 PAST_YEAR_CUTOFF = 5
-"""The span over which the RIS should be considered. The presented score is
+"""The span over which the AIS should be considered. The presented score is
 a maximum over this period.
 """
 
@@ -140,8 +140,8 @@ def filter_get_average_score(pub: Publication, name: str) -> float:
 @dataclass(frozen=True)
 class Criteria:
     position: Position
-    min_ris: float
-    min_recent_ris: float
+    min_ais: float
+    min_recent_ais: float
     min_citations: int
 
     @property
@@ -167,7 +167,7 @@ MIN_CRITERIA_FOR_POSITION = {
 
 # {{{ candidate
 
-AVERAGED_RIS_POSITIONS = {
+AVERAGED_AIS_POSITIONS = {
     Position.Professor,
     Position.AssociateProfessor,
     Position.Assistant,
@@ -180,8 +180,8 @@ AVERAGED_RIS_POSITIONS = {
 class Candidate:
     qualname: str
     publications: Sequence[Publication]
-    ris: float
-    recent_ris: float
+    ais: float
+    recent_ais: float
     total_citations: int
 
 
@@ -189,7 +189,7 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
     return tuple(
         sorted(
             pubs,
-            key=lambda p: (p.year, p.journal.scores[ScoreType.RIS]),
+            key=lambda p: (p.year, p.journal.scores[ScoreType.AIS]),
             reverse=True,
         )
     )
@@ -205,32 +205,32 @@ def make_candidate(
 
     recent_year_cutoff = datetime.now().year - RECENT_YEAR_CUTOFF
 
-    total_ris = 0.0
-    recent_total_ris = 0.0
+    total_ais = 0.0
+    recent_total_ais = 0.0
     total_citations = 0
 
     publications = []
     for pub in pubs:
-        ris = pub.journal.scores.get(ScoreType.RIS)
-        if ris is None:
-            log.warning("Journal does not have a RIS score: '%s'.", pub.journal)
+        ais = pub.journal.scores.get(ScoreType.AIS)
+        if ais is None:
+            log.warning("Journal does not have a AIS score: '%s'.", pub.journal)
             continue
 
-        if ris < MIN_RIS_SCORE:
-            log.warning("Journal RIS '%.3f' < 0.5: '%s'.", ris, pub.journal)
+        if ais < MIN_AIS_SCORE:
+            log.warning("Journal AIS '%.3f' < 0.5: '%s'.", ais, pub.journal)
             continue
 
-        if position in AVERAGED_RIS_POSITIONS:
-            ris /= len(pub.authors)
+        if position in AVERAGED_AIS_POSITIONS:
+            ais /= len(pub.authors)
 
-        total_ris += ris
+        total_ais += ais
         if pub.year >= recent_year_cutoff:
-            recent_total_ris += ris
+            recent_total_ais += ais
 
         cited_by = []
         for cite in pub.cited_by:
-            ris = cite.journal.scores.get(ScoreType.RIS)
-            if ris is None or ris < MIN_RIS_SCORE:
+            ais = cite.journal.scores.get(ScoreType.AIS)
+            if ais is None or ais < MIN_AIS_SCORE:
                 continue
 
             if any(au.last_name in name for au in cite.authors):
@@ -255,8 +255,8 @@ def make_candidate(
     return Candidate(
         qualname=name,
         publications=sortedpubs(publications),
-        ris=total_ris,
-        recent_ris=recent_total_ris,
+        ais=total_ais,
+        recent_ais=recent_total_ais,
         total_citations=total_citations,
     )
 
@@ -312,11 +312,11 @@ def export_publications_csv(
         writer.writeheader()
 
         for i, pub in enumerate(candidate.publications):
-            ris = pub.journal.scores[ScoreType.RIS]
-            if position in AVERAGED_RIS_POSITIONS:
-                ris_per_author = ris / len(pub.authors)
+            ais = pub.journal.scores[ScoreType.AIS]
+            if position in AVERAGED_AIS_POSITIONS:
+                ais_per_author = ais / len(pub.authors)
             else:
-                ris_per_author = ris
+                ais_per_author = ais
 
             writer.writerow(
                 dict(
@@ -326,9 +326,9 @@ def export_publications_csv(
                             str(i + 1),
                             filter_csv_format_pub(pub),
                             "X" if pub.year >= seven_years_ago else "",
-                            f"{ris:.3f}",
+                            f"{ais:.3f}",
                             str(len(pub.authors)),
-                            f"{ris_per_author:.3f}",
+                            f"{ais_per_author:.3f}",
                         ],
                         strict=True,
                     )
@@ -337,8 +337,8 @@ def export_publications_csv(
 
         writer.writerow({
             PUBLICATION_FIELD_NAMES[1]: "Total",
-            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ris:.3f}",
-            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ris:.3f}",
+            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ais:.3f}",
+            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ais:.3f}",
         })
 
     filename = filename.with_stem(f"{filename.stem}.cites")
@@ -354,7 +354,7 @@ def export_publications_csv(
         i = 0
         for pub in candidate.publications:
             for j, cited_by in enumerate(pub.cited_by):
-                ris = cited_by.journal.scores[ScoreType.RIS]
+                ais = cited_by.journal.scores[ScoreType.AIS]
 
                 i += 1
                 writer.writerow(
@@ -365,7 +365,7 @@ def export_publications_csv(
                                 str(i),
                                 filter_csv_format_pub(pub) if j == 0 else "",
                                 filter_csv_format_pub(cited_by),
-                                f"{ris:.3f}",
+                                f"{ais:.3f}",
                             ],
                             strict=True,
                         )
@@ -412,7 +412,7 @@ def export_publications_latex(
     env.filters["is_recent"] = filter_latex_is_recent
     env.filters["get_score"] = filter_get_score
 
-    if position in AVERAGED_RIS_POSITIONS:
+    if position in AVERAGED_AIS_POSITIONS:
         env.filters["get_average_score"] = filter_get_average_score
     else:
         env.filters["get_average_score"] = filter_get_score

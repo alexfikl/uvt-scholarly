@@ -97,11 +97,11 @@ Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 & \textbf{Standard pentru \TplVar{criteria.position_name}}
 & \textbf{Valoarea realizată a indicatorului} \\\hline
 S &
-$\ge \TplVar{criteria.min_ris}$ &
-\TplVar{'{:.3f}'.format(candidate.ris)} \\\hline
+$\ge \TplVar{criteria.min_ais}$ &
+\TplVar{'{:.3f}'.format(candidate.ais)} \\\hline
 S\textsubscript{recent} &
-$\ge \TplVar{criteria.min_recent_ris}$ &
-\TplVar{'{:.3f}'.format(candidate.recent_ris)} \\\hline
+$\ge \TplVar{criteria.min_recent_ais}$ &
+\TplVar{'{:.3f}'.format(candidate.recent_ais)} \\\hline
 C &
 $\ge \TplVar{criteria.min_citations}$ &
 \TplVar{candidate.total_citations} \\\hline
@@ -187,9 +187,9 @@ $\ge \TplVar{criteria.min_citations}$ &
 \rowcolor{TableGray} &
 \textbf{Total} &
 \multicolumn{4}{m{\dimexpr(11.4em+6\tabcolsep)}|}{
-    \textbf{S = \TplVar{'{:.3f}'.format(candidate.ris)}}
+    \textbf{S = \TplVar{'{:.3f}'.format(candidate.ais)}}
     \hfill
-    \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(candidate.recent_ris)}}
+    \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(candidate.recent_ais)}}
 } \\
 \hline
 \endlastfoot
@@ -199,9 +199,9 @@ $\ge \TplVar{criteria.min_citations}$ &
 \TplVar{loop.index} &
 \TplVar{pub | format_pub} &
 \TplVar{pub | is_recent} &
-\TplVar{'{:.3f}'.format(pub | get_score('RIS'))} &
+\TplVar{'{:.3f}'.format(pub | get_score('AIS'))} &
 \TplVar{pub.authors | length} &
-\TplVar{'{:.3f}'.format(pub | get_average_score('RIS'))} \\\hline
+\TplVar{'{:.3f}'.format(pub | get_average_score('AIS'))} \\\hline
 \TplBlock{endfor}
 \end{longtable}
 }
@@ -272,7 +272,7 @@ $\ge \TplVar{criteria.min_citations}$ &
 \TplVar{counter.value} &
 \TplBlock{-if loop.index == 1} \TplVar{pub | format_pub} \TplBlock{endif-} &
 \TplVar{cite | format_pub} &
-\TplVar{'{:.3f}'.format(cite | get_score('RIS'))} \\\hline
+\TplVar{'{:.3f}'.format(cite | get_score('AIS'))} \\\hline
     \TplBlock{-endfor}
 \TplBlock{-endfor}
 \end{longtable}
