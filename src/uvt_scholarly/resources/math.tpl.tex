@@ -97,24 +97,35 @@ Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 & \textbf{Standard pentru \TplVar{criteria.position_name}}
 & \textbf{Valoarea realizată a indicatorului} \\\hline
 S &
-$\ge \TplVar{criteria.min_ais}$ &
-\TplVar{'{:.3f}'.format(candidate.ais)} \\\hline
+\TplVar{'$\\ge {}$'.format(criteria.min_ais) if criteria.min_ais else '--'} &
+\TplVar{'{:.3f}'.format(candidate.ais) if candidate.ais else '--'} \\\hline
 S\textsubscript{recent} &
-$\ge \TplVar{criteria.min_recent_ais}$ &
-\TplVar{'{:.3f}'.format(candidate.recent_ais)} \\\hline
+\TplVar{'$\\ge {}$'.format(criteria.min_recent_ais)
+    if criteria.min_recent_ais else '--'} &
+\TplVar{'{:.3f}'.format(candidate.recent_ais) if candidate.recent_ais else '--'} \\\hline
 C &
-$\ge \TplVar{criteria.min_citations}$ &
-\TplVar{candidate.total_citations} \\\hline
-C1\_UVT & $\ge \TplVar{criteria.min_c1_uvt_books}$ &
-\TplVar{'{:d}'.format(candidate.c1_uvt_books)} \\\hline
-C2\_UVT & $\ge \TplVar{criteria.min_c2_uvt_courses}$ &
-\TplVar{'{:d}'.format(candidate.c2_uvt_courses)} \\\hline
-C3\_UVT & $\ge \TplVar{criteria.min_c3_uvt_projects}$ &
-\TplVar{'{:d}'.format(candidate.c3_uvt_grants)} \\\hline
-C4\_UVT & $\ge \TplVar{criteria.min_c4_uvt_publications}$ &
-\TplVar{'{:d}'.format(candidate.c4_uvt_publications)} \\\hline
-C5\_UVT & $\ge \TplVar{criteria.min_c5_uvt_recommendations}$ &
-\TplVar{'{:d}'.format(candidate.c5_uvt_recommendations)} \\\hline
+\TplVar{'$\\ge {}$'.format(criteria.min_citations) if criteria.min_citations else '--'} &
+\TplVar{candidate.total_citations if candidate.total_citations else '--'} \\\hline
+C1\_UVT &
+\TplVar{'$\\ge {}$'.format(criteria.min_c1_uvt_books)
+    if criteria.min_c1_uvt_books else '--'} &
+\TplVar{'{:d}'.format(candidate.c1_uvt_books) if candidate.c1_uvt_books else '--'} \\\hline
+C2\_UVT &
+\TplVar{'$\\ge {}$'.format(criteria.min_c2_uvt_courses)
+    if criteria.min_c2_uvt_courses else '--'} &
+\TplVar{'{:d}'.format(candidate.c2_uvt_courses) if candidate.c2_uvt_courses else '--'} \\\hline
+C3\_UVT &
+\TplVar{'$\\ge {}$'.format(criteria.min_c3_uvt_projects)
+    if criteria.min_c3_uvt_projects else '--'} &
+\TplVar{'{:d}'.format(candidate.c3_uvt_grants) if candidate.c3_uvt_grants else '--'} \\\hline
+C4\_UVT &
+\TplVar{'$\\ge {}$'.format(criteria.min_c4_uvt_publications)
+    if criteria.min_c4_uvt_publications else '--'} &
+\TplVar{'{:d}'.format(candidate.c4_uvt_publications) if candidate.c4_uvt_publications else '--'} \\\hline
+C5\_UVT &
+\TplVar{'$\\ge {}$'.format(criteria.min_c5_uvt_recommendations)
+    if criteria.min_c5_uvt_recommendations else '--'} &
+\TplVar{'{:d}'.format(candidate.c5_uvt_recommendations) if candidate.c5_uvt_recommendations else '--'} \\\hline
 \end{tabular}
 }
 
