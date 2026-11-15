@@ -5,7 +5,7 @@ Timișoara can be found
 [here](https://cariere.uvt.ro/standarde-minimale-si-obligatorii/). In
 particular, for the Mathematics department, you can find a (fairly) up to date
 document listing the requirements
-[here](https://cariere.uvt.ro/wp-content/uploads/2024/06/e_fisa_verificare_Redacted.pdf).
+[here](https://uvt.ro/wp-content/uploads/2025/03/Anexa-17_Standarde-minimale-si-obligatorii-Matematica.pdf).
 To generate a file with your information, you can follow steps described in the
 [Web of Science](wos.md) section.
 
