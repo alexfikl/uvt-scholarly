@@ -28,11 +28,12 @@ EXPECTED_RIS_ENTRIES_PER_YEAR = {
     2023: 13651,
     2024: 21846,
     2025: 22247,
+    2026: 21766,
 }
 
 
 @pytest.mark.xfail(raises=httpx2.ReadTimeout)
-@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025, 2026])
 def test_parse_relative_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
 
@@ -127,11 +128,12 @@ EXPECTED_RIF_ENTRIES_PER_YEAR = {
     2023: 13651,
     2024: 21846,
     2025: 22247,
+    2026: 22643,
 }
 
 
 @pytest.mark.xfail(raises=httpx2.ReadTimeout)
-@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025, 2026])
 def test_parse_relative_impact_factor(year: int) -> None:
     pytest.importorskip("openpyxl")
 
@@ -163,11 +165,12 @@ EXPECTED_AIS_ENTRIES_PER_YEAR = {
     2023: 22094,
     2024: 30820,
     2025: 31550,
+    2026: 32215,
 }
 
 
 @pytest.mark.xfail(raises=httpx2.ReadTimeout)
-@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025])
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025, 2026])
 def test_parse_article_influence_score(year: int) -> None:
     pytest.importorskip("openpyxl")
 

@@ -107,6 +107,20 @@ class RelativeImpactFactorPraser(XLSXParser[RelativeImpactFactor]):
         return RelativeImpactFactor.from_strings(journal, issn, eissn, score)
 
 
+class RelativeImpactFactor2026Parser(RelativeImpactFactorPraser):
+    def parse_row(
+        self,
+        row: tuple[ReadOnlyCell, ...],
+    ) -> RelativeImpactFactor | None:
+        # NOTE: the 2026 template has mostly empty rows after a while due to some
+        # fun formatting for another 10k rows.
+        assert len(row) == self.ncolumns
+        if row[-1].value is None:
+            return None
+
+        return super().parse_row(row)
+
+
 class RelativeImpactFactor2025Parser(RelativeImpactFactorPraser):
     @property
     def ncolumns(self) -> int:
@@ -169,7 +183,9 @@ def parse_relative_impact_factor(
     if version not in UEFISCDI_DATABASE_URL:
         raise ValueError(f"unsupported database version: {version}")
 
-    if version == 2025:
+    if version == 2026:
+        parser = RelativeImpactFactor2026Parser()
+    elif version == 2025:
         parser = RelativeImpactFactor2025Parser()
     elif version == 2020:
         parser = RelativeImpactFactor2020Parser()

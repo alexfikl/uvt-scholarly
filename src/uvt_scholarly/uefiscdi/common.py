@@ -119,6 +119,11 @@ def is_valid_issn(text: str | ISSN) -> bool:
 # NOTE: This mostly has the last 5-ish years, since those are required for UEFISCDI,
 # CNATDCU, or university competitions and accreditations.
 UEFISCDI_DATABASE_URL = {
+    2026: {
+        ScoreType.AIS: "https://uefiscdi.gov.ro/resource-832705-AIS.JCR2025.iunie2026.xlsx",
+        ScoreType.RIS: "https://uefiscdi.gov.ro/resource-832984-RIS.2025.iunie.2026.xlsx",
+        ScoreType.RIF: "https://uefiscdi.gov.ro/resource-832921-RIF.2025.iunie.2026.xlsx",
+    },
     2025: {
         ScoreType.AIS: "https://uefiscdi.gov.ro/resource-865528-AIS.JCR2024.iunie2025.xlsx",
         ScoreType.RIS: "https://uefiscdi.gov.ro/resource-865521-RIS.2024.iunie-2025.xlsx",
