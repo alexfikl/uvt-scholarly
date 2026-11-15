@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING
 
 from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Author, Publication, ScoreType
+from uvt_scholarly.publication import (
+    Author,
+    DocumentType,
+    Grant,
+    Publication,
+    ScoreType,
+)
 
 if TYPE_CHECKING:
     import pathlib
@@ -143,6 +149,11 @@ class Criteria:
     min_ais: float
     min_recent_ais: float
     min_citations: int
+    min_c1_uvt_books: int
+    min_c2_uvt_courses: int
+    min_c3_uvt_projects: int
+    min_c4_uvt_publications: int
+    min_c5_uvt_recommendations: int
 
     @property
     def position_name(self) -> str:
@@ -151,14 +162,22 @@ class Criteria:
 
 MIN_CRITERIA_FOR_POSITION = {
     # academic
-    Position.Professor: Criteria(Position.Professor, 5.0, 2.5, 12),
-    Position.AssociateProfessor: Criteria(Position.AssociateProfessor, 2.5, 1.5, 6),
-    Position.AssistantProfessor: Criteria(Position.AssistantProfessor, 1.0, 0.0, 0),
-    Position.Assistant: Criteria(Position.Assistant, 0.0, 0.0, 0),
+    Position.Professor: Criteria(Position.Professor, 5.0, 2.5, 12, 2, 1, 2, 0, 2),
+    Position.AssociateProfessor: Criteria(
+        Position.AssociateProfessor, 2.5, 1.5, 6, 1, 1, 1, 0, 2
+    ),
+    Position.AssistantProfessor: Criteria(
+        Position.AssistantProfessor, 1.0, 0.0, 0, 0, 0, 0, 5, 2
+    ),
+    Position.Assistant: Criteria(Position.Assistant, 0.0, 0.0, 0, 0, 0, 0, 3, 2),
     # research
-    Position.SeniorResearcher: Criteria(Position.SeniorResearcher, 5.0, 2.5, 12),
-    Position.Researcher: Criteria(Position.Researcher, 2.5, 1.5, 6),
-    Position.JuniorResearcher: Criteria(Position.JuniorResearcher, 1.0, 0.0, 0),
+    Position.SeniorResearcher: Criteria(
+        Position.SeniorResearcher, 5.0, 2.5, 12, 2, 1, 2, 0, 2
+    ),
+    Position.Researcher: Criteria(Position.Researcher, 2.5, 1.5, 6, 1, 1, 1, 0, 2),
+    Position.JuniorResearcher: Criteria(
+        Position.JuniorResearcher, 1.0, 0.0, 0, 0, 0, 0, 5, 2
+    ),
 }
 
 
@@ -179,10 +198,35 @@ AVERAGED_AIS_POSITIONS = {
 @dataclass(frozen=True)
 class Candidate:
     qualname: str
-    publications: Sequence[Publication]
+
     ais: float
     recent_ais: float
     total_citations: int
+
+    books: Sequence[Publication]
+    courses: Sequence[Publication]
+    publications: Sequence[Publication]
+    grants: Sequence[Grant]
+
+    @property
+    def c1_uvt_books(self) -> int:
+        return len(self.books)
+
+    @property
+    def c2_uvt_courses(self) -> int:
+        return len(self.courses)
+
+    @property
+    def c3_uvt_grants(self) -> int:
+        return len(self.grants)
+
+    @property
+    def c4_uvt_publications(self) -> int:
+        return len(self.publications)
+
+    @property
+    def c5_uvt_recommendations(self) -> int:
+        return 2
 
 
 def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
@@ -198,6 +242,7 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
 def make_candidate(
     name: str,
     pubs: Sequence[Publication],
+    grants: Sequence[Grant],
     *,
     position: Position = Position.Professor,
 ) -> Candidate:
@@ -209,55 +254,69 @@ def make_candidate(
     recent_total_ais = 0.0
     total_citations = 0
 
+    books = []
+    courses = []
     publications = []
     for pub in pubs:
-        ais = pub.journal.scores.get(ScoreType.AIS)
-        if ais is None:
-            log.warning("Journal does not have a AIS score: '%s'.", pub.journal)
-            continue
-
-        if ais < MIN_AIS_SCORE:
-            log.warning("Journal AIS '%.3f' < 0.5: '%s'.", ais, pub.journal)
-            continue
-
-        if position in AVERAGED_AIS_POSITIONS:
-            ais /= len(pub.authors)
-
-        total_ais += ais
-        if pub.year >= recent_year_cutoff:
-            recent_total_ais += ais
-
-        cited_by = []
-        for cite in pub.cited_by:
-            ais = cite.journal.scores.get(ScoreType.AIS)
-            if ais is None or ais < MIN_AIS_SCORE:
+        if pub.dtype == DocumentType.Book:
+            books.append(pub)
+        elif pub.dtype == DocumentType.Report:
+            courses.append(pub)
+        elif pub.dtype in {DocumentType.Article, DocumentType.Review}:
+            ais = pub.journal.scores.get(ScoreType.AIS)
+            if ais is None:
+                log.warning("Journal does not have a AIS score: '%s'.", pub.journal)
                 continue
 
-            if any(au.last_name in name for au in cite.authors):
+            if ais < MIN_AIS_SCORE:
                 log.warning(
-                    "Self-citation for publication '%s': '%s'.",
-                    pub.doi,
-                    cite.title,
+                    "Journal AIS '%.3f' < %.3f: '%s'.", ais, MIN_AIS_SCORE, pub.journal
                 )
                 continue
 
-            total_citations += 1
-            cited_by.append(cite)
+            if position in AVERAGED_AIS_POSITIONS:
+                ais /= len(pub.authors)
 
-        publications.append(
-            replace(
-                pub,
-                cited_by=sortedpubs(cited_by),
-                cited_by_count=len(cited_by),
+            total_ais += ais
+            if pub.year >= recent_year_cutoff:
+                recent_total_ais += ais
+
+            cited_by = []
+            for cite in pub.cited_by:
+                ais = cite.journal.scores.get(ScoreType.AIS)
+                if ais is None or ais < MIN_AIS_SCORE:
+                    continue
+
+                if any(au.last_name in name for au in cite.authors):
+                    log.warning(
+                        "Self-citation for publication '%s': '%s'.",
+                        pub.doi,
+                        cite.title,
+                    )
+                    continue
+
+                total_citations += 1
+                cited_by.append(cite)
+
+            publications.append(
+                replace(
+                    pub,
+                    cited_by=sortedpubs(cited_by),
+                    cited_by_count=len(cited_by),
+                )
             )
-        )
+        else:
+            log.warning("Publication has unsupported type: %s", pub.dtype)
 
     return Candidate(
         qualname=name,
-        publications=sortedpubs(publications),
         ais=total_ais,
         recent_ais=recent_total_ais,
         total_citations=total_citations,
+        books=(),
+        courses=(),
+        publications=sortedpubs(publications),
+        grants=(),
     )
 
 
@@ -287,6 +346,7 @@ def export_publications_csv(
     filename: pathlib.Path,
     candidate_name: str,
     pubs: Sequence[Publication],
+    grants: Sequence[Grant],
     *,
     position: Position = Position.Professor,
     encoding: str = "utf-8",
@@ -300,7 +360,7 @@ def export_publications_csv(
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
-    candidate = make_candidate(candidate_name, pubs, position=position)
+    candidate = make_candidate(candidate_name, pubs, grants, position=position)
 
     with open(filename, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
@@ -388,6 +448,7 @@ def export_publications_latex(
     outfile: pathlib.Path,
     candidate_name: str,
     pubs: Sequence[Publication],
+    grants: Sequence[Grant],
     *,
     position: Position = Position.Professor,
     overwrite: bool = False,
@@ -424,7 +485,7 @@ def export_publications_latex(
     from importlib.resources import files
 
     criteria = MIN_CRITERIA_FOR_POSITION[position]
-    candidate = make_candidate(candidate_name, pubs, position=position)
+    candidate = make_candidate(candidate_name, pubs, grants, position=position)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
     with template_file.open(encoding="utf-8") as f:

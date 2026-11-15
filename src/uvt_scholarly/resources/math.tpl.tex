@@ -105,6 +105,16 @@ $\ge \TplVar{criteria.min_recent_ais}$ &
 C &
 $\ge \TplVar{criteria.min_citations}$ &
 \TplVar{candidate.total_citations} \\\hline
+C1\_UVT & $\ge \TplVar{criteria.min_c1_uvt_books}$ &
+\TplVar{'{:d}'.format(candidate.c1_uvt_books)} \\\hline
+C2\_UVT & $\ge \TplVar{criteria.min_c2_uvt_courses}$ &
+\TplVar{'{:d}'.format(candidate.c2_uvt_courses)} \\\hline
+C3\_UVT & $\ge \TplVar{criteria.min_c3_uvt_projects}$ &
+\TplVar{'{:d}'.format(candidate.c3_uvt_projects)} \\\hline
+C4\_UVT & $\ge \TplVar{criteria.min_c4_uvt_publications}$ &
+\TplVar{'{:d}'.format(candidate.c4_uvt_publications)} \\\hline
+C5\_UVT & $\ge \TplVar{criteria.min_c5_uvt_recommendations}$ &
+\TplVar{'{:d}'.format(candidate.c5_uvt_recommendations)} \\\hline
 \end{tabular}
 }
 
@@ -116,6 +126,14 @@ $\ge \TplVar{criteria.min_citations}$ &
     ani) a tuturor articolelor publicate \textbf{în ultimii 7 ani}.
     \item C: numărul de citări ale articolelor luate în considerare pentru indicatorul S.
     Nu se iau în considerare articole care au ca autor candidatul.
+    \item C1\_UVT: Cărţi de specialitate publicate în domeniul postului pentru care
+    candidează (în edituri recunoscute de CNCSIS).
+    \item C2\_UVT: Cursuri publicate în domeniul postului pentru care candidează (în
+    edituri recunoscute de CNCSIS; nu se iau în considerare culegerile de probleme).
+    \item C3\_UVT: Participări în granturi de cercetare.
+    \item C4\_UVT: Nr. de lucrări.
+    \item C5\_UVT: Recomandări de la cadre didactice universitare cu experienţă
+    relevantă în domeniul postului
 \end{itemize}
 }
 \vfill

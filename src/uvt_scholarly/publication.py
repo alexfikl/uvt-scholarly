@@ -47,6 +47,7 @@ class Author:
 
 # }}}
 
+
 # {{{ Journal
 
 
@@ -162,6 +163,7 @@ class Pages:
 
 # }}}
 
+
 # {{{ Publication
 
 
@@ -241,6 +243,32 @@ class Publication:
 
     citations: dict[DOI, CitedPublication]
     """A list of publications cited by this publication."""
+
+
+# }}}
+
+
+# {{{ Grant
+
+
+@dataclass(frozen=True, slots=True)
+class Grant:
+    """A grant that an author was part of."""
+
+    name: str
+    """The full name of the grant (this can contain an acronym)."""
+    identifier: str
+    """A unique identifier for the grant that can be used to locate it in the
+    funder's database.
+    """
+    funder: str
+    """The full name of the funder for this grant."""
+    period: tuple[int, int]
+    """The period that the author was part of this grant."""
+    position: str
+    """The position of the author in the grant."""
+    url: str | None
+    """A URL for the project or a link to the funder's page for this grant."""
 
 
 # }}}
