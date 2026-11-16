@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+import math
 import pathlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, ClassVar
 
 from uvt_scholarly.identifiers import ISSN
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import JournalCategory, Quartile
+from uvt_scholarly.publication import Category, JournalCategory, Quartile
 from uvt_scholarly.uefiscdi.common import (
     UEFISCDI_CACHE_DIRNAME,
     UEFISCDI_DATABASE_URL,
@@ -25,9 +26,9 @@ from uvt_scholarly.uefiscdi.common import (
 )
 
 if TYPE_CHECKING:
-    from openpyxl.cell import ReadOnlyCell
+    from collections.abc import Sequence
 
-    from uvt_scholarly.export.cs import Category
+    from openpyxl.cell import ReadOnlyCell
 
 log = make_logger(__name__)
 
@@ -381,6 +382,76 @@ def parse_article_influence_score(
 # }}}
 
 
+# {{{ recategorize_article_influence_score
+
+
+def recategorize_article_influence_score(
+    scores: Sequence[ArticleInfluenceScore],
+    *,
+    a_star_percentage: int = 20,
+) -> tuple[ArticleInfluenceScore, ...]:
+    if not 0 < a_star_percentage < 100:
+        raise ValueError(
+            f"'a_star_percentage' should be in (0, 100): {a_star_percentage}"
+        )
+    a_star_percentage = int(a_star_percentage)
+
+    # gather all the scores in a helpful dict
+    journal_category_quartile: dict[
+        JournalCategory, dict[Quartile, list[ArticleInfluenceScore]]
+    ] = {}
+    for ais in scores:
+        zones = journal_category_quartile.setdefault(ais.journal_category, {})
+        if not zones:
+            for quartile in Quartile:
+                zones[quartile] = []
+
+        zones[ais.quartile].append(ais)
+
+    assert len(scores) == sum(
+        len(scs) for qs in journal_category_quartile.values() for scs in qs.values()
+    )
+
+    # determine all the categories and update the scores
+    result: list[ArticleInfluenceScore] = []
+    for journal_category, zones_ in journal_category_quartile.items():
+        if not zones_[Quartile.Q1]:
+            raise ValueError(f"no Q1 quartile in '{journal_category}' category")
+
+        # FIXME: not clear if this needs sorting
+        zones = {
+            quartile: sorted(aiss, key=lambda s: s.position)
+            for quartile, aiss in zones_.items()
+        }
+
+        nmax = len(zones[Quartile.Q1])
+        n = math.ceil(a_star_percentage * nmax / 100)
+
+        # AA
+        result.extend(replace(s, category=Category.AA) for s in zones[Quartile.Q1][:n])
+
+        # A
+        result.extend(replace(s, category=Category.A) for s in zones[Quartile.Q1][n:])
+        result.extend(replace(s, category=Category.A) for s in zones[Quartile.Q2][:n])
+
+        # B
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q2][n:])
+        result.extend(replace(s, category=Category.B) for s in zones[Quartile.Q3][:n])
+
+        # C
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q3][n:])
+        result.extend(replace(s, category=Category.C) for s in zones[Quartile.Q4])
+
+        # D
+        # FIXME: not clear from docs what to do with N/A entries
+        result.extend(replace(s, category=Category.D) for s in zones[Quartile.NA])
+
+    return tuple(result)
+
+
+# }}}
+
+
 # {{{ store_article_influence_score
 
 
@@ -492,8 +563,6 @@ def store_article_influence_score(
             scores = parse_article_influence_score(xlsxfile, year)
 
             if year in KNOWN_YEARS_WITH_QUARTILES:
-                from uvt_scholarly.export.cs import recategorize_article_influence_score
-
                 scores = recategorize_article_influence_score(
                     scores, a_star_percentage=a_star_percentage
                 )

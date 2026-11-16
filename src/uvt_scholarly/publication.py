@@ -91,6 +91,23 @@ class Quartile(enum.IntEnum):
     """The quartile for this publication is not set or not applicable."""
 
 
+@enum.unique
+class Category(enum.IntEnum):
+    """Category to which a journal belongs to in the CS scoring system.
+
+    This system is roughly based on the quartiles offered by UEFISCDI (through
+    Web of Science), with some additional rules to make it more difficult to
+    automate.
+    """
+
+    AA = 4
+    """Referred to as $A^*$ in the documentation."""
+    A = 3
+    B = 2
+    C = 1
+    D = 0
+
+
 @dataclass(frozen=True, slots=True)
 class JournalCategory:
     """A category for a journal."""

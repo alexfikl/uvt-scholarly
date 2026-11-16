@@ -178,6 +178,7 @@ def test_parse_article_influence_score(year: int) -> None:
     from uvt_scholarly.uefiscdi.ais import (
         KNOWN_YEARS_WITH_QUARTILES,
         parse_article_influence_score,
+        recategorize_article_influence_score,
     )
 
     url = UEFISCDI_DATABASE_URL[year][ScoreType.AIS]
@@ -190,8 +191,6 @@ def test_parse_article_influence_score(year: int) -> None:
         scores = parse_article_influence_score(filename, year)
 
     if year in KNOWN_YEARS_WITH_QUARTILES:
-        from uvt_scholarly.export.cs import recategorize_article_influence_score
-
         with block_timer(f"parse-ais-categories-{year}"):
             scores = recategorize_article_influence_score(scores)
 
