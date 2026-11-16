@@ -63,6 +63,13 @@
 \NewDocumentCommand \TplBlock {+m} {}
 \NewDocumentCommand \TplVar {+m} {}
 
+\newlength{\tablewidth}
+\NewDocumentCommand \TplTableWidth {m} {%
+    \setlength{\tablewidth}{\dimexpr\textwidth
+        - \numexpr 2*#1\relax\tabcolsep
+        - \numexpr #1+1\relax\arrayrulewidth\relax}%
+}
+
 % }}}
 
 \begin{document}
@@ -85,14 +92,12 @@ Monitorul Oficial,  Partea I, nr. 123bis/15.02.2017.}
 
 {
 \renewcommand{\arraystretch}{1.5}
-
-\newlength{\colwidth}
-\setlength{\colwidth}{5.5em}
+\TplTableWidth{3}
 
 \begin{tabular}{
-    |m{\colwidth}
-    |p{\dimexpr(\textwidth-\colwidth-6\tabcolsep-4\arrayrulewidth)/2}
-    |p{\dimexpr(\textwidth-\colwidth-6\tabcolsep-4\arrayrulewidth)/2}|} \hline
+    |m{0.12\tablewidth}
+    |p{0.44\tablewidth}
+    |p{0.44\tablewidth}|} \hline
 \rowcolor{TableYellow}
 \textbf{Indicator}
 & \textbf{Standard pentru \TplVar{criteria.position_name}}
@@ -175,13 +180,15 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
+\TplTableWidth{6}
+
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{1.5em}
-    |m{\dimexpr\textwidth-12.9em-12\tabcolsep-7\arrayrulewidth}
-    |>{\centering\arraybackslash}m{4em}
-    |>{\centering\arraybackslash}m{2.9em}
-    |>{\centering\arraybackslash}m{2.7em}
-    |>{\centering\arraybackslash}m{1.8em}|}
+    |>{\centering\arraybackslash}m{0.04\tablewidth}
+    |m{0.58\tablewidth}
+    |>{\centering\arraybackslash}m{0.11\tablewidth}
+    |>{\centering\arraybackslash}m{0.09\tablewidth}
+    |>{\centering\arraybackslash}m{0.08\tablewidth}
+    |>{\centering\arraybackslash}m{0.10\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
@@ -215,7 +222,7 @@ C5\_UVT &
 \hline
 \rowcolor{TableGray} &
 \textbf{Total} &
-\multicolumn{4}{m{\dimexpr(11.4em+6\tabcolsep)}|}{
+\multicolumn{4}{m{\dimexpr 0.38\tablewidth + 6\tabcolsep + 3\arrayrulewidth\relax}|}{
     \textbf{S = \TplVar{'{:.3f}'.format(candidate.ais)}}
     \hfill
     \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(candidate.recent_ais)}}
@@ -254,16 +261,13 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
-\newlength{\firstcol}
-\setlength{\firstcol}{1.5em}
-\newlength{\lastcol}
-\setlength{\lastcol}{3.3em}
+\TplTableWidth{4}
 
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{\firstcol}
-    |m{\dimexpr(\textwidth-\firstcol-\lastcol-8\tabcolsep-4\arrayrulewidth)/2}
-    |m{\dimexpr(\textwidth-\firstcol-\lastcol-8\tabcolsep-4\arrayrulewidth)/2}
-    |>{\centering\arraybackslash}m{\lastcol}|}
+    |>{\centering\arraybackslash}m{0.05\tablewidth}
+    |m{0.43\tablewidth}
+    |m{0.43\tablewidth}
+    |>{\centering\arraybackslash}m{0.09\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
@@ -322,9 +326,11 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
+\TplTableWidth{2}
+
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{1.5em}
-    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+    |>{\centering\arraybackslash}m{0.05\tablewidth}
+    |m{0.95\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
@@ -365,9 +371,11 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
+\TplTableWidth{2}
+
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{1.5em}
-    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+    |>{\centering\arraybackslash}m{0.05\tablewidth}
+    |m{0.95\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
@@ -408,9 +416,11 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
+\TplTableWidth{2}
+
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{1.5em}
-    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+    |>{\centering\arraybackslash}m{0.05\tablewidth}
+    |m{0.95\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
@@ -450,9 +460,11 @@ C5\_UVT &
 {\footnotesize
 \renewcommand{\arraystretch}{1.35}
 
+\TplTableWidth{2}
+
 \begin{longtable}{
-    |>{\centering\arraybackslash}m{1.5em}
-    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+    |>{\centering\arraybackslash}m{0.05\tablewidth}
+    |m{0.95\tablewidth}|}
 % header on first page
 \hline
 \rowcolor{TableYellow}
