@@ -11,7 +11,6 @@ from uvt_scholarly.logging import make_logger
 from uvt_scholarly.publication import (
     Author,
     DocumentType,
-    Grant,
     Publication,
     ScoreType,
 )
@@ -20,6 +19,7 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
 
+    from uvt_scholarly.metadata import Grant
 
 log = make_logger(__name__)
 

@@ -7,7 +7,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.publication import Grant, Publication, ScoreType
+from uvt_scholarly.publication import Publication, ScoreType
 
 if TYPE_CHECKING:
     import pathlib
@@ -195,56 +195,6 @@ def add_categories(
                 )
 
     return tuple(result)
-
-
-# }}}
-
-
-# {{{ read_grants
-
-
-def read_grants(filename: pathlib.Path) -> Sequence[Grant]:
-    if not filename.exists():
-        raise FileNotFoundError(filename)
-
-    import tomllib
-
-    with open(filename, "rb") as fp:
-        data = tomllib.load(fp)
-
-    if "grants" not in data:
-        raise KeyError(f"key 'grants' not found in file: {filename}")
-
-    def parse_period(period: Sequence[int]) -> tuple[int, int]:
-        if not isinstance(period, list) or len(period) != 2:
-            raise KeyError(f"'period' is not a two-tuple: {period!r}")
-
-        return int(period[0]), int(period[1])
-
-    grants = []
-    for i, d in enumerate(data["grants"]):
-        if "name" not in d:
-            log.error("Grant '%d' has no name. Skipping...", i)
-            continue
-
-        name = d["name"].strip()
-        try:
-            grants.append(
-                Grant(
-                    name=name,
-                    identifier=d["identifier"].strip(),
-                    funder=d["funder"].strip(),
-                    budget=budget.strip() if (budget := d.get("budget")) else None,
-                    position=d["position"].strip(),
-                    period=parse_period(d["period"]),
-                    url=url.strip() if (url := d.get("url")) else None,
-                )
-            )
-        except KeyError as exc:
-            log.error("Failed to read grant %d: '%s'.", i, name, exc_info=exc)
-            continue
-
-    return tuple(grants)
 
 
 # }}}

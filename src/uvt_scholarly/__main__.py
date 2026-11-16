@@ -233,9 +233,10 @@ def math_generate(
     if exclude_mdpi and not MDPI_DB_FILE.exists():
         store_mdpi_journals(MDPI_DB_FILE)
 
-    from uvt_scholarly.enrich import add_cited_by, add_scores, read_grants
+    from uvt_scholarly.enrich import add_cited_by, add_scores
     from uvt_scholarly.export.math import PAST_YEAR_CUTOFF
 
+    # get publications
     if source == "wos":
         from uvt_scholarly.wos import read_pubs
 
@@ -243,7 +244,6 @@ def math_generate(
             log.error("Cannot generate report without a 'pub_file'.")
             ctx.exit(0)
 
-        # get publications
         pubs = read_pubs(pub_file)
         if exclude_mdpi:
             pubs = remove_mdpi_publications(pubs, MDPI_DB_FILE)
@@ -263,12 +263,14 @@ def math_generate(
             )
 
             pubs = add_cited_by(pubs, cites)
-
-        # get grants
-        grants = read_grants(grant_file) if grant_file else ()
     else:
         log.error("Unknown source format: '%s'", source)
         ctx.exit(1)
+
+    # get grants
+    from uvt_scholarly.metadata import read_grants
+
+    grants = read_grants(grant_file) if grant_file else ()
 
     log.info("Candidate '%s': Imported %d publications.", candidate, len(pubs))
     log.info("Candidate '%s': Imported %d citations.", candidate, len(cites))
