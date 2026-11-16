@@ -226,9 +226,7 @@ C5\_UVT &
 % rows
 \TplBlock{for pub in candidate.publications}
 \TplBlock{-set ais = pub | get_score('AIS')}
-\TplBlock{-if ais == 0}
-\rowcolor{TableOrange!30}
-\TplBlock{endif-}
+\TplVar{'\\rowcolor{TableOrange!30}' if ais == 0 else ''}
 \TplVar{loop.index} &
 \TplVar{pub | format_pub} &
 \TplVar{pub | is_recent} &
@@ -242,6 +240,8 @@ C5\_UVT &
 {\footnotesize
 * Scor: AIS revistă / Nr. Autori. Pentru poziția de Lector (sau Cercetător
 Științific III) nu se împarte la numărul de autori.
+
+* Roșu: Articole fără scor AIS (BDI, proceedings, etc.).
 }
 
 \clearpage
