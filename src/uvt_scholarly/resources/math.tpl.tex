@@ -439,6 +439,54 @@ C5\_UVT &
 \end{longtable}
 }
 \TplBlock{endif-}
+
+\clearpage
+
+\begin{center}
+{\Large \textbf{C5\_UVT: Scrisori de recomandare}}
+\end{center}
+\bigskip
+
+{\footnotesize
+\renewcommand{\arraystretch}{1.35}
+
+\begin{longtable}{
+    |>{\centering\arraybackslash}m{1.5em}
+    |m{\dimexpr(\textwidth-\firstcol-8\tabcolsep-4\arrayrulewidth)}|}
+% header on first page
+\hline
+\rowcolor{TableYellow}
+\textbf{Nr. crt.}
+& \textbf{Scrisoare (funcția, nume și prenume, universitatea, date de contact)} \\
+\hline
+\endfirsthead
+
+% footer on other pages
+\hline
+\multicolumn{2}{r}{\textit{Continuat pe pagina următoare}} \\
+\endfoot
+
+% footer on the last page
+\hline
+1 & {
+Profesor, etc. \newline
+\url{mailto:prof@university.edu}
+}
+\\\hline
+2 & {
+Profesor, etc. \newline
+\url{mailto:prof@university.edu}
+}
+\\\hline
+\rowcolor{TableGray}
+& \textbf{Total punctaj C5\_UVT = \TplVar{candidate.c5_uvt_recommendations}} \\
+\hline
+\endlastfoot
+
+% rows
+
+\end{longtable}
+}
 \end{document}
 
 % vim:foldmarker=<<<,>>>:foldmethod=marker:spell spelllang=ro
