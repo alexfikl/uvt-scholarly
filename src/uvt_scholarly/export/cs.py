@@ -6,8 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.metadata import POSITION_NAME, Position
 from uvt_scholarly.publication import (
     Author,
     Category,

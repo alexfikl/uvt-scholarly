@@ -8,8 +8,8 @@ from importlib import metadata
 
 import click
 
-from uvt_scholarly.export.common import ID_TO_POSITION
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.metadata import ID_TO_POSITION
 from uvt_scholarly.utils import PROJECT_NAME
 
 log = make_logger(__name__)

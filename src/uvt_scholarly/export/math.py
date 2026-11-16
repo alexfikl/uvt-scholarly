@@ -6,8 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from uvt_scholarly.export.common import POSITION_NAME, Position
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.metadata import POSITION_NAME, Position
 from uvt_scholarly.publication import (
     Author,
     DocumentType,
@@ -134,21 +134,21 @@ def filter_latex_format_book(pub: Publication, candidate: str) -> str:
 def filter_latex_format_grant(grant: Grant) -> str:
     parts = []
 
-    # name + identifier + funder + period
+    # title + identifier + funder + period
     parts.extend([
-        rf"\textbf{{{grant.name}}}",
-        f"Contract: {grant.identifier}",
-        rf"\textit{{{grant.funder}}}",
+        rf"\textbf{{{grant.title}}}",
+        f"Contract: {grant.identifier or 'N/A'}",
+        rf"\textit{{{grant.funder.name}}}",
         (
             f"{grant.period[0]}--{grant.period[1]}"
             if grant.period[0] != grant.period[1]
             else f"{grant.period[0]}"
         ),
-        rf"Poziție: \textbf{{{grant.position}}}",
+        rf"Poziție: \textbf{{{grant.role.name}}}",
     ])
 
-    if grant.budget:
-        parts.append(f"Budget: approx. {grant.budget}")
+    if grant.amount:
+        parts.append(f"Budget: approx. {grant.amount.value:g} {grant.amount.currency}")
 
     if grant.url:
         parts.append(rf"(\href{{{grant.url}}}{{LINK}})")

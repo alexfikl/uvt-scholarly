@@ -1,9 +1,255 @@
-[author]
-FirstName = "Alexandru"
-LastName = "Fikl"
-ResearcherID = "TODO"
-ORCiD = "TODO"
+[metadata]
+version = 2
 
-[math.files.wos]
-Publications = "savedrecs.txt"
-Citations = "savedrecs_cited_by.txt"
+[candidate]
+first_name = "Alexandru"
+last_name = "Fikl"
+target = "lect"
+
+email = "alexandru.fikl@e-uvt.ro"
+orcid = "0000-0002-0552-5936"
+researcher_id = "HGC-5374-2022"
+scopus_id = "..."
+google_scholar_id = "..."
+aliases = ["A. Fikl"]
+
+[candidate.hirsch]
+wos = 3
+scopus = 4
+google_scholar = 6
+as_of = 2026
+
+[[candidate.sources.publications]]
+source = "wos"
+files = ["savedrecs.txt"]
+
+[[candidate.sources.publications]]
+source = "bib"
+files = ["supplement.bib"]
+
+[[candidate.sources.citations]]
+source = "wos"
+files = ["savedrecs_cited_by.txt"]
+
+# i) Books, edited books, and book chapters.
+#
+# The bibliographic fields follow BibLaTeX where possible. The `kind` field
+# selects the BibLaTeX entry type:
+#   book         -> @book
+#   edited-book  -> @book/@collection with editor
+#   chapter      -> @inbook
+#
+# `publisher_category` is the SENSE category used by the CS standards and is
+# not a BibLaTeX field.
+[[candidate.books]]
+kind = "book"                 # book | edited-book | chapter
+publisher_category = "A"      # A | B | C | D | E | unlisted
+
+author = ["Fikl, Alexandru"]
+title = "Book title"
+publisher = "UVT"
+location = "Timișoara"
+date = "2026"
+isbn = "9-0000-0000-0000"
+pagetotal = 120
+url = "https://example.com"
+
+[[candidate.books]]
+kind = "chapter"
+publisher_category = "A"
+
+author = ["Fikl, Alexandru"]
+title = "Chapter title"
+booktitle = "Book title"
+editor = ["Fikl, Alexandru"]
+publisher = "UVT"
+location = "Timișoara"
+date = "2026"
+chapter = "3"
+pages = "25--48"
+pagetotal = 120
+isbn = "9-0000-0000-0000"
+
+# ii) Edited proceedings volumes.
+#
+# `category` is the forum category used by the CS standards. Individual papers
+# in proceedings belong in `sources.publications` instead.
+[[candidate.proceedings]]
+kind = "proceedings"          # proceedings
+category = "A*"               # A* | A | B | C | D
+
+editor = ["Fikl, Alexandru"]
+title = "Proceedings title"
+publisher = "UVT"
+location = "Timișoara"
+date = "2026"
+isbn = "9-0000-0000-0000"
+pagetotal = 200
+
+eventtitle = "UVT Conference"
+venue = "Timișoara"
+eventdate = "2026-06-01"
+
+# iii) University courses.
+#
+# BibLaTeX has no @course type, so `kind` selects the closest entry type:
+#   manual  -> @manual
+#   book    -> @book
+#   online  -> @online
+#   misc    -> @misc
+#
+# `course_kind` and `format` are used by the CS standards.
+[[candidate.courses]]
+kind = "manual"               # manual | book | online | misc
+course_kind = "course"        # course | lab-guide | problem-collection
+format = "electronic"         # electronic | print
+
+author = ["Fikl, Alexandru"]
+title = "Course title"
+organization = "UVT"
+date = "2026"
+edition = "1"
+pagetotal = 80
+url = "https://www.example.com"
+urldate = "2026-01-01"
+language = "romanian"
+
+# iv) Editorial roles at journals.
+[[candidate.journals]]
+journal = "UVT Journal"
+role = "editor"               # director | editor | member | guest-editor
+category = "A*"               # A* | A | B | C | D
+year = 2026
+issn = "..."
+url = "..."
+
+# v) Grants and research projects.
+[[candidate.grants]]
+title = "UVT Grant"
+role = "member"               # director | member
+funder = { name = "UVT", identifier = "..." }
+identifier = "..."            # contract number
+amount = { value = 10000, currency = "EUR" }
+competition = "national"      # national | international
+period = [2016, 2022]
+url = "..."
+
+# vi) Scientific/program committees.
+[[candidate.conference_committee]]
+name = "UVT Conference"
+kind = "conference"           # conference | workshop | symposium | summer-school
+role = "program-committee"    # program-committee | scientific-committee
+category = "A*"               # A* | A | B | C | D
+year = 2026
+location = "Timișoara"
+url = "..."
+
+# vii) Organizing committees and summer schools.
+[[candidate.events]]
+name = "UVT Event"
+kind = "summer-school"        # conference | workshop | symposium | summer-school
+role = "director"             # director | organizing-committee
+year = 2026
+location = "Timișoara"
+url = "..."
+
+# viii) Keynotes and invited talks.
+#
+# For `kind = "university"`, use `ranking` instead of `category`.
+[[candidate.keynotes]]
+name = "UVT Conference"
+kind = "conference"           # conference | workshop | symposium | summer-school | university
+role = "keynote"              # keynote | invited | professor
+title = "Talk title"
+category = "A*"               # A* | A | B | C | D
+year = 2026
+location = "Timișoara"
+url = "..."
+
+# ix) Visiting positions.
+[[candidate.visiting]]
+name = "UVT"
+kind = "visit"
+country = "RO"
+role = "visiting"             # professor | researcher | visiting
+ranking = "top500"            # top20 | top100 | top200 | top500 | above500
+duration_months = 12
+teaching_hours = 0            # optional; 1 month = 16 teaching hours
+period = [2026, 2027]
+url = "..."
+
+# x) Research teams.
+[[candidate.teams]]
+name = "UVT Team"
+kind = "team"
+role = "leader"               # only leader is scored
+scope = "international"       # international | national | institutional
+team_size = 5
+period = [2026, 2027]
+evidence = "..."              # accreditation/recognition
+url = "..."
+
+# xi) Doctoral thesis evaluation committees.
+[[candidate.phd_evaluation]]
+role = "member"               # member | evaluator
+university = "UVT"
+ranking = "top500"            # top20 | top100 | top200 | top500 | above500
+student = "Alexandru Fikl"
+thesis = "..."
+year = 2026
+
+# xii) Doctoral supervision committees.
+[[candidate.phd_committee]]
+role = "supervisor"           # supervisor | member
+university = "UVT"
+student = "Alexandru Fikl"
+thesis = "..."
+year = 2026
+doctoral_school_decision = "..."
+
+# xiii) Patents and inventions.
+[[candidate.patents]]
+title = "Patent title"
+inventors = ["Alexandru Fikl"]
+identifier = "..."
+office = "OSIM"
+status = "active"             # active | granted | filed | expired | unknown
+year = 2026
+url = "..."
+
+# xiv) Software, resources, and datasets.
+[[candidate.software]]
+name = "Package"
+kind = "package"              # package | tool | resource | dataset | other
+authors = ["Alexandru Fikl"]
+year = 2026
+license = "MIT"
+accesses = 1000               # usage evidence
+url = "https://github.com"
+doi = "..."
+description = "..."
+
+# xv) Leadership positions in professional organizations.
+[[candidate.leadership]]
+name = "UVT"
+kind = "leadership"
+role = "president"
+scope = "international"       # international | national
+period = [2026, 2027]
+url = "..."
+
+# xvi) Awards and other merits.
+[[candidate.awards]]
+title = "Award"
+organization = "UVT"
+year = 2026
+points = 2                    # per university/institute decision
+url = "..."
+description = "..."
+
+# C5 recommendation letters.
+[[candidate.recommendations]]
+position = "Professor"
+name = "Jane Doe"
+university = "UVT"
+email = "jane@example.com"
