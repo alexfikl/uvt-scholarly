@@ -538,7 +538,11 @@ def read_from_csv(
                     year=int(row["PY"].strip()),
                     volume=row["VL"].strip(),
                     issue=row["IS"].strip().upper(),
-                    pages=parse_pages(row["BP"], row["EP"], row["PG"]),
+                    pages=(
+                        parse_pages(bp, row["EP"], row["PG"])
+                        if (bp := row.get("BP"))
+                        else Pages(row.get("AN", ""), None, None)
+                    ),
                     dtype=DOCUMENT_TYPE.get(dtypes[0], DocumentType.Other),
                     doi=parse_doi(row.get("DI", "")),
                     isbn=parse_isbn(row.get("BN", "")),
@@ -661,7 +665,11 @@ def read_from_bib(
                 year=int(get(fields, "year", "0")),
                 volume=get(fields, "volume"),
                 issue=issue,
-                pages=parse_bib_pages(get(fields, "pages")),
+                pages=(
+                    parse_bib_pages(pages)
+                    if (pages := get(fields, "pages"))
+                    else Pages(get(fields, "article-number", ""), None, None)
+                ),
                 dtype=DOCUMENT_TYPE.get(entry.entry_type, DocumentType.Other),
                 doi=parse_doi(get(fields, "doi")),
                 isbn=parse_isbn(get(fields, "isbn", get(fields, "isbn-13"))),

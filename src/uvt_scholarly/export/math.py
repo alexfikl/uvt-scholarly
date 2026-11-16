@@ -75,9 +75,16 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
     parts.append(rf"\textit{{{encode(pub.journal)}}}")
 
     # volume + year
-    parts.append(rf"vol.\ {pub.volume} ({pub.year})")
+    if pub.volume:
+        parts.append(rf"vol.\ {pub.volume} ({pub.year})")
+    else:
+        parts.append(f"{pub.year}")
+
     if pages := str(pub.pages):
-        parts.append(rf"pp.\ {pages}")
+        if pub.pages.end is not None:
+            parts.append(rf"pp.\ {pages}")
+        else:
+            parts.append(rf"art. no.\ {pub.pages.start}")
 
     # doi
     if pub.doi:

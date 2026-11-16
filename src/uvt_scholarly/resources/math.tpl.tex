@@ -226,7 +226,7 @@ C5\_UVT &
 % rows
 \TplBlock{for pub in candidate.publications}
 \TplBlock{-set ais = pub | get_score('AIS')}
-\TplVar{'\\rowcolor{TableOrange!30}' if ais == 0 else ''}
+\TplVar{'\\rowcolor{TableOrange!20}' if ais == 0 else ''}
 \TplVar{loop.index} &
 \TplVar{pub | format_pub} &
 \TplVar{pub | is_recent} &
