@@ -9,8 +9,8 @@ target = "lect"
 email = "alexandru.fikl@e-uvt.ro"
 orcid = "0000-0002-0552-5936"
 researcher_id = "HGC-5374-2022"
-scopus_id = "..."
-google_scholar_id = "..."
+scopus_id = "57212345678"
+google_scholar_id = "AbCdEf123456"
 
 [candidate.hirsch]
 wos = 3
@@ -22,9 +22,9 @@ as_of = 2026
 source = "wos"
 files = ["savedrecs.txt"]
 
-[[candidate.sources.publications]]
-source = "bib"
-files = ["supplement.bib"]
+# [[candidate.sources.publications]]
+# source = "bib"
+# files = ["supplement.bib"]
 
 [[candidate.sources.citations]]
 source = "wos"
@@ -119,19 +119,19 @@ journal = "UVT Journal"
 role = "editor"               # director | editor | member | guest-editor
 category = "A*"               # A* | A | B | C | D
 year = 2026
-issn = "..."
-url = "..."
+issn = "0025-5718"
+url = "https://www.example.com/journals/uvt"
 
 # v) Grants and research projects.
 [[candidate.grants]]
 title = "UVT Grant"
 role = "member"               # director | member
-funder = { name = "UVT", identifier = "..." }
-identifier = "..."            # contract number
+funder = { name = "UEFISCDI", identifier = "RO-UEFISCDI" }
+identifier = "PN-III-P1-1.1-TE-2021-1234"  # contract number
 amount = { value = 10000, currency = "EUR" }
 competition = "national"      # national | international
 period = [2016, 2022]
-url = "..."
+url = "https://uefiscdi.gov.ro/project/te-2021-1234"
 
 # vi) Scientific/program committees.
 [[candidate.conference_committee]]
@@ -141,7 +141,7 @@ role = "program-committee"    # program-committee | scientific-committee
 category = "A*"               # A* | A | B | C | D
 year = 2026
 location = "Timișoara"
-url = "..."
+url = "https://icnp2026.example.org"
 
 # vii) Organizing committees and summer schools.
 [[candidate.events]]
@@ -150,7 +150,7 @@ kind = "summer-school"        # conference | workshop | symposium | summer-schoo
 role = "director"             # director | organizing-committee
 year = 2026
 location = "Timișoara"
-url = "..."
+url = "https://summerschool2026.example.org"
 
 # viii) Keynotes and invited talks.
 #
@@ -163,7 +163,7 @@ title = "Talk title"
 category = "A*"               # A* | A | B | C | D
 year = 2026
 location = "Timișoara"
-url = "..."
+url = "https://icnp2026.example.org/program"
 
 # ix) Visiting positions.
 [[candidate.visiting]]
@@ -175,18 +175,18 @@ ranking = "top500"            # top20 | top100 | top200 | top500 | above500
 duration_months = 12
 teaching_hours = 0            # optional; 1 month = 16 teaching hours
 period = [2026, 2027]
-url = "..."
+url = "https://www.example.com/visiting/uvt"
 
 # x) Research teams.
 [[candidate.teams]]
 name = "UVT Team"
 kind = "team"
 role = "leader"               # only leader is scored
-scope = "international"       # international | national | institutional
+scope = "international"       # international | national | local
 team_size = 5
 period = [2026, 2027]
-evidence = "..."              # accreditation/recognition
-url = "..."
+evidence = "CNATDCU accreditation no. 456/2026"  # accreditation/recognition
+url = "https://www.example.com/teams/uvt"
 
 # xi) Doctoral thesis evaluation committees.
 [[candidate.phd_evaluation]]
@@ -194,7 +194,7 @@ role = "member"               # member | evaluator
 university = "UVT"
 ranking = "top500"            # top20 | top100 | top200 | top500 | above500
 student = "Alexandru Fikl"
-thesis = "..."
+thesis = "Numerical methods for fractional differential equations"
 year = 2026
 
 # xii) Doctoral supervision committees.
@@ -202,19 +202,19 @@ year = 2026
 role = "supervisor"           # supervisor | member
 university = "UVT"
 student = "Alexandru Fikl"
-thesis = "..."
+thesis = "Adaptive schemes for fractional operators"
 year = 2026
-doctoral_school_decision = "..."
+doctoral_school_decision = "IOSUD-UVT Decision no. 123/2026"
 
 # xiii) Patents and inventions.
 [[candidate.patents]]
 title = "Patent title"
 inventors = ["Alexandru Fikl"]
-identifier = "..."
+identifier = "RO 132456 A0"
 office = "OSIM"
 status = "active"             # active | granted | filed | expired | unknown
 year = 2026
-url = "..."
+url = "https://www.example.com/patents/RO132456"
 
 # xiv) Software, resources, and datasets.
 [[candidate.software]]
@@ -224,9 +224,9 @@ authors = ["Alexandru Fikl"]
 year = 2026
 license = "MIT"
 accesses = 1000               # usage evidence
-url = "https://github.com"
-doi = "..."
-description = "..."
+url = "https://www.example.com/software/package"
+doi = "10.5281/zenodo.1234567"
+description = "A package for solving fractional differential equations."
 
 # xv) Leadership positions in professional organizations.
 [[candidate.leadership]]
@@ -235,7 +235,7 @@ kind = "leadership"
 role = "president"
 scope = "international"       # international | national
 period = [2026, 2027]
-url = "..."
+url = "https://www.example.com/leadership/uvt"
 
 # xvi) Awards and other merits.
 [[candidate.awards]]
@@ -243,8 +243,8 @@ title = "Award"
 organization = "UVT"
 year = 2026
 points = 2                    # per university/institute decision
-url = "..."
-description = "..."
+url = "https://www.example.com/awards/uvt"
+description = "Awarded for contributions to numerical analysis."
 
 # C5 recommendation letters.
 [[candidate.recommendations]]

@@ -117,6 +117,12 @@ class JournalAffiliation:
     url: str | None = None
 
 
+def _parse_journals_v1(
+    entries: Sequence[dict[str, Any]],
+) -> Sequence[JournalAffiliation]:
+    return []
+
+
 # }}}
 
 
@@ -173,25 +179,10 @@ GRANT_ROLE_ID = {
 }
 
 
-def _parse_grants_v1(filename: pathlib.Path) -> Sequence[Grant]:
-    if not filename.exists():
-        raise FileNotFoundError(filename)
-
-    import tomllib
-
-    with open(filename, "rb") as fp:
-        data = tomllib.load(fp)
-
-    grants_data = data.get("grants")
-    if grants_data is None:
-        grants_data = data.get("candidate", {}).get("grants")
-
-    if grants_data is None:
-        raise KeyError(f"key 'grants' not found in file: {filename}")
-
-    def parse_period(period: Sequence[int]) -> tuple[int, int]:
+def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Grant]:
+    def parse_period(period: object) -> tuple[int, int]:
         if not isinstance(period, list) or len(period) != 2:
-            raise KeyError(f"'period' is not a two-tuple: {period!r}")
+            raise ValueError(f"'period' is not a two-tuple: {period!r}")
 
         return int(period[0]), int(period[1])
 
@@ -206,7 +197,9 @@ def _parse_grants_v1(filename: pathlib.Path) -> Sequence[Grant]:
                 identifier=str(identifier).strip() if identifier else None,
             )
 
-        raise KeyError(f"'organization' is not a valid organization: {organization!r}")
+        raise ValueError(
+            f"'organization' is not a valid organization: {organization!r}"
+        )
 
     def parse_amount(amount: object) -> Money | None:
         if amount is None:
@@ -218,16 +211,16 @@ def _parse_grants_v1(filename: pathlib.Path) -> Sequence[Grant]:
                 currency=str(amount.get("currency", "EUR")).upper(),
             )
 
-        raise KeyError(f"'amount' is not a valid amount: {amount!r}")
+        raise ValueError(f"'amount' is not a valid amount: {amount!r}")
 
     grants = []
-    for i, d in enumerate(grants_data):
+    for i, d in enumerate(entries):
         title = d.get("title", d.get("name"))
         if not title:
             log.error("Grant '%d' has no title. Skipping...", i)
             continue
 
-        title = title.strip()
+        title = str(title).strip()
         try:
             role = GRANT_ROLE_ID[str(d.get("role", "member")).strip().lower()]
             competition = d.get("competition")
@@ -248,7 +241,7 @@ def _parse_grants_v1(filename: pathlib.Path) -> Sequence[Grant]:
                     url=url.strip() if (url := d.get("url")) else None,
                 )
             )
-        except KeyError as exc:
+        except (KeyError, TypeError, ValueError) as exc:
             log.error("Failed to read grant %d: '%s'.", i, title, exc_info=exc)
             continue
 
@@ -312,6 +305,20 @@ class Event:
     """A URL with more information about the event or talk."""
 
 
+def _parse_conference_committee_v1(
+    entries: Sequence[dict[str, Any]],
+) -> Sequence[Event]:
+    return []
+
+
+def _parse_events_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Event]:
+    return []
+
+
+def _parse_keynotes_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Event]:
+    return []
+
+
 # }}}
 
 
@@ -361,6 +368,18 @@ class Role:
     """A URL with more information about the role."""
 
 
+def _parse_visiting_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
+    return []
+
+
+def _parse_teams_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
+    return []
+
+
+def _parse_leadership_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
+    return []
+
+
 # }}}
 
 
@@ -385,6 +404,18 @@ class DoctoralCommittee:
     thesis: str | None = None
     ranking: UniversityRanking | None = None
     doctoral_school_decision: str | None = None
+
+
+def _parse_phd_evaluation_v1(
+    entries: Sequence[dict[str, Any]],
+) -> Sequence[DoctoralCommittee]:
+    return []
+
+
+def _parse_phd_committee_v1(
+    entries: Sequence[dict[str, Any]],
+) -> Sequence[DoctoralCommittee]:
+    return []
 
 
 # }}}
@@ -412,6 +443,10 @@ class Patent:
     office: str | None = None
     url: str | None = None
     description: str | None = None
+
+
+def _parse_patents_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Patent]:
+    return []
 
 
 # }}}
@@ -442,6 +477,10 @@ class Software:
     description: str | None = None
 
 
+def _parse_software_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Software]:
+    return []
+
+
 # }}}
 
 
@@ -456,6 +495,10 @@ class Award:
     points: float | None = None
     url: str | None = None
     description: str | None = None
+
+
+def _parse_awards_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Award]:
+    return []
 
 
 # }}}
@@ -474,6 +517,12 @@ class Recommendation:
     email: str
 
 
+def _parse_recommendations_v1(
+    entries: Sequence[dict[str, Any]],
+) -> Sequence[Recommendation]:
+    return []
+
+
 # }}}
 
 
@@ -488,15 +537,18 @@ class HirschIndex:
     as_of: int
 
 
-def _parse_hirsh_index_v1(data: dict[str, Any]) -> HirschIndex:
-    if data and "as_of" not in data:
+def _parse_hirsch_index_v1(data: dict[str, Any] | None) -> HirschIndex | None:
+    if not data:
+        return None
+
+    if "as_of" not in data:
         raise ValueError("'HirschIndex' requires the 'as_of' field")
 
     return HirschIndex(
         wos=int(data.get("wos", 0)),
         scopus=int(data.get("scopus", 0)),
         google_scholar=int(data.get("google_scholar", 0)),
-        as_of=data["as_of"],
+        as_of=int(data["as_of"]),
     )
 
 
@@ -548,19 +600,26 @@ class Candidate:
 
 
 def _parse_books_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    pass
+    return []
 
 
 def _parse_proceedings_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    pass
+    return []
 
 
 def _parse_courses_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    pass
+    return []
 
 
-def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
-    candidate = metadata.get("candidate", {})
+def _read_candidate_v1(
+    candidate: dict[str, Any], cwd: pathlib.Path | None = None
+) -> Candidate:
+    if cwd is None:
+        cwd = pathlib.Path.cwd()
+
+    def resolve_path(filename: str) -> pathlib.Path:
+        path = pathlib.Path(filename)
+        return path if path.is_absolute() else cwd / path
 
     # {{{ parse candidate metadata
 
@@ -568,7 +627,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
 
     first_name = candidate.get("first_name", "#FirstName#")
     last_name = candidate.get("last_name", "#LastName#")
-    target_raw = candidate.get("target", "assi").lower()
+    target_raw = str(candidate.get("target", "assi")).strip().lower()
     email = candidate.get("email", "candidate@example.com")
     orcid_raw = candidate.get("orcid")
     researcher_id_raw = candidate.get("researcher_id")
@@ -576,7 +635,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
     google_scholar_id_raw = candidate.get("google_scholar_id")
 
     try:
-        target = Position[target_raw]
+        target = ID_TO_POSITION[target_raw]
     except KeyError:
         target = Position.Assistant
 
@@ -611,7 +670,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
         source = entries.get("source")
         if source == "wos":
             for filename in entries.get("files", []):
-                path = pathlib.Path(filename)
+                path = resolve_path(filename)
                 if not path.exists():
                     log.error("File does not exist: '%s'.", path)
                     continue
@@ -625,7 +684,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
         source = entries.get("source")
         if source == "wos":
             for filename in entries.get("files", []):
-                path = pathlib.Path(filename)
+                path = resolve_path(filename)
                 if not path.exists():
                     log.error("File does not exist: '%s'.", path)
                     continue
@@ -645,7 +704,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
         researcher_id=researcher_id,
         scopus_id=scopus_id,
         google_scholar_id=google_scholar_id,
-        hirsch=_parse_hirsh_index_v1(candidate.get("hirsch", {})),
+        hirsch=_parse_hirsch_index_v1(candidate.get("hirsch")),
         publications=publications,
         citations=citations,
         books=_parse_books_v1(candidate.get("books", [])),
@@ -657,6 +716,7 @@ def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
             candidate.get("conference_committee", [])
         ),
         events=_parse_events_v1(candidate.get("events", [])),
+        keynotes=_parse_keynotes_v1(candidate.get("keynotes", [])),
         visiting=_parse_visiting_v1(candidate.get("visiting", [])),
         teams=_parse_teams_v1(candidate.get("teams", [])),
         phd_evaluation=_parse_phd_evaluation_v1(candidate.get("phd_evaluation", [])),
@@ -682,7 +742,7 @@ def read_candidate(filename: pathlib.Path) -> Candidate:
 
     version = data.get("metadata", {}).get("version", LATEST_METADATA_VERSION)
     if version == 1:
-        return _read_candidate_v1(data.get("candidate", {}))
+        return _read_candidate_v1(data.get("candidate", {}), cwd=filename.parent)
     else:
         raise ValueError(
             f"candidate file has unsupported version '{version}': '{filename}'"
