@@ -113,7 +113,6 @@ def parse_sense_classification(filename: pathlib.Path) -> Sequence[Publisher]:
             year=year,
             category=PublisherCategory[category],
         )
-        print(result[code].name)
 
     return tuple(sorted(result.values(), key=lambda v: v.category))
 

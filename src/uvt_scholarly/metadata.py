@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from uvt_scholarly.publication import Category, Publication
+    from uvt_scholarly.qs import UniversityRanking
 
 log = make_logger(__name__)
 
@@ -70,29 +71,6 @@ ID_TO_POSITION = {
 
 
 # {{{ Categories
-
-
-@enum.unique
-class PublisherCategory(enum.Enum):
-    """SENSE category of a book publisher."""
-
-    A = enum.auto()
-    B = enum.auto()
-    C = enum.auto()
-    D = enum.auto()
-    E = enum.auto()
-    Unlisted = enum.auto()
-
-
-@enum.unique
-class UniversityRanking(enum.Enum):
-    """Ranking bucket of a university, as used by the CS standards."""
-
-    Top20 = enum.auto()
-    Top100 = enum.auto()
-    Top200 = enum.auto()
-    Top500 = enum.auto()
-    Above500 = enum.auto()
 
 
 @enum.unique
