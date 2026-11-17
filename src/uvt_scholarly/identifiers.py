@@ -824,3 +824,72 @@ class ResearcherID:
 
 
 # }}}
+
+
+# {{{ ScopusID
+
+
+@dataclass(frozen=True, slots=True)
+class ScopusID:
+    """A parsed Scopus Author ID."""
+
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
+    @staticmethod
+    def from_string(sid: str) -> ScopusID:
+        if not sid.isdigit():
+            raise ValueError(f"Scopus Author IDs are numeric: {sid}")
+
+        return ScopusID(sid)
+
+    @property
+    def is_valid(self) -> bool:
+        # NOTE: theres no format to Scopus Author IDs, so we just check that it
+        # is numeric and leave it at that. The only way to check would be to
+        # query the API, I guess.
+        return self.value.isdigit()
+
+
+# }}}
+
+
+# {{{ GoogleScholarID
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleScholarID:
+    """A parsed Google Scholar ID."""
+
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}('{self}')"
+
+    @staticmethod
+    def from_string(gsid: str) -> GoogleScholarID:
+        # NOTE: there are no documented rules for a Google Schoar ID, so these
+        # are heuristic. If they turn out to be too strict, just remove them.
+        gsid = gsid.strip()
+        if len(gsid) != 12:
+            raise ValueError(f"Google Scholar IDs has length 12: {gsid!r}")
+
+        if not gsid.isalnum():
+            raise ValueError(f"Google Scholar IDs are alphanumeric: {gsid!r}")
+
+        return GoogleScholarID(gsid)
+
+    @property
+    def is_valid(self) -> bool:
+        return self.value.isalnum()
+
+
+# }}}

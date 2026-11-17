@@ -1,5 +1,5 @@
 [metadata]
-version = 2
+version = 1
 
 [candidate]
 first_name = "Alexandru"
@@ -11,7 +11,6 @@ orcid = "0000-0002-0552-5936"
 researcher_id = "HGC-5374-2022"
 scopus_id = "..."
 google_scholar_id = "..."
-aliases = ["A. Fikl"]
 
 [candidate.hirsch]
 wos = 3

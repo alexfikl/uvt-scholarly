@@ -4,19 +4,22 @@
 from __future__ import annotations
 
 import enum
+import pathlib
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from uvt_scholarly.identifiers import GoogleScholarID, ORCiD, ResearcherID, ScopusID
 from uvt_scholarly.logging import make_logger
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Sequence
 
     from uvt_scholarly.publication import Category, Publication
     from uvt_scholarly.qs import UniversityRanking
 
 log = make_logger(__name__)
+
+LATEST_METADATA_VERSION = 1
 
 
 # {{{ Position
@@ -70,25 +73,23 @@ ID_TO_POSITION = {
 # }}}
 
 
-# {{{ Categories
+# {{{ Scope
 
 
 @enum.unique
 class Scope(enum.Enum):
-    """Geographic or institutional scope of a role or activity."""
+    """Geographic scope of a role or activity."""
 
     International = enum.auto()
     National = enum.auto()
-    Institutional = enum.auto()
+    Local = enum.auto()
 
 
-@enum.unique
-class CompetitionScope(enum.Enum):
-    """Scope of the competition through which a grant was obtained."""
-
-    International = enum.auto()
-    National = enum.auto()
-
+SCOPE_ID = {
+    "international": Scope.International,
+    "national": Scope.National,
+    "local": Scope.Local,
+}
 
 # }}}
 
@@ -98,9 +99,9 @@ class CompetitionScope(enum.Enum):
 
 @enum.unique
 class JournalPosition(enum.Enum):
-    Director = enum.auto()
+    EditorInChief = enum.auto()
     Editor = enum.auto()
-    Member = enum.auto()
+    BoardMember = enum.auto()
     GuestEditor = enum.auto()
 
 
@@ -158,12 +159,100 @@ class Grant:
     """The contract or grant number used by the funder."""
     amount: Money | None
     """The amount that entered the institution."""
-    competition: CompetitionScope | None
+    competition: Scope | None
     """The scope of the competition through which the grant was obtained."""
     period: tuple[int, int]
     """The period that the author was part of this grant."""
     url: str | None
     """A URL for the project or a link to the funder's page for this grant."""
+
+
+GRANT_ROLE_ID = {
+    "director": GrantRole.Director,
+    "member": GrantRole.Member,
+}
+
+
+def _parse_grants_v1(filename: pathlib.Path) -> Sequence[Grant]:
+    if not filename.exists():
+        raise FileNotFoundError(filename)
+
+    import tomllib
+
+    with open(filename, "rb") as fp:
+        data = tomllib.load(fp)
+
+    grants_data = data.get("grants")
+    if grants_data is None:
+        grants_data = data.get("candidate", {}).get("grants")
+
+    if grants_data is None:
+        raise KeyError(f"key 'grants' not found in file: {filename}")
+
+    def parse_period(period: Sequence[int]) -> tuple[int, int]:
+        if not isinstance(period, list) or len(period) != 2:
+            raise KeyError(f"'period' is not a two-tuple: {period!r}")
+
+        return int(period[0]), int(period[1])
+
+    def parse_organization(organization: object) -> Organization:
+        if isinstance(organization, str):
+            return Organization(name=organization.strip())
+
+        if isinstance(organization, dict) and (name := organization.get("name")):
+            identifier = organization.get("identifier")
+            return Organization(
+                name=str(name).strip(),
+                identifier=str(identifier).strip() if identifier else None,
+            )
+
+        raise KeyError(f"'organization' is not a valid organization: {organization!r}")
+
+    def parse_amount(amount: object) -> Money | None:
+        if amount is None:
+            return None
+
+        if isinstance(amount, dict):
+            return Money(
+                value=float(amount["value"]),
+                currency=str(amount.get("currency", "EUR")).upper(),
+            )
+
+        raise KeyError(f"'amount' is not a valid amount: {amount!r}")
+
+    grants = []
+    for i, d in enumerate(grants_data):
+        title = d.get("title", d.get("name"))
+        if not title:
+            log.error("Grant '%d' has no title. Skipping...", i)
+            continue
+
+        title = title.strip()
+        try:
+            role = GRANT_ROLE_ID[str(d.get("role", "member")).strip().lower()]
+            competition = d.get("competition")
+            identifier = d.get("identifier", d.get("contract"))
+            grants.append(
+                Grant(
+                    title=title,
+                    role=role,
+                    funder=parse_organization(d["funder"]),
+                    identifier=str(identifier).strip() if identifier else None,
+                    amount=parse_amount(d.get("amount")),
+                    competition=(
+                        SCOPE_ID[str(competition).strip().lower()]
+                        if competition
+                        else None
+                    ),
+                    period=parse_period(d["period"]),
+                    url=url.strip() if (url := d.get("url")) else None,
+                )
+            )
+        except KeyError as exc:
+            log.error("Failed to read grant %d: '%s'.", i, title, exc_info=exc)
+            continue
+
+    return tuple(grants)
 
 
 # }}}
@@ -197,10 +286,10 @@ class EventRole(enum.Enum):
 class Event:
     """An event participation that is not covered by [Role][].
 
-    This is used for conference committees (d.vi), organizing committees (d.vii),
-    and keynote/invited talks (d.viii). The scoring category and university
-    ranking are mutually exclusive, depending on [kind][]:
-    events use [category][], while universities use [ranking][].
+    This is used for conference committees, organizing committees, keynote or
+    invited talks. The scoring category and university ranking are mutually
+    exclusive, depending on [kind][]: events use [category][], while
+    universities use [ranking][].
     """
 
     name: str
@@ -240,8 +329,8 @@ class RoleKind(enum.Enum):
 class Role:
     """A longer-lived role at an organization.
 
-    This is used for visiting positions (d.ix), research teams (d.x), and
-    leadership positions in professional organizations (d.xv).
+    This is used for visiting positions, research teams, and leadership
+    positions in professional organizations.
     """
 
     name: str
@@ -388,35 +477,27 @@ class Recommendation:
 # }}}
 
 
-# {{{ Sources
-
-
-@dataclass(frozen=True, slots=True)
-class Source:
-    source: str
-    """The source format, e.g. ``"wos"`` or ``"bib"``."""
-    files: tuple[str, ...]
-    """The files that make up this source."""
-
-
-@dataclass(frozen=True, slots=True)
-class Sources:
-    publications: Sequence[Source] = ()
-    citations: Sequence[Source] = ()
-
-
-# }}}
-
-
 # {{{ HirschIndex
 
 
 @dataclass(frozen=True, slots=True)
 class HirschIndex:
-    wos: int | None = None
-    scopus: int | None = None
-    google_scholar: int | None = None
-    as_of: int | None = None
+    wos: int
+    scopus: int
+    google_scholar: int
+    as_of: int
+
+
+def _parse_hirsh_index_v1(data: dict[str, Any]) -> HirschIndex:
+    if data and "as_of" not in data:
+        raise ValueError("'HirschIndex' requires the 'as_of' field")
+
+    return HirschIndex(
+        wos=int(data.get("wos", 0)),
+        scopus=int(data.get("scopus", 0)),
+        google_scholar=int(data.get("google_scholar", 0)),
+        as_of=data["as_of"],
+    )
 
 
 # }}}
@@ -431,7 +512,6 @@ class Candidate:
     last_name: str
     target: Position
 
-    sources: Sources
     publications: Sequence[Publication]
     citations: Sequence[Publication]
 
@@ -453,13 +533,12 @@ class Candidate:
     awards: Sequence[Award]
     recommendations: Sequence[Recommendation]
 
-    hirsch: HirschIndex | None = None
     email: str | None = None
-    orcid: str | None = None
-    researcher_id: str | None = None
-    scopus_id: str | None = None
-    google_scholar_id: str | None = None
-    aliases: tuple[str, ...] = ()
+    orcid: ORCiD | None = None
+    researcher_id: ResearcherID | None = None
+    scopus_id: ScopusID | None = None
+    google_scholar_id: GoogleScholarID | None = None
+    hirsch: HirschIndex | None = None
 
 
 # }}}
@@ -468,18 +547,129 @@ class Candidate:
 # {{{ read_candidate
 
 
-def read_candidate(filename: pathlib.Path) -> None:
-    if not filename.exists():
-        raise FileNotFoundError(filename)
+def _parse_books_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
+    pass
 
 
-# }}}
+def _parse_proceedings_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
+    pass
 
 
-# {{{ read_grants
+def _parse_courses_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
+    pass
 
 
-def read_grants(filename: pathlib.Path) -> Sequence[Grant]:
+def _read_candidate_v1(metadata: dict[str, Any]) -> Candidate:
+    candidate = metadata.get("candidate", {})
+
+    # {{{ parse candidate metadata
+
+    # FIXME: move this to separate function
+
+    first_name = candidate.get("first_name", "#FirstName#")
+    last_name = candidate.get("last_name", "#LastName#")
+    target_raw = candidate.get("target", "assi").lower()
+    email = candidate.get("email", "candidate@example.com")
+    orcid_raw = candidate.get("orcid")
+    researcher_id_raw = candidate.get("researcher_id")
+    scopus_id_raw = candidate.get("scopus_id")
+    google_scholar_id_raw = candidate.get("google_scholar_id")
+
+    try:
+        target = Position[target_raw]
+    except KeyError:
+        target = Position.Assistant
+
+    orcid = None
+    if orcid_raw is not None:
+        orcid = ORCiD.from_string(orcid_raw)
+
+    researcher_id = None
+    if researcher_id_raw is not None:
+        researcher_id = ResearcherID.from_string(researcher_id_raw)
+
+    scopus_id = None
+    if scopus_id_raw is not None:
+        scopus_id = ScopusID.from_string(scopus_id_raw)
+
+    google_scholar_id = None
+    if google_scholar_id_raw is not None:
+        google_scholar_id = GoogleScholarID.from_string(google_scholar_id_raw)
+
+    # }}}
+
+    # {{{ parse sources
+
+    # FIXME: move this to separate function
+
+    from uvt_scholarly.wos import read_pubs
+
+    sources = candidate.get("sources", {})
+
+    publications = []
+    for entries in sources.get("publications", []):
+        source = entries.get("source")
+        if source == "wos":
+            for filename in entries.get("files", []):
+                path = pathlib.Path(filename)
+                if not path.exists():
+                    log.error("File does not exist: '%s'.", path)
+                    continue
+
+                publications.extend(read_pubs(path))
+        else:
+            raise ValueError(f"unknown source type: {source!r}")
+
+    citations = []
+    for entries in sources.get("citations", []):
+        source = entries.get("source")
+        if source == "wos":
+            for filename in entries.get("files", []):
+                path = pathlib.Path(filename)
+                if not path.exists():
+                    log.error("File does not exist: '%s'.", path)
+                    continue
+
+                citations.extend(read_pubs(path, include_citations=True))
+        else:
+            raise ValueError(f"unknown source type: {source!r}")
+
+    # }}}
+
+    return Candidate(
+        first_name=first_name,
+        last_name=last_name,
+        target=target,
+        email=email,
+        orcid=orcid,
+        researcher_id=researcher_id,
+        scopus_id=scopus_id,
+        google_scholar_id=google_scholar_id,
+        hirsch=_parse_hirsh_index_v1(candidate.get("hirsch", {})),
+        publications=publications,
+        citations=citations,
+        books=_parse_books_v1(candidate.get("books", [])),
+        proceedings=_parse_proceedings_v1(candidate.get("proceedings", [])),
+        courses=_parse_courses_v1(candidate.get("courses", [])),
+        journals=_parse_journals_v1(candidate.get("journals", [])),
+        grants=_parse_grants_v1(candidate.get("grants", [])),
+        conference_committee=_parse_conference_committee_v1(
+            candidate.get("conference_committee", [])
+        ),
+        events=_parse_events_v1(candidate.get("events", [])),
+        visiting=_parse_visiting_v1(candidate.get("visiting", [])),
+        teams=_parse_teams_v1(candidate.get("teams", [])),
+        phd_evaluation=_parse_phd_evaluation_v1(candidate.get("phd_evaluation", [])),
+        phd_committee=_parse_phd_committee_v1(candidate.get("phd_committee", [])),
+        patents=_parse_patents_v1(candidate.get("patents", [])),
+        software=_parse_software_v1(candidate.get("software", [])),
+        leadership=_parse_leadership_v1(candidate.get("leadership", [])),
+        awards=_parse_awards_v1(candidate.get("awards", [])),
+        recommendations=_parse_recommendations_v1(candidate.get("recommendations", [])),
+    )
+
+
+def read_candidate(filename: pathlib.Path) -> Candidate:
     if not filename.exists():
         raise FileNotFoundError(filename)
 
@@ -488,86 +678,15 @@ def read_grants(filename: pathlib.Path) -> Sequence[Grant]:
     with open(filename, "rb") as fp:
         data = tomllib.load(fp)
 
-    grants_data = data.get("grants")
-    if grants_data is None:
-        grants_data = data.get("candidate", {}).get("grants")
+    # FIXME: add a json schema and check it here
 
-    if grants_data is None:
-        raise KeyError(f"key 'grants' not found in file: {filename}")
-
-    def parse_period(period: Sequence[int]) -> tuple[int, int]:
-        if not isinstance(period, list) or len(period) != 2:
-            raise KeyError(f"'period' is not a two-tuple: {period!r}")
-
-        return int(period[0]), int(period[1])
-
-    def parse_organization(organization: object) -> Organization:
-        if isinstance(organization, str):
-            return Organization(name=organization.strip())
-
-        if isinstance(organization, dict) and (name := organization.get("name")):
-            identifier = organization.get("identifier")
-            return Organization(
-                name=str(name).strip(),
-                identifier=str(identifier).strip() if identifier else None,
-            )
-
-        raise KeyError(f"'organization' is not a valid organization: {organization!r}")
-
-    def parse_amount(amount: object) -> Money | None:
-        if amount is None:
-            return None
-
-        if isinstance(amount, dict):
-            return Money(
-                value=float(amount["value"]),
-                currency=str(amount.get("currency", "EUR")).upper(),
-            )
-
-        raise KeyError(f"'amount' is not a valid amount: {amount!r}")
-
-    grant_roles = {
-        "director": GrantRole.Director,
-        "member": GrantRole.Member,
-    }
-    competition_scopes = {
-        "international": CompetitionScope.International,
-        "national": CompetitionScope.National,
-    }
-
-    grants = []
-    for i, d in enumerate(grants_data):
-        title = d.get("title", d.get("name"))
-        if not title:
-            log.error("Grant '%d' has no title. Skipping...", i)
-            continue
-
-        title = title.strip()
-        try:
-            role = grant_roles[str(d.get("role", "member")).strip().lower()]
-            competition = d.get("competition")
-            identifier = d.get("identifier", d.get("contract"))
-            grants.append(
-                Grant(
-                    title=title,
-                    role=role,
-                    funder=parse_organization(d["funder"]),
-                    identifier=str(identifier).strip() if identifier else None,
-                    amount=parse_amount(d.get("amount")),
-                    competition=(
-                        competition_scopes[str(competition).strip().lower()]
-                        if competition
-                        else None
-                    ),
-                    period=parse_period(d["period"]),
-                    url=url.strip() if (url := d.get("url")) else None,
-                )
-            )
-        except KeyError as exc:
-            log.error("Failed to read grant %d: '%s'.", i, title, exc_info=exc)
-            continue
-
-    return tuple(grants)
+    version = data.get("metadata", {}).get("version", LATEST_METADATA_VERSION)
+    if version == 1:
+        return _read_candidate_v1(data.get("candidate", {}))
+    else:
+        raise ValueError(
+            f"candidate file has unsupported version '{version}': '{filename}'"
+        )
 
 
 # }}}
