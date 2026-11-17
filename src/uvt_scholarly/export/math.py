@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.metadata import POSITION_NAME, Position
+from uvt_scholarly.metadata import POSITION_NAME, Candidate, Position
 from uvt_scholarly.publication import (
     Author,
     DocumentType,
@@ -61,7 +61,7 @@ def filter_latex_format_pub(pub: Publication, candidate: str) -> str:
         (
             rf"\textbf{{{_format_author(au)}}}"
             # FIXME: this isn't a great check. It already failed once
-            if au.last_name in candidate.split()
+            if au.last_name == candidate
             else _format_author(au)
         )
         for au in pub.authors
@@ -112,7 +112,7 @@ def filter_latex_format_book(pub: Publication, candidate: str) -> str:
         (
             rf"\textbf{{{_format_author(au)}}}"
             # FIXME: this isn't a great check. It already failed once
-            if au.last_name in candidate.split()
+            if au.last_name == candidate
             else _format_author(au)
         )
         for au in pub.authors
@@ -266,8 +266,9 @@ AVERAGED_AIS_POSITIONS = {
 
 
 @dataclass(frozen=True)
-class Candidate:
+class MathCandidate:
     qualname: str
+    target: Position
 
     ais: float
     recent_ais: float
@@ -309,14 +310,15 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
     )
 
 
-def make_candidate(
-    name: str,
-    pubs: Sequence[Publication],
-    grants: Sequence[Grant],
-    *,
-    position: Position = Position.Professor,
-) -> Candidate:
+def to_math_candidate(
+    candidate: Candidate,
+) -> MathCandidate:
     from datetime import datetime
+
+    # TODO: will need to implement this
+
+    assert not candidate.books
+    assert not candidate.courses
 
     recent_year_cutoff = datetime.now().year - RECENT_YEAR_CUTOFF
 
@@ -327,7 +329,7 @@ def make_candidate(
     books = []
     courses = []
     publications = []
-    for pub in pubs:
+    for pub in candidate.publications:
         if pub.dtype == DocumentType.Book:
             books.append(pub)
         elif pub.dtype == DocumentType.Report:
@@ -344,7 +346,7 @@ def make_candidate(
                 )
                 ais = 0
 
-            if position in AVERAGED_AIS_POSITIONS:
+            if candidate.target in AVERAGED_AIS_POSITIONS:
                 ais /= len(pub.authors)
 
             total_ais += ais
@@ -358,7 +360,7 @@ def make_candidate(
                     if ais is None or ais < MIN_AIS_SCORE:
                         continue
 
-                    if any(au.last_name in name for au in cite.authors):
+                    if any(au.last_name == candidate.last_name for au in cite.authors):
                         log.warning(
                             "Self-citation for publication '%s': '%s'.",
                             pub.doi,
@@ -377,15 +379,16 @@ def make_candidate(
                 )
             )
 
-    return Candidate(
-        qualname=name,
+    return MathCandidate(
+        qualname=f"{candidate.first_name} {candidate.last_name}",
+        target=candidate.target,
         ais=total_ais,
         recent_ais=recent_total_ais,
         total_citations=total_citations,
         books=tuple(books),
         courses=tuple(courses),
         publications=sortedpubs(publications),
-        grants=tuple(sorted(grants, key=lambda g: g.period[1], reverse=True)),
+        grants=tuple(sorted(candidate.grants, key=lambda g: g.period[1], reverse=True)),
     )
 
 
@@ -413,11 +416,8 @@ CITATION_FIELD_NAMES = (
 
 def export_publications_csv(
     filename: pathlib.Path,
-    candidate_name: str,
-    pubs: Sequence[Publication],
-    grants: Sequence[Grant],
+    _candidate: Candidate,
     *,
-    position: Position = Position.Professor,
     encoding: str = "utf-8",
     dialect: str = "excel",
     overwrite: bool = False,
@@ -429,7 +429,7 @@ def export_publications_csv(
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
-    candidate = make_candidate(candidate_name, pubs, grants, position=position)
+    mc = to_math_candidate(_candidate)
 
     with open(filename, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
@@ -440,9 +440,9 @@ def export_publications_csv(
         )
         writer.writeheader()
 
-        for i, pub in enumerate(candidate.publications):
+        for i, pub in enumerate(mc.publications):
             ais = pub.journal.scores[ScoreType.AIS]
-            if position in AVERAGED_AIS_POSITIONS:
+            if mc.target in AVERAGED_AIS_POSITIONS:
                 ais_per_author = ais / len(pub.authors)
             else:
                 ais_per_author = ais
@@ -466,8 +466,8 @@ def export_publications_csv(
 
         writer.writerow({
             PUBLICATION_FIELD_NAMES[1]: "Total",
-            PUBLICATION_FIELD_NAMES[3]: f"S = {candidate.ais:.3f}",
-            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {candidate.recent_ais:.3f}",
+            PUBLICATION_FIELD_NAMES[3]: f"S = {mc.ais:.3f}",
+            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {mc.recent_ais:.3f}",
         })
 
     filename = filename.with_stem(f"{filename.stem}.cites")
@@ -481,7 +481,7 @@ def export_publications_csv(
         writer.writeheader()
 
         i = 0
-        for pub in candidate.publications:
+        for pub in mc.publications:
             for j, cited_by in enumerate(pub.cited_by):
                 ais = cited_by.journal.scores[ScoreType.AIS]
 
@@ -503,7 +503,7 @@ def export_publications_csv(
 
         writer.writerow({
             CITATION_FIELD_NAMES[1]: "Total",
-            CITATION_FIELD_NAMES[3]: f"C = {candidate.total_citations}",
+            CITATION_FIELD_NAMES[3]: f"C = {mc.total_citations}",
         })
 
 
@@ -515,11 +515,8 @@ def export_publications_csv(
 
 def export_publications_latex(
     outfile: pathlib.Path,
-    candidate_name: str,
-    pubs: Sequence[Publication],
-    grants: Sequence[Grant],
+    candidate: Candidate,
     *,
-    position: Position = Position.Professor,
     overwrite: bool = False,
 ) -> None:
     if not overwrite and outfile.exists():
@@ -538,15 +535,17 @@ def export_publications_latex(
         comment_end_string="=))",
     )
 
-    env.filters["format_pub"] = lambda pub: filter_latex_format_pub(pub, candidate_name)
+    env.filters["format_pub"] = lambda pub: filter_latex_format_pub(
+        pub, candidate.last_name
+    )
     env.filters["format_book"] = lambda pub: filter_latex_format_book(
-        pub, candidate_name
+        pub, candidate.last_name
     )
     env.filters["format_grant"] = filter_latex_format_grant
     env.filters["is_recent"] = filter_latex_is_recent
     env.filters["get_score"] = filter_get_score
 
-    if position in AVERAGED_AIS_POSITIONS:
+    if candidate.target in AVERAGED_AIS_POSITIONS:
         env.filters["get_average_score"] = filter_get_average_score
     else:
         env.filters["get_average_score"] = filter_get_score
@@ -557,17 +556,12 @@ def export_publications_latex(
 
     from importlib.resources import files
 
-    criteria = MIN_CRITERIA_FOR_POSITION[position]
-    candidate = make_candidate(candidate_name, pubs, grants, position=position)
+    criteria = MIN_CRITERIA_FOR_POSITION[candidate.target]
+    mc = to_math_candidate(candidate)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
     with template_file.open(encoding="utf-8") as f:
-        tex = (
-            env
-            .from_string(f.read())
-            .render(candidate=candidate, criteria=criteria)
-            .strip()
-        )
+        tex = env.from_string(f.read()).render(candidate=mc, criteria=criteria).strip()
 
     with open(outfile, "w", encoding="utf-8") as f:
         f.write(tex)

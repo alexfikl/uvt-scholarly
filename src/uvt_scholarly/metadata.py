@@ -82,6 +82,8 @@ ID_TO_POSITION = {
     "cs3": Position.JuniorResearcher,
 }
 
+POSITION_TO_ID = {v: k for k, v in ID_TO_POSITION.items()}
+
 # }}}
 
 
@@ -132,8 +134,8 @@ class JournalAffiliation:
 
 def _parse_journals_v1(
     entries: Sequence[dict[str, Any]],
-) -> Sequence[JournalAffiliation]:
-    return []
+) -> tuple[JournalAffiliation, ...]:
+    return ()
 
 
 # }}}
@@ -192,7 +194,7 @@ ID_TO_GRANT_ROLE = {
 }
 
 
-def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Grant]:
+def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> tuple[Grant, ...]:
     def parse_organization(organization: object) -> Organization:
         if isinstance(organization, str):
             return Organization(name=organization.strip())
@@ -314,16 +316,16 @@ class Event:
 
 def _parse_conference_committee_v1(
     entries: Sequence[dict[str, Any]],
-) -> Sequence[Event]:
-    return []
+) -> tuple[Event, ...]:
+    return ()
 
 
-def _parse_events_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Event]:
-    return []
+def _parse_events_v1(entries: Sequence[dict[str, Any]]) -> tuple[Event, ...]:
+    return ()
 
 
-def _parse_keynotes_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Event]:
-    return []
+def _parse_keynotes_v1(entries: Sequence[dict[str, Any]]) -> tuple[Event, ...]:
+    return ()
 
 
 # }}}
@@ -382,7 +384,7 @@ class Role:
     """A URL with more information about the role."""
 
 
-def _parse_visiting_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
+def _parse_visiting_v1(entries: Sequence[dict[str, Any]]) -> tuple[Role, ...]:
     visiting = []
     for i, d in enumerate(entries):
         name = d.get("name")
@@ -422,12 +424,12 @@ def _parse_visiting_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
     return tuple(visiting)
 
 
-def _parse_teams_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
-    return []
+def _parse_teams_v1(entries: Sequence[dict[str, Any]]) -> tuple[Role, ...]:
+    return ()
 
 
-def _parse_leadership_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
-    return []
+def _parse_leadership_v1(entries: Sequence[dict[str, Any]]) -> tuple[Role, ...]:
+    return ()
 
 
 # }}}
@@ -465,13 +467,13 @@ class DoctoralCommittee:
 
 def _parse_phd_evaluation_v1(
     entries: Sequence[dict[str, Any]],
-) -> Sequence[DoctoralCommittee]:
-    return []
+) -> tuple[DoctoralCommittee, ...]:
+    return ()
 
 
 def _parse_phd_committee_v1(
     entries: Sequence[dict[str, Any]],
-) -> Sequence[DoctoralCommittee]:
+) -> tuple[DoctoralCommittee, ...]:
     committees = []
     for i, d in enumerate(entries):
         student = d.get("student")
@@ -532,8 +534,8 @@ class Patent:
     description: str | None = None
 
 
-def _parse_patents_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Patent]:
-    return []
+def _parse_patents_v1(entries: Sequence[dict[str, Any]]) -> tuple[Patent, ...]:
+    return ()
 
 
 # }}}
@@ -573,7 +575,7 @@ class Software:
     description: str | None = None
 
 
-def _parse_software_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Software]:
+def _parse_software_v1(entries: Sequence[dict[str, Any]]) -> tuple[Software, ...]:
     software = []
     for i, d in enumerate(entries):
         name = d.get("name")
@@ -619,8 +621,8 @@ class Award:
     description: str | None = None
 
 
-def _parse_awards_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Award]:
-    return []
+def _parse_awards_v1(entries: Sequence[dict[str, Any]]) -> tuple[Award, ...]:
+    return ()
 
 
 # }}}
@@ -641,7 +643,7 @@ class Recommendation:
 
 def _parse_recommendations_v1(
     entries: Sequence[dict[str, Any]],
-) -> Sequence[Recommendation]:
+) -> tuple[Recommendation, ...]:
     recommendations = []
     for i, d in enumerate(entries):
         name = d.get("name")
@@ -707,26 +709,26 @@ class Candidate:
     last_name: str
     target: Position
 
-    publications: Sequence[Publication]
-    citations: Sequence[Publication]
+    publications: tuple[Publication, ...]
+    citations: tuple[Publication, ...]
 
-    books: Sequence[Publication]
-    proceedings: Sequence[Publication]
-    courses: Sequence[Publication]
-    journals: Sequence[JournalAffiliation]
-    grants: Sequence[Grant]
-    conference_committee: Sequence[Event]
-    events: Sequence[Event]
-    keynotes: Sequence[Event]
-    visiting: Sequence[Role]
-    teams: Sequence[Role]
-    phd_evaluation: Sequence[DoctoralCommittee]
-    phd_committee: Sequence[DoctoralCommittee]
-    patents: Sequence[Patent]
-    software: Sequence[Software]
-    leadership: Sequence[Role]
-    awards: Sequence[Award]
-    recommendations: Sequence[Recommendation]
+    books: tuple[Publication, ...]
+    proceedings: tuple[Publication, ...]
+    courses: tuple[Publication, ...]
+    journals: tuple[JournalAffiliation, ...]
+    grants: tuple[Grant, ...]
+    conference_committee: tuple[Event, ...]
+    events: tuple[Event, ...]
+    keynotes: tuple[Event, ...]
+    visiting: tuple[Role, ...]
+    teams: tuple[Role, ...]
+    phd_evaluation: tuple[DoctoralCommittee, ...]
+    phd_committee: tuple[DoctoralCommittee, ...]
+    patents: tuple[Patent, ...]
+    software: tuple[Software, ...]
+    leadership: tuple[Role, ...]
+    awards: tuple[Award, ...]
+    recommendations: tuple[Recommendation, ...]
 
     email: str | None = None
     orcid: ORCiD | None = None
@@ -742,16 +744,16 @@ class Candidate:
 # {{{ read_candidate
 
 
-def _parse_books_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    return []
+def _parse_books_v1(entries: Sequence[dict[str, Any]]) -> tuple[Publication, ...]:
+    return ()
 
 
-def _parse_proceedings_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    return []
+def _parse_proceedings_v1(entries: Sequence[dict[str, Any]]) -> tuple[Publication, ...]:
+    return ()
 
 
-def _parse_courses_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Publication]:
-    return []
+def _parse_courses_v1(entries: Sequence[dict[str, Any]]) -> tuple[Publication, ...]:
+    return ()
 
 
 def _read_candidate_v1(
@@ -848,8 +850,8 @@ def _read_candidate_v1(
         scopus_id=scopus_id,
         google_scholar_id=google_scholar_id,
         hirsch=_parse_hirsch_index_v1(candidate.get("hirsch")),
-        publications=publications,
-        citations=citations,
+        publications=tuple(publications),
+        citations=tuple(citations),
         books=_parse_books_v1(candidate.get("books", [])),
         proceedings=_parse_proceedings_v1(candidate.get("proceedings", [])),
         courses=_parse_courses_v1(candidate.get("courses", [])),
@@ -872,9 +874,16 @@ def _read_candidate_v1(
     )
 
 
-def read_candidate(filename: pathlib.Path) -> Candidate:
+def read_candidate(
+    filename: pathlib.Path,
+    *,
+    cwd: pathlib.Path | None = None,
+) -> Candidate:
     if not filename.exists():
         raise FileNotFoundError(filename)
+
+    if cwd is None:
+        cwd = filename.parent
 
     import tomllib
 
@@ -885,7 +894,7 @@ def read_candidate(filename: pathlib.Path) -> Candidate:
 
     version = data.get("metadata", {}).get("version", LATEST_METADATA_VERSION)
     if version == 1:
-        return _read_candidate_v1(data.get("candidate", {}), cwd=filename.parent)
+        return _read_candidate_v1(data.get("candidate", {}), cwd=cwd)
     else:
         raise ValueError(
             f"candidate file has unsupported version '{version}': '{filename}'"

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import pathlib
+from dataclasses import replace
 from importlib import metadata
 
 import click
@@ -139,46 +140,12 @@ def math(ctx: click.Context) -> None:
 
 @math.command("generate")
 @click.help_option("-h", "--help")
-@click.option(
-    "--source",
-    type=click.Choice(sorted(SUPPORTED_SOURCES)),
-    required=True,
-    help="The source format of the publications and citations",
-)
-@click.option(
-    "--candidate",
-    required=True,
-    help="Full name of the candidate for which to generate the list",
-)
-@click.option(
-    "--position",
-    type=click.Choice(list(ID_TO_POSITION)),
-    required=True,
-    help="The position for which the candidate is applying",
-)
+@click.argument("filename", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--outfile",
     type=click.Path(dir_okay=False, path_type=pathlib.Path),
     default=None,
     help="The file name for the generated documents",
-)
-@click.option(
-    "--pub-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    default=None,
-    help="A list of publications",
-)
-@click.option(
-    "--cite-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    default=None,
-    help="A list of citations for the given publications",
-)
-@click.option(
-    "--grant-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    default=None,
-    help="A TOML file containing the list of grants the candidate was a part of",
 )
 @click.option(
     "--exclude-mdpi",
@@ -196,13 +163,8 @@ def math(ctx: click.Context) -> None:
 @click.pass_context
 def math_generate(
     ctx: click.Context,
-    source: str,
-    candidate: str,
-    position: str,
+    filename: pathlib.Path,
     outfile: pathlib.Path | None,
-    pub_file: pathlib.Path | None,
-    cite_file: pathlib.Path | None,
-    grant_file: pathlib.Path | None,
     exclude_mdpi: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     force: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
@@ -216,9 +178,13 @@ def math_generate(
         log.info("Run 'uvtscholarly download' to generate the database.")
         ctx.exit(1)
 
+    from uvt_scholarly.metadata import POSITION_TO_ID, read_candidate
+
+    candidate = read_candidate(filename)
+
     if outfile is None:
-        basename = candidate.lower().replace(" ", "-").replace(".", "")
-        outfile = pathlib.Path(f"math-{basename}.tex")
+        basename = f"math-{candidate.last_name}-{POSITION_TO_ID[candidate.target]}.tex"
+        outfile = pathlib.Path(basename.lower().replace(" ", "-"))
 
     if not force and outfile.exists():
         log.error("File already exists (use --force to overwrite): '%s'.", outfile)
@@ -236,68 +202,54 @@ def math_generate(
     from uvt_scholarly.enrich import add_cited_by, add_scores
     from uvt_scholarly.export.math import PAST_YEAR_CUTOFF
 
-    # get publications
-    if source == "wos":
-        from uvt_scholarly.wos import read_pubs
+    # clean up publications
+    pubs = candidate.publications
+    if exclude_mdpi:
+        pubs = remove_mdpi_publications(pubs, MDPI_DB_FILE)
 
-        if pub_file is None:
-            log.error("Cannot generate report without a 'pub_file'.")
-            ctx.exit(0)
+    pubs = add_scores(
+        pubs, UEFISCDI_DB_FILE, scores=ScoreType.AIS, past=PAST_YEAR_CUTOFF
+    )
 
-        pubs = read_pubs(pub_file)
+    # add citations
+    cites = candidate.citations
+    if cites:
         if exclude_mdpi:
-            pubs = remove_mdpi_publications(pubs, MDPI_DB_FILE)
+            cites = remove_mdpi_publications(cites, MDPI_DB_FILE)
 
-        pubs = add_scores(
-            pubs, UEFISCDI_DB_FILE, scores=ScoreType.AIS, past=PAST_YEAR_CUTOFF
+        cites = add_scores(
+            cites, UEFISCDI_DB_FILE, scores={ScoreType.AIS}, past=PAST_YEAR_CUTOFF
         )
 
-        # get citations
-        if cite_file is not None:
-            cites = read_pubs(cite_file, include_citations=True)
-            if exclude_mdpi:
-                cites = remove_mdpi_publications(cites, MDPI_DB_FILE)
+        pubs = add_cited_by(pubs, cites)
 
-            cites = add_scores(
-                cites, UEFISCDI_DB_FILE, scores={ScoreType.AIS}, past=PAST_YEAR_CUTOFF
-            )
+    candidate = replace(candidate, publications=pubs, citations=cites)
 
-            pubs = add_cited_by(pubs, cites)
-    else:
-        log.error("Unknown source format: '%s'", source)
-        ctx.exit(1)
+    log.info(
+        "Candidate '%s': Imported %d publications.",
+        candidate.last_name,
+        len(candidate.publications),
+    )
+    log.info(
+        "Candidate '%s': Imported %d citations.",
+        candidate.last_name,
+        len(candidate.citations),
+    )
+    log.info(
+        "Candidate '%s': Imported %d grants.",
+        candidate.last_name,
+        len(candidate.grants),
+    )
 
-    # get grants
-    from uvt_scholarly.metadata import read_grants
-
-    grants = read_grants(grant_file) if grant_file else ()
-
-    log.info("Candidate '%s': Imported %d publications.", candidate, len(pubs))
-    log.info("Candidate '%s': Imported %d citations.", candidate, len(cites))
-    log.info("Candidate '%s': Imported %d grants.", candidate, len(grants))
-
+    # export
     if outfile.suffix == ".tex":
         from uvt_scholarly.export.math import export_publications_latex
 
-        export_publications_latex(
-            outfile,
-            candidate,
-            pubs,
-            grants,
-            position=ID_TO_POSITION[position],
-            overwrite=force,
-        )
+        export_publications_latex(outfile, candidate, overwrite=force)
     elif outfile.suffix == ".csv":
         from uvt_scholarly.export.math import export_publications_csv
 
-        export_publications_csv(
-            outfile,
-            candidate,
-            pubs,
-            grants,
-            position=ID_TO_POSITION[position],
-            overwrite=force,
-        )
+        export_publications_csv(outfile, candidate, overwrite=force)
     else:
         log.error("Unsupported file format '%s'.", outfile)
         ctx.exit(1)
