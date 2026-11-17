@@ -74,7 +74,7 @@ ID_TO_POSITION = {
 
 @enum.unique
 class PublisherCategory(enum.Enum):
-    """SENSE category of a book publisher, as used by the CS standards."""
+    """SENSE category of a book publisher."""
 
     A = enum.auto()
     B = enum.auto()

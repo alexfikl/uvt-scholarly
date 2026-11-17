@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 
 log = make_logger(__name__)
 
-# See:
 ANZSRC_FOR_URL: str = "https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/2020/anzsrc2020_for.xlsx"
-"""The full URL for the ANZSRC classification. The latest version can be found at
-the [official website](https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/latest-release).
+"""The full URL for the ANZSRC Fielf of Research (FOR) classification. The latest
+version can be found at the
+[official website](https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-research-classification-anzsrc/latest-release).
 """
 
 ANZSRC_CLASSIFICATIONS: dict[int, str] = {
@@ -285,9 +285,10 @@ def parse_research_classification(filename: pathlib.Path) -> dict[int, str]:
     if wb is None:
         raise ValueError(f"could not load workbook from file: '{filename}'")
 
-    if "Table 2" not in wb.sheetnames:
-        raise ValueError(f"expected a sheet called 'Table 2' in file: '{filename}'")
-    ws = wb["Table 2"]
+    sheetname = "Table 2"
+    if sheetname not in wb.sheetnames:
+        raise ValueError(f"expected a sheet called '{sheetname}' in file: '{filename}'")
+    ws = wb[sheetname]
 
     # NOTE: the format of these things seems to be something like
     #
