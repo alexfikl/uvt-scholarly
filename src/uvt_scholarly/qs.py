@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 log = make_logger(__name__)
 
 
-# {{{ parse_qs_ranking
+# {{{ University
 
 
 @enum.unique
@@ -28,6 +28,15 @@ class UniversityRanking(enum.Enum):
     Top200 = enum.auto()
     Top500 = enum.auto()
     Above500 = enum.auto()
+
+
+UNIVERSITY_RANKING_ID = {
+    "top20": UniversityRanking.Top20,
+    "top100": UniversityRanking.Top100,
+    "top200": UniversityRanking.Top200,
+    "top500": UniversityRanking.Top500,
+    "above500": UniversityRanking.Above500,
+}
 
 
 @enum.unique
@@ -58,6 +67,12 @@ class University:
             return UniversityRanking.Top500
         else:
             return UniversityRanking.Above500
+
+
+# }}}
+
+
+# {{{ parse_qs_ranking
 
 
 def parse_qs_ranking(filename: pathlib.Path) -> Sequence[University]:

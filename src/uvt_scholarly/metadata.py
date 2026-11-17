@@ -10,16 +10,28 @@ from typing import TYPE_CHECKING, Any
 
 from uvt_scholarly.identifiers import GoogleScholarID, ORCiD, ResearcherID, ScopusID
 from uvt_scholarly.logging import make_logger
+from uvt_scholarly.qs import UNIVERSITY_RANKING_ID, UniversityRanking
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from uvt_scholarly.publication import Category, Publication
-    from uvt_scholarly.qs import UniversityRanking
 
 log = make_logger(__name__)
 
 LATEST_METADATA_VERSION = 1
+
+# {{{ helpers
+
+
+def _parse_period_v1(period: object) -> tuple[int, int]:
+    if not isinstance(period, list) or len(period) != 2:
+        raise ValueError(f"'period' is not a two-tuple: {period!r}")
+
+    return int(period[0]), int(period[1])
+
+
+# }}}
 
 
 # {{{ Position
@@ -85,11 +97,12 @@ class Scope(enum.Enum):
     Local = enum.auto()
 
 
-SCOPE_ID = {
+ID_TO_SCOPE = {
     "international": Scope.International,
     "national": Scope.National,
     "local": Scope.Local,
 }
+
 
 # }}}
 
@@ -173,19 +186,13 @@ class Grant:
     """A URL for the project or a link to the funder's page for this grant."""
 
 
-GRANT_ROLE_ID = {
+ID_TO_GRANT_ROLE = {
     "director": GrantRole.Director,
     "member": GrantRole.Member,
 }
 
 
 def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Grant]:
-    def parse_period(period: object) -> tuple[int, int]:
-        if not isinstance(period, list) or len(period) != 2:
-            raise ValueError(f"'period' is not a two-tuple: {period!r}")
-
-        return int(period[0]), int(period[1])
-
     def parse_organization(organization: object) -> Organization:
         if isinstance(organization, str):
             return Organization(name=organization.strip())
@@ -222,7 +229,7 @@ def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Grant]:
 
         title = str(title).strip()
         try:
-            role = GRANT_ROLE_ID[str(d.get("role", "member")).strip().lower()]
+            role = ID_TO_GRANT_ROLE[str(d.get("role", "member")).strip().lower()]
             competition = d.get("competition")
             identifier = d.get("identifier", d.get("contract"))
             grants.append(
@@ -233,11 +240,11 @@ def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Grant]:
                     identifier=str(identifier).strip() if identifier else None,
                     amount=parse_amount(d.get("amount")),
                     competition=(
-                        SCOPE_ID[str(competition).strip().lower()]
+                        ID_TO_SCOPE[str(competition).strip().lower()]
                         if competition
                         else None
                     ),
-                    period=parse_period(d["period"]),
+                    period=_parse_period_v1(d["period"]),
                     url=url.strip() if (url := d.get("url")) else None,
                 )
             )
@@ -332,6 +339,13 @@ class RoleKind(enum.Enum):
     Leadership = enum.auto()
 
 
+ID_TO_ROLE_KIND = {
+    "visit": RoleKind.Visit,
+    "team": RoleKind.Team,
+    "leadership": RoleKind.Leadership,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class Role:
     """A longer-lived role at an organization.
@@ -349,7 +363,7 @@ class Role:
     ``"president"``.
     """
     scope: Scope | None = None
-    """The geographic or institutional scope of the role."""
+    """The geographic scope of the role."""
     ranking: UniversityRanking | None = None
     """The university ranking, for visiting positions."""
     country: str | None = None
@@ -369,7 +383,43 @@ class Role:
 
 
 def _parse_visiting_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
-    return []
+    visiting = []
+    for i, d in enumerate(entries):
+        name = d.get("name")
+        if not name:
+            log.error("Visiting position %d has no name. Skipping...", i)
+            continue
+
+        name = str(name).strip()
+        try:
+            visiting.append(
+                Role(
+                    name=name,
+                    kind=ID_TO_ROLE_KIND[str(d["kind"]).strip().lower()],
+                    role=str(d["role"]).strip(),
+                    country=d.get("country"),
+                    ranking=(
+                        UNIVERSITY_RANKING_ID[str(d["ranking"]).strip().lower()]
+                        if d.get("ranking")
+                        else None
+                    ),
+                    period=_parse_period_v1(d["period"]) if "period" in d else None,
+                    duration_months=(
+                        int(d["duration_months"]) if "duration_months" in d else None
+                    ),
+                    teaching_hours=(
+                        int(d["teaching_hours"]) if "teaching_hours" in d else None
+                    ),
+                    url=d.get("url"),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            log.error(
+                "Failed to read visiting position %d: '%s'.", i, name, exc_info=exc
+            )
+            continue
+
+    return tuple(visiting)
 
 
 def _parse_teams_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Role]:
@@ -391,6 +441,13 @@ class DoctoralRole(enum.Enum):
     Supervisor = enum.auto()
     Member = enum.auto()
     Evaluator = enum.auto()
+
+
+ID_TO_DOCTORAL_ROLE = {
+    "supervisor": DoctoralRole.Supervisor,
+    "member": DoctoralRole.Member,
+    "evaluator": DoctoralRole.Evaluator,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -415,7 +472,37 @@ def _parse_phd_evaluation_v1(
 def _parse_phd_committee_v1(
     entries: Sequence[dict[str, Any]],
 ) -> Sequence[DoctoralCommittee]:
-    return []
+    committees = []
+    for i, d in enumerate(entries):
+        student = d.get("student")
+        if not student:
+            log.error("Doctoral committee entry %d has no student. Skipping...", i)
+            continue
+
+        student = str(student).strip()
+        try:
+            committees.append(
+                DoctoralCommittee(
+                    university=str(d["university"]).strip(),
+                    role=ID_TO_DOCTORAL_ROLE[str(d["role"]).strip().lower()],
+                    student=student,
+                    year=int(d["year"]),
+                    thesis=d.get("thesis"),
+                    ranking=(
+                        UNIVERSITY_RANKING_ID[str(d["ranking"]).strip().lower()]
+                        if d.get("ranking")
+                        else None
+                    ),
+                    doctoral_school_decision=d.get("doctoral_school_decision"),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            log.error(
+                "Failed to read doctoral committee %d: '%s'.", i, student, exc_info=exc
+            )
+            continue
+
+    return tuple(committees)
 
 
 # }}}
@@ -464,6 +551,15 @@ class SoftwareKind(enum.Enum):
     Other = enum.auto()
 
 
+ID_TO_SOFTWARE_KIND = {
+    "package": SoftwareKind.Package,
+    "tool": SoftwareKind.Tool,
+    "resource": SoftwareKind.Resource,
+    "dataset": SoftwareKind.Dataset,
+    "other": SoftwareKind.Other,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class Software:
     name: str
@@ -478,7 +574,33 @@ class Software:
 
 
 def _parse_software_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Software]:
-    return []
+    software = []
+    for i, d in enumerate(entries):
+        name = d.get("name")
+        if not name:
+            log.error("Software entry %d has no name. Skipping...", i)
+            continue
+
+        name = str(name).strip()
+        try:
+            software.append(
+                Software(
+                    name=name,
+                    kind=ID_TO_SOFTWARE_KIND[str(d["kind"]).strip().lower()],
+                    authors=tuple(str(author).strip() for author in d["authors"]),
+                    year=int(d["year"]) if "year" in d else None,
+                    license=d.get("license"),
+                    accesses=int(d["accesses"]) if "accesses" in d else None,
+                    url=d.get("url"),
+                    doi=d.get("doi"),
+                    description=d.get("description"),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            log.error("Failed to read software %d: '%s'.", i, name, exc_info=exc)
+            continue
+
+    return tuple(software)
 
 
 # }}}
@@ -509,7 +631,7 @@ def _parse_awards_v1(entries: Sequence[dict[str, Any]]) -> Sequence[Award]:
 
 @dataclass(frozen=True, slots=True)
 class Recommendation:
-    """A C5 recommendation letter."""
+    """A recommendation letter."""
 
     position: str
     name: str
@@ -520,7 +642,28 @@ class Recommendation:
 def _parse_recommendations_v1(
     entries: Sequence[dict[str, Any]],
 ) -> Sequence[Recommendation]:
-    return []
+    recommendations = []
+    for i, d in enumerate(entries):
+        name = d.get("name")
+        if not name:
+            log.error("Recommendation %d has no name. Skipping...", i)
+            continue
+
+        name = str(name).strip()
+        try:
+            recommendations.append(
+                Recommendation(
+                    position=str(d["position"]).strip(),
+                    name=name,
+                    university=str(d["university"]).strip(),
+                    email=str(d["email"]).strip(),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            log.error("Failed to read recommendation %d: '%s'.", i, name, exc_info=exc)
+            continue
+
+    return tuple(recommendations)
 
 
 # }}}
