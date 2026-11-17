@@ -144,7 +144,7 @@ def filter_latex_format_grant(grant: Grant) -> str:
             if grant.period[0] != grant.period[1]
             else f"{grant.period[0]}"
         ),
-        rf"Poziție: \textbf{{{grant.role.name}}}",
+        rf"Rol: \textbf{{{grant.role.name}}}",
     ])
 
     if grant.amount:

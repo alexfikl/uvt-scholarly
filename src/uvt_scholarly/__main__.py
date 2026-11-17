@@ -140,7 +140,10 @@ def math(ctx: click.Context) -> None:
 
 @math.command("generate")
 @click.help_option("-h", "--help")
-@click.argument("filename", type=click.Path(exists=True, dir_okay=False))
+@click.argument(
+    "filename",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+)
 @click.option(
     "--outfile",
     type=click.Path(dir_okay=False, path_type=pathlib.Path),
