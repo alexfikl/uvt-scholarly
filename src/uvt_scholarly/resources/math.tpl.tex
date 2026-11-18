@@ -75,7 +75,7 @@
 \begin{document}
 
 \begin{center}
-{\Huge \textbf{Fișă de verificare: \TplVar{candidate.qualname}}}
+{\Huge \textbf{Fișă de verificare: \TplVar{candidate.full_name}}}
 \bigskip
 
 {\Large Standarde minimale pentru conferirea titlului de \TplVar{criteria.position_name}}
@@ -102,34 +102,34 @@
 & \textbf{Valoarea realizată a indicatorului} \\\hline
 S &
 \TplVar{'$\\ge {}$'.format(criteria.min_ais) if criteria.min_ais else '--'} &
-\TplVar{'{:.3f}'.format(candidate.ais) if candidate.ais else '--'} \\\hline
+\TplVar{'{:.3f}'.format(summary.ais) if summary.ais else '--'} \\\hline
 S\textsubscript{recent} &
 \TplVar{'$\\ge {}$'.format(criteria.min_recent_ais)
     if criteria.min_recent_ais else '--'} &
-\TplVar{'{:.3f}'.format(candidate.recent_ais) if candidate.recent_ais else '--'} \\\hline
+\TplVar{'{:.3f}'.format(summary.recent_ais) if summary.recent_ais else '--'} \\\hline
 C &
 \TplVar{'$\\ge {}$'.format(criteria.min_citations) if criteria.min_citations else '--'} &
-\TplVar{candidate.total_citations if candidate.total_citations else '--'} \\\hline
+\TplVar{summary.total_citations if summary.total_citations else '--'} \\\hline
 C1\_UVT &
 \TplVar{'$\\ge {}$'.format(criteria.min_c1_uvt_books)
     if criteria.min_c1_uvt_books else '--'} &
-\TplVar{'{:d}'.format(candidate.c1_uvt_books) if candidate.c1_uvt_books else '--'} \\\hline
+\TplVar{'{:d}'.format(summary.c1_uvt_books) if summary.c1_uvt_books else '--'} \\\hline
 C2\_UVT &
 \TplVar{'$\\ge {}$'.format(criteria.min_c2_uvt_courses)
     if criteria.min_c2_uvt_courses else '--'} &
-\TplVar{'{:d}'.format(candidate.c2_uvt_courses) if candidate.c2_uvt_courses else '--'} \\\hline
+\TplVar{'{:d}'.format(summary.c2_uvt_courses) if summary.c2_uvt_courses else '--'} \\\hline
 C3\_UVT &
 \TplVar{'$\\ge {}$'.format(criteria.min_c3_uvt_projects)
     if criteria.min_c3_uvt_projects else '--'} &
-\TplVar{'{:d}'.format(candidate.c3_uvt_grants) if candidate.c3_uvt_grants else '--'} \\\hline
+\TplVar{'{:d}'.format(summary.c3_uvt_grants) if summary.c3_uvt_grants else '--'} \\\hline
 C4\_UVT &
 \TplVar{'$\\ge {}$'.format(criteria.min_c4_uvt_publications)
     if criteria.min_c4_uvt_publications else '--'} &
-\TplVar{'{:d}'.format(candidate.c4_uvt_publications) if candidate.c4_uvt_publications else '--'} \\\hline
+\TplVar{'{:d}'.format(summary.c4_uvt_publications) if summary.c4_uvt_publications else '--'} \\\hline
 C5\_UVT &
 \TplVar{'$\\ge {}$'.format(criteria.min_c5_uvt_recommendations)
     if criteria.min_c5_uvt_recommendations else '--'} &
-\TplVar{'{:d}'.format(candidate.c5_uvt_recommendations) if candidate.c5_uvt_recommendations else '--'} \\\hline
+\TplVar{'{:d}'.format(summary.c5_uvt_recommendations) if summary.c5_uvt_recommendations else '--'} \\\hline
 \end{tabular}
 \end{center}
 }
@@ -155,7 +155,7 @@ C5\_UVT &
 \vfill
 
 {\large
-\noindent \textbf{Timișoara, \today \hfill \TplVar{candidate.qualname}}
+\noindent \textbf{Timișoara, \today \hfill \TplVar{candidate.full_name}}
 }
 
 \vspace{1.5cm}
@@ -167,7 +167,7 @@ C5\_UVT &
 
 \textbf{Facultatea de Matematică}
 
-\textbf{\TplVar{candidate.qualname}}
+\textbf{\TplVar{candidate.full_name}}
 }
 
 \bigskip
@@ -222,15 +222,15 @@ C5\_UVT &
 \rowcolor{TableGray} &
 \textbf{Total} &
 \multicolumn{4}{m{\dimexpr 0.38\tablewidth + 6\tabcolsep + 3\arrayrulewidth\relax}|}{
-    \textbf{S = \TplVar{'{:.3f}'.format(candidate.ais)}}
+    \textbf{S = \TplVar{'{:.3f}'.format(summary.ais)}}
     \hfill
-    \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(candidate.recent_ais)}}
+    \textbf{S\textsubscript{recent} = \TplVar{"{:.3f}".format(summary.recent_ais)}}
 } \\
 \hline
 \endlastfoot
 
 % rows
-\TplBlock{for pub in candidate.publications}
+\TplBlock{for pub in summary.publications}
 \TplBlock{-set ais = pub | get_score('AIS')}
 \TplVar{'\\rowcolor{TableOrange!20}' if ais == 0 else ''}
 \TplVar{loop.index} &
@@ -296,13 +296,13 @@ C5\_UVT &
 \hline
 \rowcolor{TableGray}
 & \textbf{Total} &
-\multicolumn{2}{r|}{\textbf{C = \TplVar{candidate.total_citations}}} \\
+\multicolumn{2}{r|}{\textbf{C = \TplVar{summary.total_citations}}} \\
 \hline
 \endlastfoot
 
 % rows
 \TplBlock{set counter = namespace(value=0)}
-\TplBlock{for pub in candidate.publications}
+\TplBlock{for pub in summary.publications}
     \TplBlock{-for cite in pub.cited_by}
         \TplBlock{set counter.value = counter.value + 1}
 \TplVar{counter.value} &
@@ -314,7 +314,7 @@ C5\_UVT &
 \end{longtable}
 }
 
-\TplBlock{-if candidate.books}
+\TplBlock{-if summary.books}
 \clearpage
 
 \begin{center}
@@ -346,12 +346,12 @@ C5\_UVT &
 % footer on the last page
 \hline
 \rowcolor{TableGray}
-& \textbf{Total punctaj C1\_UVT = \TplVar{candidate.c1_uvt_books}} \\
+& \textbf{Total punctaj C1\_UVT = \TplVar{summary.c1_uvt_books}} \\
 \hline
 \endlastfoot
 
 % rows
-\TplBlock{for pub in candidate.books}
+\TplBlock{for pub in summary.books}
 \TplVar{loop.index} &
 \TplVar{pub | format_book} \\\hline
 \TplBlock{endfor}
@@ -359,7 +359,7 @@ C5\_UVT &
 }
 \TplBlock{endif-}
 
-\TplBlock{-if candidate.courses}
+\TplBlock{-if summary.courses}
 \clearpage
 
 \begin{center}
@@ -391,12 +391,12 @@ C5\_UVT &
 % footer on the last page
 \hline
 \rowcolor{TableGray}
-& \textbf{Total punctaj C2\_UVT = \TplVar{candidate.c2_uvt_courses}} \\
+& \textbf{Total punctaj C2\_UVT = \TplVar{summary.c2_uvt_courses}} \\
 \hline
 \endlastfoot
 
 % rows
-\TplBlock{for pub in candidate.courses}
+\TplBlock{for pub in summary.courses}
 \TplVar{loop.index} &
 \TplVar{pub | format_book} \\\hline
 \TplBlock{endfor}
@@ -404,7 +404,7 @@ C5\_UVT &
 }
 \TplBlock{endif-}
 
-\TplBlock{-if candidate.grants}
+\TplBlock{-if summary.grants}
 \clearpage
 
 \begin{center}
@@ -436,12 +436,12 @@ C5\_UVT &
 % footer on the last page
 \hline
 \rowcolor{TableGray}
-& \textbf{Total punctaj C3\_UVT = \TplVar{candidate.c3_uvt_grants}} \\
+& \textbf{Total punctaj C3\_UVT = \TplVar{summary.c3_uvt_grants}} \\
 \hline
 \endlastfoot
 
 % rows
-\TplBlock{for pub in candidate.grants}
+\TplBlock{for pub in summary.grants}
 \TplVar{loop.index} &
 \TplVar{pub | format_grant} \\\hline
 \TplBlock{endfor}
@@ -449,6 +449,7 @@ C5\_UVT &
 }
 \TplBlock{endif-}
 
+\TplBlock{-if summary.recommendations}
 \clearpage
 
 \begin{center}
@@ -479,25 +480,22 @@ C5\_UVT &
 
 % footer on the last page
 \hline
-1 & {
-Profesor, etc. \newline
-\url{mailto:prof@university.edu}
-}
-\\\hline
-2 & {
-Profesor, etc. \newline
-\url{mailto:prof@university.edu}
-}
-\\\hline
 \rowcolor{TableGray}
-& \textbf{Total punctaj C5\_UVT = \TplVar{candidate.c5_uvt_recommendations}} \\
+& \textbf{Total punctaj C5\_UVT = \TplVar{summary.c5_uvt_recommendations}} \\
 \hline
 \endlastfoot
 
 % rows
-
+\TplBlock{for rec in summary.recommendations}
+\TplVar{loop.index} & {
+\TplVar{rec.position}, \TplVar{rec.name}, \TplVar{rec.university} \newline
+\url{mailto:\TplVar{rec.email}}
+}
+\\\hline
+\TplBlock{endfor}
 \end{longtable}
 }
+\TplBlock{endif-}
 \end{document}
 
 % vim:foldmarker=<<<,>>>:foldmethod=marker:spell spelllang=ro

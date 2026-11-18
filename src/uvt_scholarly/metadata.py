@@ -193,6 +193,11 @@ ID_TO_GRANT_ROLE = {
     "member": GrantRole.Member,
 }
 
+GRANT_ROLE_NAME = {
+    GrantRole.Director: "Director",
+    GrantRole.Member: "Membru",
+}
+
 
 def _parse_grants_v1(entries: Sequence[dict[str, Any]]) -> tuple[Grant, ...]:
     def parse_organization(organization: object) -> Organization:
@@ -736,6 +741,10 @@ class Candidate:
     scopus_id: ScopusID | None = None
     google_scholar_id: GoogleScholarID | None = None
     hirsch: HirschIndex | None = None
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
 
 
 # }}}

@@ -7,7 +7,13 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from uvt_scholarly.logging import make_logger
-from uvt_scholarly.metadata import POSITION_NAME, Candidate, Position
+from uvt_scholarly.metadata import (
+    GRANT_ROLE_NAME,
+    POSITION_NAME,
+    Candidate,
+    Position,
+    Recommendation,
+)
 from uvt_scholarly.publication import (
     Author,
     DocumentType,
@@ -25,17 +31,6 @@ log = make_logger(__name__)
 
 
 # {{{ utils
-
-MIN_AIS_SCORE = 0
-"""The minimum score allowed for publications by the Mathematics Department."""
-
-PAST_YEAR_CUTOFF = 5
-"""The span over which the AIS should be considered. The presented score is
-a maximum over this period.
-"""
-
-RECENT_YEAR_CUTOFF = 7
-"""The span over which the publication is considered as *RECENT*."""
 
 
 def _format_author(au: Author) -> str:
@@ -144,7 +139,7 @@ def filter_latex_format_grant(grant: Grant) -> str:
             if grant.period[0] != grant.period[1]
             else f"{grant.period[0]}"
         ),
-        rf"Rol: \textbf{{{grant.role.name}}}",
+        rf"Poziție: \textbf{{{GRANT_ROLE_NAME[grant.role]}}}",
     ])
 
     if grant.amount:
@@ -213,17 +208,45 @@ def filter_get_average_score(pub: Publication, name: str) -> float:
 # {{{ criteria
 
 
+MIN_AIS_SCORE = 0
+"""The minimum score allowed for publications by the Mathematics Department."""
+
+PAST_YEAR_CUTOFF = 5
+"""The span over which the AIS should be considered. The presented score is
+a maximum over this period.
+"""
+
+RECENT_YEAR_CUTOFF = 7
+"""The span over which the publication is considered as *RECENT*."""
+
+
 @dataclass(frozen=True)
 class Criteria:
     position: Position
+    """Position this criterion applies to."""
+
     min_ais: float
+    """Minimal total score `S` based on the AIS required for the position."""
     min_recent_ais: float
+    """Minimal recent score `S_recent` based on the AIS required for the position
+    (see [RECENT_YEAR_CUTOFF][]).
+    """
     min_citations: int
+    """Minimum number of citations `C` for all eligible papers."""
+
     min_c1_uvt_books: int
+    """Minimum number of speciality books in the position's domain. Only
+    publishers recognized by CNCSIS are allowed.
+    """
     min_c2_uvt_courses: int
+    """Minimum number of published lecture notes published in the position's
+    domain. Only publishers recognized by CNCSIS are allowed."""
     min_c3_uvt_projects: int
+    """Minimum number of participations in research grants."""
     min_c4_uvt_publications: int
+    """Minimum number of publications."""
     min_c5_uvt_recommendations: int
+    """Minimum number of recommendation letters for the position."""
 
     @property
     def position_name(self) -> str:
@@ -249,7 +272,7 @@ MIN_CRITERIA_FOR_POSITION = {
         Position.JuniorResearcher, 1.0, 0.0, 0, 0, 0, 0, 5, 2
     ),
 }
-
+"""A mapping of positions to their minimum criteria."""
 
 # }}}
 
@@ -263,21 +286,22 @@ AVERAGED_AIS_POSITIONS = {
     Position.SeniorResearcher,
     Position.Researcher,
 }
+"""A set of positions whose total and recent scores are averaged per number of
+authors of each publication.
+"""
 
 
 @dataclass(frozen=True)
-class MathCandidate:
-    qualname: str
-    target: Position
-
+class ScoreSummary:
     ais: float
     recent_ais: float
     total_citations: int
 
     books: Sequence[Publication]
     courses: Sequence[Publication]
-    publications: Sequence[Publication]
     grants: Sequence[Grant]
+    publications: Sequence[Publication]
+    recommendations: Sequence[Recommendation]
 
     @property
     def c1_uvt_books(self) -> int:
@@ -297,7 +321,7 @@ class MathCandidate:
 
     @property
     def c5_uvt_recommendations(self) -> int:
-        return 2
+        return len(self.recommendations)
 
 
 def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
@@ -310,9 +334,9 @@ def sortedpubs(pubs: Sequence[Publication]) -> tuple[Publication, ...]:
     )
 
 
-def to_math_candidate(
+def make_score_summary(
     candidate: Candidate,
-) -> MathCandidate:
+) -> ScoreSummary:
     from datetime import datetime
 
     # TODO: will need to implement this
@@ -379,9 +403,7 @@ def to_math_candidate(
                 )
             )
 
-    return MathCandidate(
-        qualname=f"{candidate.first_name} {candidate.last_name}",
-        target=candidate.target,
+    return ScoreSummary(
         ais=total_ais,
         recent_ais=recent_total_ais,
         total_citations=total_citations,
@@ -389,6 +411,7 @@ def to_math_candidate(
         courses=tuple(courses),
         publications=sortedpubs(publications),
         grants=tuple(sorted(candidate.grants, key=lambda g: g.period[1], reverse=True)),
+        recommendations=candidate.recommendations,
     )
 
 
@@ -416,7 +439,7 @@ CITATION_FIELD_NAMES = (
 
 def export_publications_csv(
     filename: pathlib.Path,
-    _candidate: Candidate,
+    candidate: Candidate,
     *,
     encoding: str = "utf-8",
     dialect: str = "excel",
@@ -429,7 +452,7 @@ def export_publications_csv(
     from datetime import datetime
 
     seven_years_ago = datetime.now().year - RECENT_YEAR_CUTOFF
-    mc = to_math_candidate(_candidate)
+    summary = make_score_summary(candidate)
 
     with open(filename, "w", encoding=encoding) as f:
         writer = csv.DictWriter(
@@ -440,9 +463,9 @@ def export_publications_csv(
         )
         writer.writeheader()
 
-        for i, pub in enumerate(mc.publications):
+        for i, pub in enumerate(summary.publications):
             ais = pub.journal.scores[ScoreType.AIS]
-            if mc.target in AVERAGED_AIS_POSITIONS:
+            if candidate.target in AVERAGED_AIS_POSITIONS:
                 ais_per_author = ais / len(pub.authors)
             else:
                 ais_per_author = ais
@@ -466,8 +489,8 @@ def export_publications_csv(
 
         writer.writerow({
             PUBLICATION_FIELD_NAMES[1]: "Total",
-            PUBLICATION_FIELD_NAMES[3]: f"S = {mc.ais:.3f}",
-            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {mc.recent_ais:.3f}",
+            PUBLICATION_FIELD_NAMES[3]: f"S = {summary.ais:.3f}",
+            PUBLICATION_FIELD_NAMES[5]: f"S_recent = {summary.recent_ais:.3f}",
         })
 
     filename = filename.with_stem(f"{filename.stem}.cites")
@@ -481,7 +504,7 @@ def export_publications_csv(
         writer.writeheader()
 
         i = 0
-        for pub in mc.publications:
+        for pub in summary.publications:
             for j, cited_by in enumerate(pub.cited_by):
                 ais = cited_by.journal.scores[ScoreType.AIS]
 
@@ -503,7 +526,7 @@ def export_publications_csv(
 
         writer.writerow({
             CITATION_FIELD_NAMES[1]: "Total",
-            CITATION_FIELD_NAMES[3]: f"C = {mc.total_citations}",
+            CITATION_FIELD_NAMES[3]: f"C = {summary.total_citations}",
         })
 
 
@@ -557,11 +580,16 @@ def export_publications_latex(
     from importlib.resources import files
 
     criteria = MIN_CRITERIA_FOR_POSITION[candidate.target]
-    mc = to_math_candidate(candidate)
+    summary = make_score_summary(candidate)
 
     template_file = files("uvt_scholarly.resources").joinpath("math.tpl.tex")
     with template_file.open(encoding="utf-8") as f:
-        tex = env.from_string(f.read()).render(candidate=mc, criteria=criteria).strip()
+        tex = (
+            env
+            .from_string(f.read())
+            .render(summary=summary, candidate=candidate, criteria=criteria)
+            .strip()
+        )
 
     with open(outfile, "w", encoding="utf-8") as f:
         f.write(tex)
